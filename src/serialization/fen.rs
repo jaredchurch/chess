@@ -255,7 +255,7 @@ fn validate_castling_rights(board: &Board) -> Result<(), String> {
     Ok(())
 }
 
-fn validate_en_passant_square(board: &Board, ep_square: Square) -> Result<(), String> {
+fn validate_en_passant_square(_board: &Board, ep_square: Square) -> Result<(), String> {
     // EP square validation: EP square must be on valid rank (3 or 4 in 0-indexed)
     // The rank check alone is sufficient - we check the actual pawn below
     let ep_idx = ep_square.as_u32();

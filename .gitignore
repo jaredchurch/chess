@@ -1,4 +1,5 @@
-.gemini# Rust build artifacts
+.gemini
+# Rust build artifacts
 /target/
 /www/pkg/
 
