@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chess WASM Prototype</title>
+    <style>
+        body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; background: #2c3e50; color: white; }
+        #board-container { 
+            width: 95vmin; 
+            max-width: 600px; 
+            margin-top: 10px; 
+        }
+        #board { 
+            display: grid; 
+            grid-template-columns: repeat(8, 1fr); 
+            grid-template-rows: repeat(8, 1fr); 
+            aspect-ratio: 1 / 1;
+            border: 2px solid #34495e; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3); 
+        }
+        .square { 
+            width: 100%; 
+            height: 100%; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            font-size: 8vmin; 
+            cursor: pointer; 
+            user-select: none; 
+        }
+        @media (min-width: 630px) {
+            .square { font-size: 50px; }
+        }
+        .white { background-color: #f0d9b5; }
+        .black { background-color: #b58863; }
+        .highlight { background-color: #f1c40f !important; }
+        .piece-white { color: #ffffff; filter: drop-shadow(0 0 1px rgba(0,0,0,0.7)); }
+        .piece-black { color: #000000; }
+        #status { margin: 20px; font-size: 1.2em; }
+        #fen { margin: 10px; font-size: 0.8em; color: #bdc3c7; width: 80%; word-break: break-all; text-align: center; }
+        button { padding: 10px 20px; font-size: 1em; cursor: pointer; background: #3498db; color: white; border: none; border-radius: 5px; }
+        button:hover { background: #2980b9; }
+    </style>
+</head>
+<body>
+    <h1>Chess WASM Prototype</h1>
+    <div id="status">Initializing...</div>
+    <div id="board-container">
+        <div id="board"></div>
+    </div>
+    <div id="fen"></div>
+    <button onclick="resetGame()">Reset Game</button>
+
+    <script type="module" src="./index.js"></script>
+</body>
+</html>
