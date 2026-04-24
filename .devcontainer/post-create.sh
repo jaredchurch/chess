@@ -105,6 +105,17 @@ echo -e "\n🐍 Installing UV - Python Package Manager..."
 run_command "pipx install uv"
 echo "✅ Done"
 
+# Installing Rust and wasm-pack for chess game build
+echo -e "\n🦀 Installing Rust..."
+run_command "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y"
+# Add cargo to PATH for this session
+export PATH="$HOME/.cargo/bin:$PATH"
+echo "✅ Done"
+
+echo -e "\n📦 Installing wasm-pack..."
+run_command "$HOME/.cargo/bin/cargo install wasm-pack"
+echo "✅ Done"
+
 # Installing Spec Kit (Spec-Driven Development)
 echo -e "\n📋 Installing Spec Kit..."
 run_command "uv tool install specify-cli --from git+https://github.com/github/spec-kit.git"
