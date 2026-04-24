@@ -1,0 +1,12 @@
+{
+    "id": "en-NZ-locale",
+    "name": "New Zealand Locale (en_NZ.UTF-8)",
+    "description": "Generates the en_NZ.UTF-8 locale",
+    "options": {
+        "locales": {
+            "type": "string",
+            "description": "Locale to generate",
+            "default": "en_NZ.UTF-8"
+        }
+    }
+}
