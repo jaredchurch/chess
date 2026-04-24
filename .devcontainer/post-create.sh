@@ -117,12 +117,12 @@ run_command "$HOME/.cargo/bin/cargo install wasm-pack"
 echo "✅ Done"
 
 # Installing GitHub CLI
-echo -e "\n🐙 Installing GitHub CLI..."
-run_command "curl -fsSL https://cli.github.com/packages/githubcli-archive-key.gpg | sudo gpg --dearmor -o /usr/share/keyrings/github-cli-archive.gpg"
-run_command 'echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/github-cli-archive.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null'
-run_command "sudo apt-get update"
-run_command "sudo apt-get install gh"
-echo "✅ Done"
+# echo -e "\n🐙 Installing GitHub CLI..."
+# run_command "curl -fsSL https://cli.github.com/packages/githubcli-archive-key.gpg | sudo gpg --dearmor -o /usr/share/keyrings/github-cli-archive.gpg"
+# run_command 'echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/github-cli-archive.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null'
+# run_command "sudo apt-get update"
+# run_command "sudo apt-get install gh"
+# echo "✅ Done"
 
 # Installing Spec Kit (Spec-Driven Development)
 echo -e "\n📋 Installing Spec Kit..."
