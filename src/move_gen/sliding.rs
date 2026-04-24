@@ -21,6 +21,7 @@ pub fn generate_rook_moves(board: &Board, square: Square, moves: &mut Vec<Move>)
     let mut bits = attacks.0 & !own_occupancy.0;
     while bits != 0 {
         let to_idx = bits.trailing_zeros();
+        // SAFETY: to_idx from filtered rook attacks, always 0-63
         let to_sq: Square = unsafe { std::mem::transmute(to_idx as u8) };
         let flag = if enemy_occupancy.get(to_idx) {
             MoveFlag::Capture
@@ -46,6 +47,7 @@ pub fn generate_bishop_moves(board: &Board, square: Square, moves: &mut Vec<Move
     let mut bits = attacks.0 & !own_occupancy.0;
     while bits != 0 {
         let to_idx = bits.trailing_zeros();
+        // SAFETY: to_idx from filtered bishop attacks, always 0-63
         let to_sq: Square = unsafe { std::mem::transmute(to_idx as u8) };
         let flag = if enemy_occupancy.get(to_idx) {
             MoveFlag::Capture

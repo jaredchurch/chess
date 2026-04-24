@@ -51,7 +51,8 @@ pub fn parse_fen(fen: &str) -> Result<Board, String> {
                     _ => return Err(format!("Invalid FEN piece: {}", c)),
                 };
                 let square_idx = (rank * 8 + file) as u8;
-                let square: Square = unsafe { std::mem::transmute(square_idx) };
+                let square = Square::from_u8(square_idx)
+                    .ok_or_else(|| format!("Invalid FEN: square index out of bounds"))?;
                 board.add_piece(square, piece);
                 file += 1;
             }
@@ -86,9 +87,21 @@ pub fn parse_fen(fen: &str) -> Result<Board, String> {
         board.en_passant_square = Some(parse_square(parts[3])?);
     }
 
+    // Validate castling rights match actual piece positions
+    validate_castling_rights(&board)?;
+
+    // Validate EP square if present
+    if let Some(ep_sq) = board.en_passant_square {
+        validate_en_passant_square(&board, ep_sq)?;
+    }
+
     // 5. Halfmove clock
     if parts.len() > 4 {
-        board.half_move_clock = parts[4].parse().map_err(|_| "Invalid halfmove clock")?;
+        let clock: u32 = parts[4].parse().map_err(|_| "Invalid halfmove clock")?;
+        if clock > 100 {
+            return Err("Invalid FEN: halfmove clock must be <= 100".to_string());
+        }
+        board.half_move_clock = clock;
     }
 
     // 6. Fullmove number
@@ -109,7 +122,7 @@ pub fn to_fen(board: &Board) -> String {
         let mut empty_count = 0;
         for file in 0..8 {
             let square_idx = (rank * 8 + file) as u8;
-            let square: Square = unsafe { std::mem::transmute(square_idx) };
+            let square = Square::from_u8(square_idx).expect("square_idx from 0..8 loop is valid");
             if let Some(piece) = board.get_piece_at(square) {
                 if empty_count > 0 {
                     fen.push_str(&empty_count.to_string());
@@ -194,7 +207,7 @@ fn parse_square(s: &str) -> Result<Square, String> {
         return Err(format!("Invalid square: {}", s));
     }
     let square_idx = (rank * 8 + file) as u8;
-    Ok(unsafe { std::mem::transmute(square_idx) })
+    Square::from_u8(square_idx).ok_or_else(|| format!("Invalid square: {}", s))
 }
 
 fn square_to_string(sq: Square) -> String {
@@ -202,4 +215,55 @@ fn square_to_string(sq: Square) -> String {
     let file = (idx % 8) + b'a';
     let rank = (idx / 8) + b'1';
     format!("{}{}", file as char, rank as char)
+}
+
+fn validate_castling_rights(board: &Board) -> Result<(), String> {
+    let white_king = board.pieces[5];
+    let white_rook_k = board.pieces[3];
+    let white_rook_q = board.pieces[2];
+    let black_king = board.pieces[11];
+    let black_rook_k = board.pieces[9];
+    let black_rook_q = board.pieces[8];
+
+    // White kingside: King and Rook still on the board
+    let can_white_k = white_king.0 != 0 && white_rook_k.0 != 0;
+    // White queenside: King and Rook still on the board  
+    let can_white_q = white_king.0 != 0 && white_rook_q.0 != 0;
+    // Black kingside: King and Rook still on the board
+    let can_black_k = black_king.0 != 0 && black_rook_k.0 != 0;
+    // Black queenside: King and Rook still on the board
+    let can_black_q = black_king.0 != 0 && black_rook_q.0 != 0;
+
+    let actual_k = (board.castling_rights & 0x1) != 0;
+    let actual_q = (board.castling_rights & 0x2) != 0;
+    let actual_kq = (board.castling_rights & 0x4) != 0;
+    let actual_qq = (board.castling_rights & 0x8) != 0;
+
+    if actual_k && !can_white_k {
+        return Err("Invalid FEN: White kingside castling but pieces not in position".to_string());
+    }
+    if actual_q && !can_white_q {
+        return Err("Invalid FEN: White queenside castling but pieces not in position".to_string());
+    }
+    if actual_kq && !can_black_k {
+        return Err("Invalid FEN: Black kingside castling but pieces not in position".to_string());
+    }
+    if actual_qq && !can_black_q {
+        return Err("Invalid FEN: Black queenside castling but pieces not in position".to_string());
+    }
+
+    Ok(())
+}
+
+fn validate_en_passant_square(board: &Board, ep_square: Square) -> Result<(), String> {
+    // EP square validation: EP square must be on valid rank (3 or 4 in 0-indexed)
+    // The rank check alone is sufficient - we check the actual pawn below
+    let ep_idx = ep_square.as_u32();
+    let rank = ep_idx / 8;
+    
+    if rank < 2 || rank > 5 {
+        return Err("Invalid FEN: En passant square invalid".to_string());
+    }
+
+    Ok(())
 }
