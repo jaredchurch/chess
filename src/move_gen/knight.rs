@@ -49,7 +49,7 @@ pub fn get_knight_attacks(square: Square) -> Bitboard {
         let nr = rank + dr;
         let nf = file + df;
         
-        if nr >= 0 && nr < 8 && nf >= 0 && nf < 8 {
+        if (0..8).contains(&nr) && (0..8).contains(&nf) {
             let to_index = (nr * 8 + nf) as u32;
             attacks |= 1 << to_index;
         }

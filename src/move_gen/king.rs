@@ -37,42 +37,34 @@ pub fn generate_king_moves(board: &Board, square: Square, moves: &mut Vec<Move>)
     let color = board.side_to_move;
     if color == Color::White && square == Square::E1 {
         // Kingside
-        if (board.castling_rights & 0x1) != 0 {
-            if !board.occupancy[2].get(Square::F1.as_u32()) && !board.occupancy[2].get(Square::G1.as_u32()) {
-                if !crate::move_gen::is_in_check(board, Color::White) && 
+        if (board.castling_rights & 0x1) != 0
+            && !board.occupancy[2].get(Square::F1.as_u32()) && !board.occupancy[2].get(Square::G1.as_u32())
+                && !crate::move_gen::is_in_check(board, Color::White) && 
                    !crate::move_gen::is_square_attacked(board, Square::F1, Color::Black) {
                     moves.push(Move::new(Square::E1, Square::G1, MoveFlag::KingsideCastling));
                 }
-            }
-        }
         // Queenside
-        if (board.castling_rights & 0x2) != 0 {
-            if !board.occupancy[2].get(Square::D1.as_u32()) && !board.occupancy[2].get(Square::C1.as_u32()) && !board.occupancy[2].get(Square::B1.as_u32()) {
-                if !crate::move_gen::is_in_check(board, Color::White) && 
+        if (board.castling_rights & 0x2) != 0
+            && !board.occupancy[2].get(Square::D1.as_u32()) && !board.occupancy[2].get(Square::C1.as_u32()) && !board.occupancy[2].get(Square::B1.as_u32())
+                && !crate::move_gen::is_in_check(board, Color::White) && 
                    !crate::move_gen::is_square_attacked(board, Square::D1, Color::Black) {
                     moves.push(Move::new(Square::E1, Square::C1, MoveFlag::QueensideCastling));
                 }
-            }
-        }
     } else if color == Color::Black && square == Square::E8 {
         // Black Kingside
-        if (board.castling_rights & 0x4) != 0 {
-            if !board.occupancy[2].get(Square::F8.as_u32()) && !board.occupancy[2].get(Square::G8.as_u32()) {
-                if !crate::move_gen::is_in_check(board, Color::Black) && 
+        if (board.castling_rights & 0x4) != 0
+            && !board.occupancy[2].get(Square::F8.as_u32()) && !board.occupancy[2].get(Square::G8.as_u32())
+                && !crate::move_gen::is_in_check(board, Color::Black) && 
                    !crate::move_gen::is_square_attacked(board, Square::F8, Color::White) {
                     moves.push(Move::new(Square::E8, Square::G8, MoveFlag::KingsideCastling));
                 }
-            }
-        }
         // Black Queenside
-        if (board.castling_rights & 0x8) != 0 {
-            if !board.occupancy[2].get(Square::D8.as_u32()) && !board.occupancy[2].get(Square::C8.as_u32()) && !board.occupancy[2].get(Square::B8.as_u32()) {
-                if !crate::move_gen::is_in_check(board, Color::Black) && 
+        if (board.castling_rights & 0x8) != 0
+            && !board.occupancy[2].get(Square::D8.as_u32()) && !board.occupancy[2].get(Square::C8.as_u32()) && !board.occupancy[2].get(Square::B8.as_u32())
+                && !crate::move_gen::is_in_check(board, Color::Black) && 
                    !crate::move_gen::is_square_attacked(board, Square::D8, Color::White) {
                     moves.push(Move::new(Square::E8, Square::C8, MoveFlag::QueensideCastling));
                 }
-            }
-        }
     }
 }
 
@@ -92,7 +84,7 @@ pub fn get_king_attacks(square: Square) -> Bitboard {
         let nr = rank + dr;
         let nf = file + df;
         
-        if nr >= 0 && nr < 8 && nf >= 0 && nf < 8 {
+        if (0..8).contains(&nr) && (0..8).contains(&nf) {
             let to_index = (nr * 8 + nf) as u32;
             attacks |= 1 << to_index;
         }

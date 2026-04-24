@@ -82,7 +82,7 @@ fn get_sliding_attacks(square: Square, occupancy: Bitboard, directions: &[(i32, 
         let mut nr = rank + dr;
         let mut nf = file + df;
         
-        while nr >= 0 && nr < 8 && nf >= 0 && nf < 8 {
+        while (0..8).contains(&nr) && (0..8).contains(&nf) {
             let to_index = (nr * 8 + nf) as u32;
             attacks |= 1 << to_index;
             if occupancy.get(to_index) {

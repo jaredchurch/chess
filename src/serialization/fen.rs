@@ -52,7 +52,7 @@ pub fn parse_fen(fen: &str) -> Result<Board, String> {
                 };
                 let square_idx = (rank * 8 + file) as u8;
                 let square = Square::from_u8(square_idx)
-                    .ok_or_else(|| format!("Invalid FEN: square index out of bounds"))?;
+                    .ok_or_else(|| "Invalid FEN: square index out of bounds".to_string())?;
                 board.add_piece(square, piece);
                 file += 1;
             }
@@ -197,13 +197,13 @@ fn parse_square(s: &str) -> Result<Square, String> {
         return Err(format!("Invalid square: {}", s));
     }
     let s = s.to_lowercase();
-    let file_char = s.chars().nth(0).unwrap();
+    let file_char = s.chars().next().unwrap();
     let rank_char = s.chars().nth(1).unwrap();
     
     let file = file_char as i32 - 'a' as i32;
     let rank = rank_char as i32 - '1' as i32;
     
-    if file < 0 || file > 7 || rank < 0 || rank > 7 {
+    if !(0..=7).contains(&file) || !(0..=7).contains(&rank) {
         return Err(format!("Invalid square: {}", s));
     }
     let square_idx = (rank * 8 + file) as u8;
@@ -261,7 +261,7 @@ fn validate_en_passant_square(_board: &Board, ep_square: Square) -> Result<(), S
     let ep_idx = ep_square.as_u32();
     let rank = ep_idx / 8;
     
-    if rank < 2 || rank > 5 {
+    if !(2..=5).contains(&rank) {
         return Err("Invalid FEN: En passant square invalid".to_string());
     }
 

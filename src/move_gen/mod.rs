@@ -80,7 +80,7 @@ pub fn is_square_attacked(board: &Board, square: Square, attacker_color: Color) 
     };
 
     // Attacked by Pawns
-    let pawns = board.pieces[attacker_offset + 0];
+    let pawns = board.pieces[attacker_offset];
     let pawn_attacks = pawn::get_pawn_attacks(square, attacker_color.opposite());
     if (pawn_attacks.0 & pawns.0) != 0 {
         return true;
