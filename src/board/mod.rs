@@ -106,7 +106,7 @@ impl Board {
         // 1. Handle captures
         if m.flag == MoveFlag::EnPassantCapture {
             let capture_idx = if piece.color == Color::White { m.to.as_u32() - 8 } else { m.to.as_u32() + 8 };
-            let capture_sq: Square = unsafe { std::mem::transmute(capture_idx as u8) };
+            let capture_sq = Square::from_u8_unchecked(capture_idx as u8);
             self.remove_piece(capture_sq);
         } else if let Some(target_piece) = self.get_piece_at(m.to) {
             self.remove_piece(m.to);
@@ -173,7 +173,7 @@ impl Board {
         self.en_passant_square = None;
         if m.flag == MoveFlag::DoublePawnPush {
             let ep_idx = if piece.color == Color::White { m.from.as_u32() + 8 } else { m.from.as_u32() - 8 };
-            self.en_passant_square = Some(unsafe { std::mem::transmute(ep_idx as u8) });
+            self.en_passant_square = Some(Square::from_u8_unchecked(ep_idx as u8));
         }
 
         // 7. Update side to move and clocks

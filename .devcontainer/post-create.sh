@@ -105,6 +105,25 @@ echo -e "\n🐍 Installing UV - Python Package Manager..."
 run_command "pipx install uv"
 echo "✅ Done"
 
+# Installing Rust and wasm-pack for chess game build
+echo -e "\n🦀 Installing Rust..."
+run_command "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y"
+# Add cargo to PATH for this session
+export PATH="$HOME/.cargo/bin:$PATH"
+echo "✅ Done"
+
+echo -e "\n📦 Installing wasm-pack..."
+run_command "$HOME/.cargo/bin/cargo install wasm-pack"
+echo "✅ Done"
+
+# Installing GitHub CLI
+echo -e "\n🐙 Installing GitHub CLI..."
+run_command "curl -fsSL https://cli.github.com/packages/githubcli-archive-key.gpg | sudo gpg --dearmor -o /usr/share/keyrings/github-cli-archive.gpg"
+run_command 'echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/github-cli-archive.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null'
+run_command "sudo apt-get update"
+run_command "sudo apt-get install gh"
+echo "✅ Done"
+
 # Installing Spec Kit (Spec-Driven Development)
 echo -e "\n📋 Installing Spec Kit..."
 run_command "uv tool install specify-cli --from git+https://github.com/github/spec-kit.git"

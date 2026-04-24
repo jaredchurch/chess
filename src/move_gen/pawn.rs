@@ -21,6 +21,7 @@ pub fn generate_pawn_moves(board: &Board, square: Square, moves: &mut Vec<Move>)
         // Single push
         let to = bit_index + 8;
         if to < 64 && !occupancy.get(to) {
+            // SAFETY: to verified < 64
             let to_sq: Square = unsafe { std::mem::transmute(to as u8) };
             if to / 8 == 7 {
                 add_promotion_moves(square, to_sq, moves);
@@ -31,6 +32,7 @@ pub fn generate_pawn_moves(board: &Board, square: Square, moves: &mut Vec<Move>)
                 if rank == 1 {
                     let to_double = bit_index + 16;
                     if !occupancy.get(to_double) {
+                        // SAFETY: rank 1 -> to_double is in valid range 16-23
                         let to_double_sq: Square = unsafe { std::mem::transmute(to_double as u8) };
                         moves.push(Move::new(square, to_double_sq, MoveFlag::DoublePawnPush));
                     }
@@ -42,6 +44,7 @@ pub fn generate_pawn_moves(board: &Board, square: Square, moves: &mut Vec<Move>)
         if bit_index >= 8 {
             let to = bit_index - 8;
             if !occupancy.get(to) {
+                // SAFETY: to verified >= 8 via check above
                 let to_sq: Square = unsafe { std::mem::transmute(to as u8) };
                 if to / 8 == 0 {
                     add_promotion_moves(square, to_sq, moves);
@@ -52,6 +55,7 @@ pub fn generate_pawn_moves(board: &Board, square: Square, moves: &mut Vec<Move>)
                     if rank == 6 {
                         let to_double = bit_index - 16;
                         if !occupancy.get(to_double) {
+                            // SAFETY: rank 6 -> to_double is in valid range 40-47
                             let to_double_sq: Square = unsafe { std::mem::transmute(to_double as u8) };
                             moves.push(Move::new(square, to_double_sq, MoveFlag::DoublePawnPush));
                         }
@@ -66,6 +70,7 @@ pub fn generate_pawn_moves(board: &Board, square: Square, moves: &mut Vec<Move>)
     let mut capture_bits = attacks.0 & enemy_occupancy.0;
     while capture_bits != 0 {
         let to_idx = capture_bits.trailing_zeros();
+        // SAFETY: to_idx from bitboard AND with enemy occupancy, always valid
         let to_sq: Square = unsafe { std::mem::transmute(to_idx as u8) };
         if to_idx / 8 == (if color == Color::White { 7 } else { 0 }) {
             add_promotion_capture_moves(square, to_sq, moves);
