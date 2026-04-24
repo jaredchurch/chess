@@ -27,9 +27,11 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: Install wasm-pack
-        uses: jetli/wasm-pack-action@v0.4.0
-        with:
-          args: build --target web --out-dir www/pkg
+        run: |
+          curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+
+      - name: Build WASM
+        run: wasm-pack build --target web --out-dir www/pkg
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
