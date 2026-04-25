@@ -10,7 +10,8 @@ Once we have worked through doing the spec for them, they should be marked as do
 - [] 6. Improve the engine that selects moves and have it's skill level configurable from novice to expert with 10 steps.
 - [] 7. Use play history to recommend the level for you on the skill level, by default games should start with that recommended level, recommendation should be based on a % configurable likelihood to win (default to 75% likely).
 - [] 8. Support mulitple profiles for users in the play history for people who share a single environment that they play in.
-- [] 9. Make play history exportable & importable to end user to support portability and backup.
+- [x] 9. Make play history exportable & importable to end user to support portability and backup.
 - [] 10. add a teaching module to help users learn about each piece, what it can do, and also special moves like en pasant.
-- [] 11. give user option to play as white or black, or random selection (50:50 odds on the calculation) - note that game history should tell which side the user was playing.
+- [x] 11. give user option to play as white or black, or random selection (50:50 odds on the calculation) - note that game history should tell which side the user was playing.
 - [x] BUG2. when a move is reviewed the dialog pops up but the board displayed has some squares are shorter than they should be. all the squares should be squares.
+- [] BUG3. when user plays a black white player should still go first.
