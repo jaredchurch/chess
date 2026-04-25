@@ -1,4 +1,4 @@
-// index.js - Chess WASM Bridge with Game Storage
+// index.js - Chess WASM Bridge with Game Storage & Info Cards
 import init, { 
     get_legal_moves, 
     apply_move, 
@@ -10,12 +10,16 @@ const INITIAL_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 const STORAGE_KEY_PROFILES = "chess_profiles";
 const STORAGE_KEY_ACTIVE_PROFILE = "chess_active_profile";
 
+const pieceValues = { 'P': 1, 'N': 3, 'B': 3, 'R': 5, 'Q': 9, 'K': 0 };
+
 let currentFen = INITIAL_FEN;
 let selectedSquare = null;
 let legalMoves = [];
 let currentGame = null;
 let moveStartTime = Date.now();
 let activeProfile = null;
+let capturedPieces = { white: [], black: [] };
+let boardOrientation = 'white';
 
 const pieceUnicode = {
     'K': '♚\uFE0E', 'Q': '♛\uFE0E', 'R': '♜\uFE0E', 'B': '♝\uFE0E', 'N': '♞\uFE0E', 'P': '♟\uFE0E',
@@ -48,6 +52,7 @@ async function start() {
     initializeProfile();
     restoreInProgressGame();
     updateUI();
+    setupUI();
 }
 
 function initializeProfile() {
@@ -90,13 +95,23 @@ function restoreInProgressGame() {
             
             if (inProgress.moves && inProgress.moves.length > 0) {
                 let fen = INITIAL_FEN;
+                capturedPieces = { white: [], black: [] };
+                
                 for (const moveRecord of inProgress.moves) {
                     const moveObj = {
                         from: moveRecord.coords.substring(0, 2),
                         to: moveRecord.coords.substring(2, 4)
                     };
                     const nextFen = apply_move(fen, moveObj);
-                    if (nextFen) fen = nextFen;
+                    if (nextFen) {
+                        const captured = getCapturedPiece(fen, moveObj);
+                        if (captured) {
+                            const isWhiteCapture = fen.includes(captured.toUpperCase());
+                            if (isWhiteCapture) capturedPieces.white.push(captured);
+                            else capturedPieces.black.push(captured);
+                        }
+                        fen = nextFen;
+                    }
                 }
                 currentFen = fen;
             }
@@ -120,6 +135,14 @@ function startNewGame() {
         method: null,
         initial_fen: INITIAL_FEN
     };
+    capturedPieces = { white: [], black: [] };
+}
+
+function getCapturedPiece(oldFen, move) {
+    const oldPieces = parseFenPieces(oldFen);
+    const toSquare = move.to;
+    const captured = oldPieces[toSquare];
+    return captured || null;
 }
 
 function saveCurrentGame(from, to) {
@@ -130,6 +153,13 @@ function saveCurrentGame(from, to) {
         
         if (!currentGame.game_id) {
             currentGame.game_id = generateUUID();
+        }
+        
+        const captured = getCapturedPiece(currentFen, { from, to });
+        if (captured) {
+            const isWhiteCapture = currentFen.includes(captured.toUpperCase());
+            if (isWhiteCapture) capturedPieces.white.push(captured);
+            else capturedPieces.black.push(captured);
         }
         
         const coords = from + to;
@@ -190,6 +220,13 @@ function generateUUID() {
     });
 }
 
+function calculateScore(capturedList) {
+    return capturedList.reduce((sum, piece) => {
+        const value = pieceValues[piece.toUpperCase()] || 0;
+        return sum + value;
+    }, 0);
+}
+
 function updateUI() {
     const gameState = get_game_state(currentFen);
     const statusEl = document.getElementById('status');
@@ -213,6 +250,8 @@ function updateUI() {
     }
 
     renderBoard();
+    updateScoreCard();
+    updateMoveHistoryCard();
 }
 
 function renderBoard() {
@@ -222,11 +261,14 @@ function renderBoard() {
     const pieces = parseFenPieces(currentFen);
     legalMoves = get_legal_moves(currentFen) || [];
 
-    for (let rank = 7; rank >= 0; rank--) {
-        for (let file = 0; file < 8; file++) {
+    const ranks = boardOrientation === 'white' ? [7, 6, 5, 4, 3, 2, 1, 0] : [0, 1, 2, 3, 4, 5, 6, 7];
+    const files = boardOrientation === 'white' ? [0, 1, 2, 3, 4, 5, 6, 7] : [7, 6, 5, 4, 3, 2, 1, 0];
+
+    ranks.forEach((rank, ri) => {
+        files.forEach((file, fi) => {
             const squareName = String.fromCharCode(97 + file) + (rank + 1);
             const squareEl = document.createElement('div');
-            squareEl.className = `square ${(rank + file) % 2 === 0 ? 'black' : 'white'}`;
+            squareEl.className = `square ${(ri + fi) % 2 === 0 ? 'black-square' : 'white-square'}`;
             if (selectedSquare === squareName) squareEl.classList.add('highlight');
             
             const piece = pieces[squareName];
@@ -237,8 +279,8 @@ function renderBoard() {
 
             squareEl.onclick = () => handleSquareClick(squareName);
             boardEl.appendChild(squareEl);
-        }
-    }
+        });
+    });
 }
 
 function handleSquareClick(square) {
@@ -298,12 +340,157 @@ function parseFenPieces(fen) {
     return pieces;
 }
 
+function getBoardStateAtMove(moveIndex) {
+    let fen = INITIAL_FEN;
+    const tempCaptures = { white: [], black: [] };
+    
+    for (let i = 0; i <= moveIndex && i < currentGame.moves.length; i++) {
+        const moveRecord = currentGame.moves[i];
+        const moveObj = {
+            from: moveRecord.coords.substring(0, 2),
+            to: moveRecord.coords.substring(2, 4)
+        };
+        const nextFen = apply_move(fen, moveObj);
+        if (nextFen) {
+            const captured = getCapturedPiece(fen, moveObj);
+            if (captured) {
+                const isWhiteCapture = fen.includes(captured.toUpperCase());
+                if (isWhiteCapture) tempCaptures.white.push(captured);
+                else tempCaptures.black.push(captured);
+            }
+            fen = nextFen;
+        }
+    }
+    return { fen, captures: tempCaptures };
+}
+
+function updateScoreCard() {
+    const scoreCard = document.getElementById('score-card');
+    if (!scoreCard) return;
+    
+    const whiteScore = calculateScore(capturedPieces.white);
+    const blackScore = calculateScore(capturedPieces.black);
+    
+    scoreCard.innerHTML = `
+        <div class="score-section">
+            <div class="score-title">White</div>
+            <div class="score-value">+${whiteScore}</div>
+            <div class="captured-pieces">${capturedPieces.white.map(p => pieceUnicode[p]).join('')}</div>
+        </div>
+        <div class="score-section">
+            <div class="score-title">Black</div>
+            <div class="score-value">+${blackScore}</div>
+            <div class="captured-pieces">${capturedPieces.black.map(p => pieceUnicode[p]).join('')}</div>
+        </div>
+    `;
+}
+
+function updateMoveHistoryCard() {
+    const historyCard = document.getElementById('move-history');
+    if (!historyCard || !currentGame) return;
+    
+    const moves = currentGame.moves;
+    let html = '';
+    
+    for (let i = 0; i < moves.length; i += 2) {
+        const moveNum = Math.floor(i / 2) + 1;
+        const whiteMove = moves[i] ? moves[i].coords : '';
+        const blackMove = moves[i + 1] ? moves[i + 1].coords : '';
+        
+        html += `<div class="move-row">
+            <span class="move-number">${moveNum}.</span>
+            <span class="move-item" data-move-index="${i}">${whiteMove}</span>
+            <span class="move-item" data-move-index="${i + 1}">${blackMove}</span>
+        </div>`;
+    }
+    
+    historyCard.innerHTML = html || '<div class="no-moves">No moves yet</div>';
+    
+    historyCard.querySelectorAll('.move-item').forEach(el => {
+        el.onclick = () => {
+            const idx = parseInt(el.dataset.moveIndex);
+            showMovePreview(idx);
+        };
+    });
+}
+
+function showMovePreview(moveIndex) {
+    const state = getBoardStateAtMove(moveIndex);
+    const move = currentGame.moves[moveIndex];
+    const from = move.coords.substring(0, 2);
+    const to = move.coords.substring(2, 4);
+    
+    const dialog = document.createElement('div');
+    dialog.className = 'preview-dialog';
+    dialog.innerHTML = `
+        <div class="preview-content">
+            <div class="preview-header">
+                <span>Move ${Math.floor(moveIndex / 2) + 1} ${moveIndex % 2 === 0 ? 'White' : 'Black'}</span>
+                <button class="preview-close">&times;</button>
+            </div>
+            <div class="preview-board"></div>
+        </div>
+    `;
+    
+    document.body.appendChild(dialog);
+    
+    const previewBoard = dialog.querySelector('.preview-board');
+    renderPreviewBoard(previewBoard, state.fen, from, to);
+    
+    dialog.querySelector('.preview-close').onclick = () => dialog.remove();
+    dialog.onclick = (e) => {
+        if (e.target === dialog) dialog.remove();
+    };
+}
+
+function renderPreviewBoard(boardEl, fen, highlightFrom, highlightTo) {
+    boardEl.innerHTML = '';
+    const pieces = parseFenPieces(fen);
+    
+    const ranks = boardOrientation === 'white' ? [7, 6, 5, 4, 3, 2, 1, 0] : [0, 1, 2, 3, 4, 5, 6, 7];
+    const files = boardOrientation === 'white' ? [0, 1, 2, 3, 4, 5, 6, 7] : [7, 6, 5, 4, 3, 2, 1, 0];
+
+    ranks.forEach((rank, ri) => {
+        files.forEach((file, fi) => {
+            const squareName = String.fromCharCode(97 + file) + (rank + 1);
+            const squareEl = document.createElement('div');
+            const isHighlight = squareName === highlightFrom || squareName === highlightTo;
+            squareEl.className = `square ${(ri + fi) % 2 === 0 ? 'black-square' : 'white-square'}${isHighlight ? ' highlight' : ''}`;
+            
+            const piece = pieces[squareName];
+            if (piece) {
+                squareEl.innerText = pieceUnicode[piece];
+                squareEl.classList.add(piece === piece.toUpperCase() ? 'piece-white' : 'piece-black');
+            }
+
+            boardEl.appendChild(squareEl);
+        });
+    });
+}
+
+function setupUI() {
+    let menuBtn = document.getElementById('menu-btn');
+    let gameMenu = document.getElementById('game-menu');
+    
+    if (menuBtn && gameMenu) {
+        menuBtn.onclick = () => {
+            gameMenu.classList.toggle('open');
+        };
+    }
+}
+
 window.resetGame = () => {
     currentFen = INITIAL_FEN;
     selectedSquare = null;
+    boardOrientation = 'white';
     startNewGame();
     moveStartTime = Date.now();
     updateUI();
+};
+
+window.flipBoard = () => {
+    boardOrientation = boardOrientation === 'white' ? 'black' : 'white';
+    renderBoard();
 };
 
 start();

@@ -12,3 +12,4 @@ Once we have worked through doing the spec for them, they should be marked as do
 - [] 8. Support mulitple profiles for users in the play history for people who share a single environment that they play in.
 - [] 9. Make play history exportable & importable to end user to support portability and backup.
 - [] 10. add a teaching module to help users learn about each piece, what it can do, and also special moves like en pasant.
+- [] 11. give user option to play as white or black, or random selection (50:50 odds on the calculation) - note that game history should tell which side the user was playing.
