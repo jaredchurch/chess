@@ -84,47 +84,55 @@ function initializeProfile() {
 
 function restoreInProgressGame() {
     try {
-        if (!activeProfile) return;
+        if (!activeProfile) {
+            startNewGame();
+            return;
+        }
         
         const key = `chess_games_${activeProfile.id}`;
         const gamesJson = getStorageItem(key);
-        const games = gamesJson ? JSON.parse(gamesJson) : [];
+        if (!gamesJson) {
+            startNewGame();
+            return;
+        }
+        
+        const games = JSON.parse(gamesJson);
         const inProgress = games.find(g => g.result === "in_progress");
         
-        if (inProgress) {
+        if (inProgress && inProgress.moves && inProgress.moves.length > 0) {
+            console.log("Restoring game with", inProgress.moves.length, "moves");
             currentGame = inProgress;
-            const playerSide = inProgress.player_side || determinePlayerSide();
             
-            if (inProgress.moves && inProgress.moves.length > 0) {
-                let fen = inProgress.initial_fen || INITIAL_FEN;
-                capturedPieces = { white: [], black: [] };
-                
-                for (const moveRecord of inProgress.moves) {
-                    const moveObj = {
-                        from: moveRecord.coords.substring(0, 2),
-                        to: moveRecord.coords.substring(2, 4)
-                    };
-                    const nextFen = apply_move(fen, moveObj);
-                    if (nextFen) {
-                        const captured = getCapturedPiece(fen, moveObj);
-                        if (captured) {
-                            const isWhiteCapture = fen.includes(captured.toUpperCase());
-                            if (isWhiteCapture) capturedPieces.white.push(captured);
-                            else capturedPieces.black.push(captured);
-                        }
-                        fen = nextFen;
+            let fen = INITIAL_FEN;
+            capturedPieces = { white: [], black: [] };
+            
+            for (const moveRecord of inProgress.moves) {
+                const moveObj = {
+                    from: moveRecord.coords.substring(0, 2),
+                    to: moveRecord.coords.substring(2, 4)
+                };
+                const nextFen = apply_move(fen, moveObj);
+                if (nextFen) {
+                    const captured = getCapturedPiece(fen, moveObj);
+                    if (captured) {
+                        const isWhiteCapture = fen.includes(captured.toUpperCase());
+                        if (isWhiteCapture) capturedPieces.white.push(captured);
+                        else capturedPieces.black.push(captured);
                     }
+                    fen = nextFen;
                 }
-                currentFen = fen;
-            } else {
-                currentFen = inProgress.initial_fen || INITIAL_FEN;
             }
+            currentFen = fen;
             
-            boardOrientation = playerSide === 'black' ? 'black' : 'white';
+            const playerSide = inProgress.player_side || 'white';
+            boardOrientation = playerSide;
             
             const select = document.getElementById('player-color');
-            if (select) select.value = playerSide === 'black' ? 'black' : 'white';
+            if (select) select.value = playerSide;
+            
+            console.log("Restored FEN:", currentFen);
         } else {
+            console.log("No in-progress game, starting new");
             startNewGame();
         }
     } catch (e) {
@@ -155,6 +163,9 @@ function startNewGame() {
         currentFen = INITIAL_FEN;
         boardOrientation = 'white';
     }
+    
+    const select = document.getElementById('player-color');
+    if (select) select.value = playerSide;
 }
 
 function getCapturedPiece(oldFen, move) {
