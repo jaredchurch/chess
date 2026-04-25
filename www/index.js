@@ -508,4 +508,6 @@ window.flipBoard = () => {
     renderBoard();
 };
 
+window.updateMoveHistoryCard = updateMoveHistoryCard;
+
 start();
