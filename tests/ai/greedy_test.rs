@@ -4,7 +4,6 @@
 use chess_core::board::Board;
 use chess_core::serialization::fen::parse_fen;
 use chess_core::ai::greedy::{get_best_move, evaluate};
-use chess_core::board::piece::PieceType;
 
 #[test]
 fn test_greedy_ai_capture_queen() {
@@ -30,7 +29,7 @@ fn test_greedy_ai_prefer_higher_value() {
 
 #[test]
 fn test_evaluate_starting_pos() {
-    let board = Board::default();
+    let _board = Board::default();
     // In a balanced starting position, score should be 0.
     // Wait, Board::default() is empty. We need to set it up or use parse_fen.
     let fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
