@@ -534,6 +534,12 @@ function updateMoveHistoryCard() {
     });
 }
 
+// Global function for preview dialog close
+window.closePreviewDialog = function() {
+    const dialog = document.getElementById('preview-dialog');
+    if (dialog) dialog.style.display = 'none';
+};
+
 function showMovePreview(moveIndex) {
     const state = getBoardStateAtMove(moveIndex);
     const move = currentGame.moves[moveIndex];
@@ -572,56 +578,6 @@ function showMovePreview(moveIndex) {
     
     dialog.style.display = 'flex';
 }
-
-function closePreviewDialog() {
-    const dialog = document.getElementById('preview-dialog');
-    if (dialog) dialog.style.display = 'none';
-}
-
-function renderPreviewBoard(boardEl, fen, highlightFrom, highlightTo) {
-    boardEl.innerHTML = '';
-    const pieces = parseFenPieces(fen);
-    
-    const ranks = boardOrientation === 'white' ? [7, 6, 5, 4, 3, 2, 1, 0] : [0, 1, 2, 3, 4, 5, 6, 7];
-    const files = boardOrientation === 'white' ? [0, 1, 2, 3, 4, 5, 6, 7] : [7, 6, 5, 4, 3, 2, 1, 0];
-
-    ranks.forEach((rank, ri) => {
-        files.forEach((file, fi) => {
-            const squareName = String.fromCharCode(97 + file) + (rank + 1);
-            const squareEl = document.createElement('div');
-            const isHighlight = squareName === highlightFrom || squareName === highlightTo;
-            squareEl.className = `square ${(ri + fi) % 2 === 0 ? 'black-square' : 'white-square'}${isHighlight ? ' highlight' : ''}`;
-            
-            const piece = pieces[squareName];
-            if (piece) {
-                squareEl.innerText = pieceUnicode[piece];
-                squareEl.classList.add(piece === piece.toUpperCase() ? 'piece-white' : 'piece-black');
-            }
-
-            boardEl.appendChild(squareEl);
-        });
-    });
-}
-
-function setupUI() {
-    let menuBtn = document.getElementById('menu-btn');
-    let gameMenu = document.getElementById('game-menu');
-    
-    if (menuBtn && gameMenu) {
-        menuBtn.onclick = () => {
-            gameMenu.classList.toggle('open');
-        };
-    }
-}
-
-window.resetGame = () => {
-    currentFen = INITIAL_FEN;
-    selectedSquare = null;
-    boardOrientation = 'white';
-    startNewGame();  // This now saves automatically
-    moveStartTime = Date.now();
-    updateUI();
-};
 
 window.flipBoard = () => {
     boardOrientation = boardOrientation === 'white' ? 'black' : 'white';
