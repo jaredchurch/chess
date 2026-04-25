@@ -53,7 +53,6 @@ async function start() {
     initializeProfile();
     restoreInProgressGame();
     updateUI();
-    setupUI();
 }
 
 function initializeProfile() {
