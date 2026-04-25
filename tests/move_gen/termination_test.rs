@@ -1,5 +1,5 @@
-use chess_core::serialization::fen::parse_fen;
 use chess_core::move_gen::termination::{detect_termination, GameState};
+use chess_core::serialization::fen::parse_fen;
 
 #[test]
 fn test_checkmate() {

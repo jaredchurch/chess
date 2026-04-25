@@ -1,14 +1,14 @@
-use chess_core::Board;
-use chess_core::board::types::{Color, Square};
 use chess_core::board::piece::{Piece, PieceType};
+use chess_core::board::types::{Color, Square};
 use chess_core::move_gen::is_in_check;
+use chess_core::Board;
 
 #[test]
 fn test_not_in_check() {
     let mut board = Board::default();
     board.add_piece(Square::E1, Piece::new(PieceType::King, Color::White));
     board.side_to_move = Color::White;
-    
+
     assert!(!is_in_check(&board, Color::White));
 }
 
@@ -19,7 +19,7 @@ fn test_in_check_by_rook() {
     board.add_piece(Square::E8, Piece::new(PieceType::Rook, Color::Black));
     board.side_to_move = Color::White;
     board.update_occupancy();
-    
+
     assert!(is_in_check(&board, Color::White));
 }
 
@@ -30,7 +30,7 @@ fn test_in_check_by_knight() {
     board.add_piece(Square::D3, Piece::new(PieceType::Knight, Color::Black));
     board.side_to_move = Color::White;
     board.update_occupancy();
-    
+
     assert!(is_in_check(&board, Color::White));
 }
 
@@ -41,7 +41,7 @@ fn test_in_check_by_pawn() {
     board.add_piece(Square::D5, Piece::new(PieceType::Pawn, Color::Black));
     board.side_to_move = Color::White;
     board.update_occupancy();
-    
+
     assert!(is_in_check(&board, Color::White));
 }
 
@@ -52,7 +52,7 @@ fn test_in_check_by_bishop() {
     board.add_piece(Square::B4, Piece::new(PieceType::Bishop, Color::Black));
     board.side_to_move = Color::White;
     board.update_occupancy();
-    
+
     assert!(is_in_check(&board, Color::White));
 }
 
@@ -64,6 +64,6 @@ fn test_double_check() {
     board.add_piece(Square::B4, Piece::new(PieceType::Bishop, Color::Black));
     board.side_to_move = Color::White;
     board.update_occupancy();
-    
+
     assert!(is_in_check(&board, Color::White));
 }

@@ -1,17 +1,16 @@
 // Copyright (c) 2026 Chess Core Team
 // Licensed under the MIT License. See LICENSE file in the project root for details.
 
-
 pub mod king;
 pub mod knight;
 pub mod pawn;
 pub mod sliding;
 pub mod termination;
 
-use crate::board::Board;
 use crate::board::move_struct::Move;
 use crate::board::piece::PieceType;
 use crate::board::types::{Color, Square};
+use crate::board::Board;
 
 pub fn generate_pseudo_legal_moves(board: &Board) -> Vec<Move> {
     let mut moves = Vec::with_capacity(256);
@@ -36,7 +35,7 @@ pub fn generate_pseudo_legal_moves(board: &Board) -> Vec<Move> {
 
         while bits != 0 {
             let square_idx = bits.trailing_zeros();
-            let square: Square = unsafe { std::mem::transmute(square_idx as u8) };
+            let square = Square::from_u8_unchecked(square_idx as u8);
             match piece_type {
                 PieceType::Pawn => pawn::generate_pawn_moves(board, square, &mut moves),
                 PieceType::Knight => knight::generate_knight_moves(board, square, &mut moves),
@@ -66,8 +65,7 @@ pub fn is_in_check(board: &Board, color: Color) -> bool {
     }
 
     let king_square_idx = king_bitboard.0.trailing_zeros() as u8;
-    // SAFETY: king_bitboard non-zero, trailing_zeros gives valid index 0-63
-    let king_square: Square = unsafe { std::mem::transmute(king_square_idx) };
+    let king_square = Square::from_u8_unchecked(king_square_idx);
 
     is_square_attacked(board, king_square, color.opposite())
 }
@@ -80,7 +78,7 @@ pub fn is_square_attacked(board: &Board, square: Square, attacker_color: Color) 
     };
 
     // Attacked by Pawns
-    let pawns = board.pieces[attacker_offset + 0];
+    let pawns = board.pieces[attacker_offset];
     let pawn_attacks = pawn::get_pawn_attacks(square, attacker_color.opposite());
     if (pawn_attacks.0 & pawns.0) != 0 {
         return true;

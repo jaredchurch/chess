@@ -1,7 +1,7 @@
-use chess_core::Board;
-use chess_core::board::types::{Color, Square};
-use chess_core::board::piece::{Piece, PieceType};
 use chess_core::board::move_struct::MoveFlag;
+use chess_core::board::piece::{Piece, PieceType};
+use chess_core::board::types::{Color, Square};
+use chess_core::Board;
 
 #[test]
 fn test_white_kingside_castling() {
@@ -11,10 +11,13 @@ fn test_white_kingside_castling() {
     board.castling_rights = 0x1; // White Kingside
     board.side_to_move = Color::White;
     board.update_occupancy();
-    
+
     let moves = board.generate_legal_moves();
     let castling_move = moves.iter().find(|m| m.flag == MoveFlag::KingsideCastling);
-    assert!(castling_move.is_some(), "White kingside castling should be available");
+    assert!(
+        castling_move.is_some(),
+        "White kingside castling should be available"
+    );
 }
 
 #[test]
@@ -26,10 +29,13 @@ fn test_castling_blocked_by_piece() {
     board.castling_rights = 0x1;
     board.side_to_move = Color::White;
     board.update_occupancy();
-    
+
     let moves = board.generate_legal_moves();
     let castling_move = moves.iter().find(|m| m.flag == MoveFlag::KingsideCastling);
-    assert!(castling_move.is_none(), "Castling should be blocked by piece at F1");
+    assert!(
+        castling_move.is_none(),
+        "Castling should be blocked by piece at F1"
+    );
 }
 
 #[test]
@@ -41,8 +47,11 @@ fn test_castling_blocked_by_attack() {
     board.castling_rights = 0x1;
     board.side_to_move = Color::White;
     board.update_occupancy();
-    
+
     let moves = board.generate_legal_moves();
     let castling_move = moves.iter().find(|m| m.flag == MoveFlag::KingsideCastling);
-    assert!(castling_move.is_none(), "Castling should be blocked by attack on F1");
+    assert!(
+        castling_move.is_none(),
+        "Castling should be blocked by attack on F1"
+    );
 }

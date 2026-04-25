@@ -1,16 +1,16 @@
 // Copyright (c) 2026 Chess Core Team
 // Licensed under the MIT License. See LICENSE file in the project root for details.
 
-use crate::board::Board;
 use crate::board::move_struct::Move;
 use crate::board::piece::PieceType;
 use crate::board::types::Color;
+use crate::board::Board;
 
 /// Evaluates the board based on material value.
 /// Positive values are better for White, negative values are better for Black.
 pub fn evaluate(board: &Board) -> i32 {
     let mut score = 0;
-    
+
     for i in 0..6 {
         let piece_type = match i {
             0 => PieceType::Pawn,
@@ -21,15 +21,15 @@ pub fn evaluate(board: &Board) -> i32 {
             5 => PieceType::King,
             _ => unreachable!(),
         };
-        
+
         let value = get_piece_value(piece_type);
-        
+
         // White pieces
         score += board.pieces[i].0.count_ones() as i32 * value;
         // Black pieces
         score -= board.pieces[i + 6].0.count_ones() as i32 * value;
     }
-    
+
     score
 }
 
@@ -45,15 +45,26 @@ fn get_piece_value(piece_type: PieceType) -> i32 {
 }
 
 /// Finds the best move for the current side to move using a greedy 1-ply search.
+/// Includes a safety limit on the number of moves to evaluate.
 pub fn get_best_move(board: &Board) -> Option<Move> {
-    let moves = board.generate_legal_moves();
+    let mut moves = board.generate_legal_moves();
     if moves.is_empty() {
         return None;
     }
 
+    // Safety limit: if there are an absurd number of legal moves,
+    // truncate to prevent DoS. 200 is well above any normal chess position.
+    if moves.len() > 200 {
+        moves.truncate(200);
+    }
+
     let side = board.side_to_move;
     let mut best_move = None;
-    let mut best_score = if side == Color::White { i32::MIN } else { i32::MAX };
+    let mut best_score = if side == Color::White {
+        i32::MIN
+    } else {
+        i32::MAX
+    };
 
     for m in moves {
         let mut board_copy = board.clone();

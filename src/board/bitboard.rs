@@ -1,7 +1,6 @@
 // Copyright (c) 2026 Chess Core Team
 // Licensed under the MIT License. See LICENSE file in the project root for details.
 
-
 /// A bitboard is a 64-bit integer where each bit represents a square on the board.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct Bitboard(pub u64);
