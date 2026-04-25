@@ -539,6 +539,31 @@ window.closePreviewDialog = function() {
     if (dialog) dialog.style.display = 'none';
 };
 
+function renderPreviewBoard(boardEl, fen, highlightFrom, highlightTo) {
+    boardEl.innerHTML = '';
+    const pieces = parseFenPieces(fen);
+    
+    const ranks = boardOrientation === 'white' ? [7, 6, 5, 4, 3, 2, 1, 0] : [0, 1, 2, 3, 4, 5, 6, 7];
+    const files = boardOrientation === 'white' ? [0, 1, 2, 3, 4, 5, 6, 7] : [7, 6, 5, 4, 3, 2, 1, 0];
+
+    ranks.forEach((rank, ri) => {
+        files.forEach((file, fi) => {
+            const squareName = String.fromCharCode(97 + file) + (rank + 1);
+            const squareEl = document.createElement('div');
+            const isHighlight = squareName === highlightFrom || squareName === highlightTo;
+            squareEl.className = `square ${(ri + fi) % 2 === 0 ? 'black-square' : 'white-square'}${isHighlight ? ' highlight' : ''}`;
+            
+            const piece = pieces[squareName];
+            if (piece) {
+                squareEl.innerText = pieceUnicode[piece];
+                squareEl.classList.add(piece === piece.toUpperCase() ? 'piece-white' : 'piece-black');
+            }
+
+            boardEl.appendChild(squareEl);
+        });
+    });
+}
+
 function showMovePreview(moveIndex) {
     const state = getBoardStateAtMove(moveIndex);
     const move = currentGame.moves[moveIndex];
