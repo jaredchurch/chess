@@ -97,10 +97,31 @@ function restoreInProgressGame() {
         }
         
         const games = JSON.parse(gamesJson);
-        const inProgress = games.find(g => g.result === "in_progress");
+        
+        // Find the most recent in-progress game
+        let inProgress = null;
+        for (const game of games) {
+            if (game.result === "in_progress") {
+                if (!inProgress || game.last_modified > inProgress.last_modified) {
+                    inProgress = game;
+                }
+            }
+        }
         
         if (inProgress) {
-            console.log("Restoring game, moves:", inProgress.moves?.length || 0);
+            // Store reference to game in localStorage before restoring
+            const storedGameId = localStorage().getItem('chess_current_game');
+            
+            // If there's a current game reference and it matches, restore it
+            if (storedGameId && storedGameId === inProgress.game_id) {
+                console.log("Restoring game:", inProgress.game_id, "moves:", inProgress.moves?.length);
+            } else {
+                console.log("No current game reference, using latest in-progress");
+            }
+            
+            // Store current game ID for next reload
+            localStorage().setItem('chess_current_game', inProgress.game_id);
+            
             currentGame = inProgress;
             
             // Replay all moves from start
@@ -133,9 +154,9 @@ function restoreInProgressGame() {
             const select = document.getElementById('player-color');
             if (select) select.value = playerSide;
             
-            console.log("Restored FEN:", currentFen);
+            console.log("Restored to FEN:", currentFen);
         } else {
-            console.log("No in-progress game, starting new");
+            console.log("No in-progress game found");
             startNewGame();
         }
     } catch (e) {
@@ -166,6 +187,36 @@ function startNewGame() {
         currentFen = INITIAL_FEN;
         boardOrientation = 'white';
     }
+    
+    const select = document.getElementById('player-color');
+    if (select) select.value = playerSide;
+    
+    // Immediately save the new game to localStorage
+    saveCurrentGameState();
+}
+
+function saveCurrentGameState() {
+    if (!currentGame) return;
+    try {
+        const key = `chess_games_${currentGame.profile_id}`;
+        let gamesJson = getStorageItem(key);
+        let games = gamesJson ? JSON.parse(gamesJson) : [];
+        
+        // Remove any other in_progress games for this profile (only one at a time)
+        games = games.filter(g => g.result !== "in_progress" || g.game_id === currentGame.game_id);
+        
+        const existingIdx = games.findIndex(g => g.game_id === currentGame.game_id);
+        if (existingIdx >= 0) {
+            games[existingIdx] = currentGame;
+        } else {
+            games.push(currentGame);
+        }
+        
+        setStorageItem(key, JSON.stringify(games));
+    } catch (e) {
+        console.warn("Save game state failed:", e);
+    }
+}
     
     const select = document.getElementById('player-color');
     if (select) select.value = playerSide;
@@ -549,8 +600,7 @@ window.resetGame = () => {
     currentFen = INITIAL_FEN;
     selectedSquare = null;
     boardOrientation = 'white';
-    startNewGame();
-    saveCurrentGameState();  // Save the new game to localStorage
+    startNewGame();  // This now saves automatically
     moveStartTime = Date.now();
     updateUI();
 };
