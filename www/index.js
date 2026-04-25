@@ -217,10 +217,6 @@ function saveCurrentGameState() {
         console.warn("Save game state failed:", e);
     }
 }
-    
-    const select = document.getElementById('player-color');
-    if (select) select.value = playerSide;
-}
 
 function getCapturedPiece(oldFen, move) {
     const oldPieces = parseFenPieces(oldFen);
@@ -604,27 +600,6 @@ window.resetGame = () => {
     moveStartTime = Date.now();
     updateUI();
 };
-
-function saveCurrentGameState() {
-    if (!currentGame) return;
-    try {
-        const key = `chess_games_${currentGame.profile_id}`;
-        let gamesJson = getStorageItem(key);
-        let games = gamesJson ? JSON.parse(gamesJson) : [];
-        
-        const existingIdx = games.findIndex(g => g.game_id === currentGame.game_id);
-        if (existingIdx >= 0) {
-            games[existingIdx] = currentGame;
-        } else {
-            games.push(currentGame);
-        }
-        
-        setStorageItem(key, JSON.stringify(games));
-        console.log("Saved game state:", currentGame.game_id, currentGame.moves.length, "moves");
-    } catch (e) {
-        console.warn("Save game state failed:", e);
-    }
-}
 
 window.flipBoard = () => {
     boardOrientation = boardOrientation === 'white' ? 'black' : 'white';
