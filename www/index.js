@@ -421,7 +421,7 @@ function updateMoveHistoryCard() {
         </div>`;
     }
     
-    historyCard.innerHTML = html || '<div class="no-moves">0 moves</div>';
+    historyCard.innerHTML = html || '';
     
     historyCard.querySelectorAll('.move-item').forEach(el => {
         el.onclick = () => {
