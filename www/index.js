@@ -608,6 +608,15 @@ window.flipBoard = () => {
     renderBoard();
 };
 
+window.resetGame = () => {
+    currentFen = INITIAL_FEN;
+    selectedSquare = null;
+    boardOrientation = 'white';
+    startNewGame();  // This saves automatically
+    moveStartTime = Date.now();
+    updateUI();
+};
+
 window.changePlayerColor = () => {
     const select = document.getElementById('player-color');
     if (select) {
