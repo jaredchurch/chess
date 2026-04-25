@@ -1,16 +1,15 @@
 // Copyright (c) 2026 Chess Core Team
 // Licensed under the MIT License. See LICENSE file in the project root for details.
 
-
-use crate::board::Board;
 use crate::board::bitboard::Bitboard;
-use crate::board::types::Square;
 use crate::board::move_struct::{Move, MoveFlag};
+use crate::board::types::Square;
+use crate::board::Board;
 
 pub fn generate_knight_moves(board: &Board, square: Square, moves: &mut Vec<Move>) {
     let knight_attacks = get_knight_attacks(square);
     let mut bits = knight_attacks.0;
-    
+
     let own_occupancy_index = match board.side_to_move {
         crate::board::types::Color::White => 0,
         crate::board::types::Color::Black => 1,
@@ -19,7 +18,7 @@ pub fn generate_knight_moves(board: &Board, square: Square, moves: &mut Vec<Move
 
     // Filter out our own pieces
     bits &= !board.occupancy[own_occupancy_index].0;
-    
+
     while bits != 0 {
         let to_index = bits.trailing_zeros();
         let to_square = Square::from_u8_unchecked(to_index as u8);
@@ -37,17 +36,23 @@ pub fn get_knight_attacks(square: Square) -> Bitboard {
     let bit_index = square.as_u32() as i32;
     let file = bit_index % 8;
     let rank = bit_index / 8;
-    
+
     let mut attacks = 0u64;
     let knight_jumps = [
-        (-2, -1), (-2, 1), (-1, -2), (-1, 2),
-        (1, -2), (1, 2), (2, -1), (2, 1)
+        (-2, -1),
+        (-2, 1),
+        (-1, -2),
+        (-1, 2),
+        (1, -2),
+        (1, 2),
+        (2, -1),
+        (2, 1),
     ];
-    
+
     for (dr, df) in knight_jumps {
         let nr = rank + dr;
         let nf = file + df;
-        
+
         if (0..8).contains(&nr) && (0..8).contains(&nf) {
             let to_index = (nr * 8 + nf) as u32;
             attacks |= 1 << to_index;

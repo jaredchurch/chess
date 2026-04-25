@@ -1,10 +1,9 @@
 // Copyright (c) 2026 Chess Core Team
 // Licensed under the MIT License. See LICENSE file in the project root for details.
 
-
-use crate::board::Board;
-use crate::board::types::{Color, Square};
 use crate::board::piece::{Piece, PieceType};
+use crate::board::types::{Color, Square};
+use crate::board::Board;
 
 /// Parses a FEN string and returns a Board state.
 pub fn parse_fen(fen: &str) -> Result<Board, String> {
@@ -58,7 +57,11 @@ pub fn parse_fen(fen: &str) -> Result<Board, String> {
             }
         }
         if file != 8 {
-            return Err(format!("Invalid FEN: row {} sums to {} (expected 8)", rank_idx + 1, file));
+            return Err(format!(
+                "Invalid FEN: row {} sums to {} (expected 8)",
+                rank_idx + 1,
+                file
+            ));
         }
     }
 
@@ -66,7 +69,10 @@ pub fn parse_fen(fen: &str) -> Result<Board, String> {
     let white_kings = board.pieces[5].0.count_ones();
     let black_kings = board.pieces[11].0.count_ones();
     if white_kings != 1 || black_kings != 1 {
-        return Err(format!("Invalid FEN: must have exactly one king per side (White: {}, Black: {})", white_kings, black_kings));
+        return Err(format!(
+            "Invalid FEN: must have exactly one king per side (White: {}, Black: {})",
+            white_kings, black_kings
+        ));
     }
 
     // 2. Side to move
@@ -177,10 +183,18 @@ pub fn to_fen(board: &Board) -> String {
     if board.castling_rights == 0 {
         fen.push('-');
     } else {
-        if (board.castling_rights & 0x1) != 0 { fen.push('K'); }
-        if (board.castling_rights & 0x2) != 0 { fen.push('Q'); }
-        if (board.castling_rights & 0x4) != 0 { fen.push('k'); }
-        if (board.castling_rights & 0x8) != 0 { fen.push('q'); }
+        if (board.castling_rights & 0x1) != 0 {
+            fen.push('K');
+        }
+        if (board.castling_rights & 0x2) != 0 {
+            fen.push('Q');
+        }
+        if (board.castling_rights & 0x4) != 0 {
+            fen.push('k');
+        }
+        if (board.castling_rights & 0x8) != 0 {
+            fen.push('q');
+        }
     }
 
     // 4. En passant target square
@@ -209,10 +223,10 @@ fn parse_square(s: &str) -> Result<Square, String> {
     let s = s.to_lowercase();
     let file_char = s.chars().next().unwrap();
     let rank_char = s.chars().nth(1).unwrap();
-    
+
     let file = file_char as i32 - 'a' as i32;
     let rank = rank_char as i32 - '1' as i32;
-    
+
     if !(0..=7).contains(&file) || !(0..=7).contains(&rank) {
         return Err(format!("Invalid square: {}", s));
     }
@@ -237,7 +251,7 @@ fn validate_castling_rights(board: &Board) -> Result<(), String> {
 
     // White kingside: King and Rook still on the board
     let can_white_k = white_king.0 != 0 && white_rook_k.0 != 0;
-    // White queenside: King and Rook still on the board  
+    // White queenside: King and Rook still on the board
     let can_white_q = white_king.0 != 0 && white_rook_q.0 != 0;
     // Black kingside: King and Rook still on the board
     let can_black_k = black_king.0 != 0 && black_rook_k.0 != 0;
@@ -270,7 +284,7 @@ fn validate_en_passant_square(_board: &Board, ep_square: Square) -> Result<(), S
     // The rank check alone is sufficient - we check the actual pawn below
     let ep_idx = ep_square.as_u32();
     let rank = ep_idx / 8;
-    
+
     if !(2..=5).contains(&rank) {
         return Err("Invalid FEN: En passant square invalid".to_string());
     }

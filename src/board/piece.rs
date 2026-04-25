@@ -1,7 +1,6 @@
 // Copyright (c) 2026 Chess Core Team
 // Licensed under the MIT License. See LICENSE file in the project root for details.
 
-
 use crate::board::types::Color;
 
 /// Represents one of the six types of chess pieces.

@@ -1,7 +1,6 @@
 // Copyright (c) 2026 Chess Core Team
 // Licensed under the MIT License. See LICENSE file in the project root for details.
 
-
 pub mod bitboard;
 pub mod move_struct;
 pub mod piece;
@@ -102,29 +101,46 @@ impl Board {
     /// It now handles special rules (castling, en passant, promotion).
     pub fn make_move(&mut self, m: Move) {
         let piece = self.get_piece_at(m.from).expect("No piece at from square");
-        
+
         // 1. Handle captures
         if m.flag == MoveFlag::EnPassantCapture {
-            let capture_idx = if piece.color == Color::White { m.to.as_u32() - 8 } else { m.to.as_u32() + 8 };
+            let capture_idx = if piece.color == Color::White {
+                m.to.as_u32() - 8
+            } else {
+                m.to.as_u32() + 8
+            };
             let capture_sq = Square::from_u8_unchecked(capture_idx as u8);
             self.remove_piece(capture_sq);
         } else if let Some(target_piece) = self.get_piece_at(m.to) {
             self.remove_piece(m.to);
             // Update castling rights if a rook is captured
             if target_piece.piece_type == PieceType::Rook {
-                if m.to == Square::A1 { self.castling_rights &= !0x2; }
-                if m.to == Square::H1 { self.castling_rights &= !0x1; }
-                if m.to == Square::A8 { self.castling_rights &= !0x8; }
-                if m.to == Square::H8 { self.castling_rights &= !0x4; }
+                if m.to == Square::A1 {
+                    self.castling_rights &= !0x2;
+                }
+                if m.to == Square::H1 {
+                    self.castling_rights &= !0x1;
+                }
+                if m.to == Square::A8 {
+                    self.castling_rights &= !0x8;
+                }
+                if m.to == Square::H8 {
+                    self.castling_rights &= !0x4;
+                }
             }
         }
 
         // 2. Remove moving piece
         self.remove_piece(m.from);
-        
+
         // 3. Add piece at destination (handling promotion)
         if let MoveFlag::Promotion(pt) = m.flag {
-            self.add_piece(m.to, Piece::new(pt, piece.color));
+            if piece.piece_type == PieceType::Pawn {
+                self.add_piece(m.to, Piece::new(pt, piece.color));
+            } else {
+                // Should not happen with legal moves, but for safety:
+                self.add_piece(m.to, piece);
+            }
         } else {
             self.add_piece(m.to, piece);
         }
@@ -161,18 +177,30 @@ impl Board {
             }
         } else if piece.piece_type == PieceType::Rook {
             if piece.color == Color::White {
-                if m.from == Square::A1 { self.castling_rights &= !0x2; }
-                if m.from == Square::H1 { self.castling_rights &= !0x1; }
+                if m.from == Square::A1 {
+                    self.castling_rights &= !0x2;
+                }
+                if m.from == Square::H1 {
+                    self.castling_rights &= !0x1;
+                }
             } else {
-                if m.from == Square::A8 { self.castling_rights &= !0x8; }
-                if m.from == Square::H8 { self.castling_rights &= !0x4; }
+                if m.from == Square::A8 {
+                    self.castling_rights &= !0x8;
+                }
+                if m.from == Square::H8 {
+                    self.castling_rights &= !0x4;
+                }
             }
         }
 
         // 6. Update EP square
         self.en_passant_square = None;
         if m.flag == MoveFlag::DoublePawnPush {
-            let ep_idx = if piece.color == Color::White { m.from.as_u32() + 8 } else { m.from.as_u32() - 8 };
+            let ep_idx = if piece.color == Color::White {
+                m.from.as_u32() + 8
+            } else {
+                m.from.as_u32() - 8
+            };
             self.en_passant_square = Some(Square::from_u8_unchecked(ep_idx as u8));
         }
 
@@ -185,7 +213,7 @@ impl Board {
     pub fn generate_legal_moves(&self) -> Vec<Move> {
         let pseudo_moves = crate::move_gen::generate_pseudo_legal_moves(self);
         let mut legal_moves = Vec::with_capacity(pseudo_moves.len());
-        
+
         for m in pseudo_moves {
             let mut board_copy = self.clone();
             board_copy.make_move(m);
@@ -193,8 +221,7 @@ impl Board {
                 legal_moves.push(m);
             }
         }
-        
+
         legal_moves
     }
 }
-

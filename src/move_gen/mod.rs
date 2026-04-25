@@ -1,17 +1,16 @@
 // Copyright (c) 2026 Chess Core Team
 // Licensed under the MIT License. See LICENSE file in the project root for details.
 
-
 pub mod king;
 pub mod knight;
 pub mod pawn;
 pub mod sliding;
 pub mod termination;
 
-use crate::board::Board;
 use crate::board::move_struct::Move;
 use crate::board::piece::PieceType;
 use crate::board::types::{Color, Square};
+use crate::board::Board;
 
 pub fn generate_pseudo_legal_moves(board: &Board) -> Vec<Move> {
     let mut moves = Vec::with_capacity(256);

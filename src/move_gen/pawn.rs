@@ -1,12 +1,11 @@
 // Copyright (c) 2026 Chess Core Team
 // Licensed under the MIT License. See LICENSE file in the project root for details.
 
-
-use crate::board::Board;
 use crate::board::bitboard::Bitboard;
-use crate::board::types::{Color, Square};
 use crate::board::move_struct::{Move, MoveFlag};
 use crate::board::piece::PieceType;
+use crate::board::types::{Color, Square};
+use crate::board::Board;
 
 pub fn generate_pawn_moves(board: &Board, square: Square, moves: &mut Vec<Move>) {
     let bit_index = square.as_u32();

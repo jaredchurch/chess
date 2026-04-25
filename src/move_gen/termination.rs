@@ -1,7 +1,6 @@
 // Copyright (c) 2026 Chess Core Team
 // Licensed under the MIT License. See LICENSE file in the project root for details.
 
-
 use crate::board::Board;
 
 /// Possible game termination states.
@@ -39,7 +38,7 @@ pub fn detect_termination(board: &Board) -> GameState {
 /// - King + Bishop vs King + Bishop (both bishops on same color squares) - omitted for simplicity
 pub fn is_insufficient_material(board: &Board) -> bool {
     let total_pieces = board.occupancy[2].0.count_ones();
-    
+
     // King vs King
     if total_pieces == 2 {
         return true;
@@ -51,7 +50,7 @@ pub fn is_insufficient_material(board: &Board) -> bool {
         let white_bishops = board.pieces[2].0.count_ones();
         let black_knights = board.pieces[7].0.count_ones();
         let black_bishops = board.pieces[8].0.count_ones();
-        
+
         if white_knights == 1 || white_bishops == 1 || black_knights == 1 || black_bishops == 1 {
             return true;
         }

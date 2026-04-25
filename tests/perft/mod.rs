@@ -1,5 +1,5 @@
-use chess_core::Board;
 use chess_core::serialization::fen::parse_fen;
+use chess_core::Board;
 
 pub fn perft(board: &Board, depth: u32) -> u64 {
     if depth == 0 {
