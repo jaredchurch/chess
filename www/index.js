@@ -540,27 +540,42 @@ function showMovePreview(moveIndex) {
     const from = move.coords.substring(0, 2);
     const to = move.coords.substring(2, 4);
     
-    const dialog = document.createElement('div');
-    dialog.className = 'preview-dialog';
-    dialog.innerHTML = `
-        <div class="preview-content">
-            <div class="preview-header">
-                <span>Move ${Math.floor(moveIndex / 2) + 1} ${moveIndex % 2 === 0 ? 'White' : 'Black'}</span>
-                <button class="preview-close">&times;</button>
+    // Create or show dialog
+    let dialog = document.getElementById('preview-dialog');
+    if (!dialog) {
+        dialog = document.createElement('div');
+        dialog.id = 'preview-dialog';
+        dialog.innerHTML = `
+            <div class="preview-content">
+                <div class="preview-header">
+                    <span id="preview-title"></span>
+                    <button class="preview-close" onclick="closePreviewDialog()">&times;</button>
+                </div>
+                <div id="preview-board"></div>
             </div>
-            <div class="preview-board"></div>
-        </div>
-    `;
+        `;
+        document.body.appendChild(dialog);
+        dialog.onclick = (e) => {
+            if (e.target === dialog) closePreviewDialog();
+        };
+    }
     
-    document.body.appendChild(dialog);
+    const title = document.getElementById('preview-title');
+    if (title) {
+        title.textContent = `Move ${Math.floor(moveIndex / 2) + 1} ${moveIndex % 2 === 0 ? 'White' : 'Black'}`;
+    }
     
-    const previewBoard = dialog.querySelector('.preview-board');
-    renderPreviewBoard(previewBoard, state.fen, from, to);
+    const previewBoard = document.getElementById('preview-board');
+    if (previewBoard) {
+        renderPreviewBoard(previewBoard, state.fen, from, to);
+    }
     
-    dialog.querySelector('.preview-close').onclick = () => dialog.remove();
-    dialog.onclick = (e) => {
-        if (e.target === dialog) dialog.remove();
-    };
+    dialog.style.display = 'flex';
+}
+
+function closePreviewDialog() {
+    const dialog = document.getElementById('preview-dialog');
+    if (dialog) dialog.style.display = 'none';
 }
 
 function renderPreviewBoard(boardEl, fen, highlightFrom, highlightTo) {

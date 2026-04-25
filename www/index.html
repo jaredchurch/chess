@@ -90,37 +90,54 @@
             border: none;
             border-radius: 5px;
         }
-        .card button:hover { background: #2980b9; }
-        .card select {
-            width: 100%;
-            padding: 10px;
-            margin: 5px 0;
-            font-size: 1em;
-            background: #2c3e50;
+.card button:hover { background: #2980b9; }
+        
+        /* Preview Dialog */
+        #preview-dialog {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        #preview-dialog.hidden { display: none; }
+        .preview-content {
+            background: #34495e;
+            border-radius: 10px;
+            padding: 20px;
+        }
+        .preview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .preview-close {
+            background: transparent;
+            border: none;
             color: white;
-            border: 1px solid #4a5f7f;
-            border-radius: 5px;
+            font-size: 1.5em;
+            cursor: pointer;
         }
-        .card-title {
-            font-size: 1em;
-            font-weight: bold;
-            margin-bottom: 10px;
-            border-bottom: 1px solid #4a5f7f;
-            padding-bottom: 8px;
+        #preview-board {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            grid-template-rows: repeat(8, 1fr);
+            width: min(60vw, 350px);
+            aspect-ratio: 1;
         }
-        #score-card { display: flex; justify-content: space-around; }
-        .score-section { text-align: center; }
-        .score-title { font-size: 0.9em; color: #bdc3c7; }
-        .score-value { font-size: 1.5em; font-weight: bold; color: #2ecc71; }
-        .captured-pieces { font-size: 1.2em; min-height: 24px; margin-top: 5px; }
-        .captured-pieces .piece-white { color: #ffffff; text-shadow: 0 0 2px rgba(0,0,0,0.8); margin-right: 2px; }
-        .captured-pieces .piece-black { color: #000000; margin-right: 2px; }
-        #move-history { max-height: 250px; overflow-y: auto; display: block; }
-        .move-row { display: flex; gap: 8px; padding: 4px 0; border-bottom: 1px solid #4a5f7f; }
-        .move-number { color: #bdc3c7; width: 30px; }
-        .move-item { cursor: pointer; padding: 2px 6px; border-radius: 3px; }
-        .move-item:hover { background: #3498db; }
-        .card-header { display: flex; justify-content: space-between; align-items: center; }
+        #preview-board .square {
+            font-size: min(6vmin, 30px);
+        }
+        @media (min-width: 500px) {
+            #preview-board .square { font-size: 30px; }
+        }
+        
         @media (max-width: 700px) {
             #app { flex-direction: column; align-items: center; }
             #info-panel { width: 100%; max-width: 500px; display: none; margin-top: 50px; }
