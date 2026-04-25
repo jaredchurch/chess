@@ -17,4 +17,4 @@ Once we have worked through doing the spec for them, they should be marked as do
 - [x] BUG3. when user plays a black white player should still go first.
 - [x] BUG4. reloading seems to reset the board to some random point (not clear what) - it should always reload to the last state before the reload was done.
 - [x] bug5. dialog box to show previous move has broken and is not appearing as expected, instead it's displaying oddly below the board.
-- [] bug6. when reset game is called with random colour (white/black) the the colour selector changes to match the result of the random selection. the colour selector should stay on random for the next reset.
+- [x] bug6. when reset game is called with random colour (white/black) the the colour selector changes to match the result of the random selection. the colour selector should stay on random for the next reset.
