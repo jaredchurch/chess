@@ -52,7 +52,7 @@ pub fn get_best_move(board: &Board) -> Option<Move> {
         return None;
     }
 
-    // Safety limit: if there are an absurd number of legal moves, 
+    // Safety limit: if there are an absurd number of legal moves,
     // truncate to prevent DoS. 200 is well above any normal chess position.
     if moves.len() > 200 {
         moves.truncate(200);
