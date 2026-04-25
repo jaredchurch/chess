@@ -121,7 +121,6 @@
         .move-item { cursor: pointer; padding: 2px 6px; border-radius: 3px; }
         .move-item:hover { background: #3498db; }
         .card-header { display: flex; justify-content: space-between; align-items: center; }
-        .card-toggle { background: transparent; border: none; color: white; font-size: 1.2em; cursor: pointer; line-height: 1; }
         @media (max-width: 700px) {
             #app { flex-direction: column; align-items: center; }
             #info-panel { width: 100%; max-width: 500px; display: none; margin-top: 50px; }
@@ -163,10 +162,7 @@
                 </div>
             </div>
             <div class="card" id="history-card-wrapper">
-                <div class="card-header">
-                    <div class="card-title">Move History</div>
-                    <button class="card-toggle" onclick="toggleMoveHistory()">−</button>
-                </div>
+                <div class="card-title">Move History</div>
                 <div id="move-history"></div>
             </div>
         </div>
@@ -175,18 +171,6 @@
     <script type="module" src="./index.js"></script>
     <script>
         var moveHistoryCollapsed = false;
-        window.toggleMoveHistory = function() {
-            window.moveHistoryCollapsed = !window.moveHistoryCollapsed;
-            const btn = document.querySelector('.card-toggle');
-            btn.textContent = window.moveHistoryCollapsed ? '+' : '−';
-            const historyCard = document.getElementById('move-history');
-            if (window.moveHistoryCollapsed) {
-                historyCard.style.display = 'none';
-            } else {
-                historyCard.style.display = 'block';
-                updateMoveHistoryCard();
-            }
-        };
         window.showGameMenu = function() {
             const scoreWrapper = document.getElementById('score-card-wrapper');
             const historyWrapper = document.getElementById('history-card-wrapper');
