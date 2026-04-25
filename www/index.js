@@ -152,7 +152,9 @@ function restoreInProgressGame() {
             boardOrientation = playerSide;
             
             const select = document.getElementById('player-color');
-            if (select) select.value = playerSide;
+            if (select && playerColor !== 'random') {
+                select.value = playerSide;
+            }
             
             console.log("Restored to FEN:", currentFen);
         } else {
@@ -190,8 +192,11 @@ function startNewGame() {
         boardOrientation = 'white';
     }
     
+    // Only update dropdown if user explicitly chose white or black
     const select = document.getElementById('player-color');
-    if (select) select.value = playerSide;
+    if (select && playerColor !== 'random') {
+        select.value = playerColor;
+    }
     
     // Immediately save the new game to localStorage
     saveCurrentGameState();
