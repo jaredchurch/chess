@@ -286,17 +286,15 @@
     
     <script type="module" src="./index.js"></script>
     <script>
-        var moveHistoryCollapsed = false;
         window.toggleMenu = function() {
             document.getElementById('info-panel').classList.toggle('open');
         };
         window.toggleMoveHistory = function() {
             window.moveHistoryCollapsed = !window.moveHistoryCollapsed;
-            moveHistoryCollapsed = window.moveHistoryCollapsed;
             const btn = document.querySelector('.card-toggle');
-            btn.textContent = moveHistoryCollapsed ? '+' : '−';
+            btn.textContent = window.moveHistoryCollapsed ? '+' : '−';
             const historyCard = document.getElementById('move-history');
-            if (moveHistoryCollapsed) {
+            if (window.moveHistoryCollapsed) {
                 historyCard.style.display = 'none';
             } else {
                 historyCard.style.display = 'block';
