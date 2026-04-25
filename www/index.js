@@ -393,7 +393,6 @@ function isWhitePiece(piece) {
     return piece === piece.toUpperCase();
 }
 
-let currentFen = INITIAL_FEN;
 let moveHistoryCollapsed = window.moveHistoryCollapsed || false;
 
 function updateMoveHistoryCard() {
