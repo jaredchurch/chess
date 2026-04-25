@@ -375,14 +375,22 @@ function updateScoreCard() {
         <div class="score-section">
             <div class="score-title">White</div>
             <div class="score-value">+${whiteScore}</div>
-            <div class="captured-pieces">${capturedPieces.white.map(p => pieceUnicode[p]).join('')}</div>
+            <div class="captured-pieces">${capturedPieces.white.map(p => 
+                `<span class="${isWhitePiece(p) ? 'piece-white' : 'piece-black'}">${pieceUnicode[p]}</span>`
+            ).join('')}</div>
         </div>
         <div class="score-section">
             <div class="score-title">Black</div>
             <div class="score-value">+${blackScore}</div>
-            <div class="captured-pieces">${capturedPieces.black.map(p => pieceUnicode[p]).join('')}</div>
+            <div class="captured-pieces">${capturedPieces.black.map(p => 
+                `<span class="${isWhitePiece(p) ? 'piece-white' : 'piece-black'}">${pieceUnicode[p]}</span>`
+            ).join('')}</div>
         </div>
     `;
+}
+
+function isWhitePiece(piece) {
+    return piece === piece.toUpperCase();
 }
 
 function updateMoveHistoryCard() {
