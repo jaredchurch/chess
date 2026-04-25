@@ -57,6 +57,16 @@ pub fn parse_fen(fen: &str) -> Result<Board, String> {
                 file += 1;
             }
         }
+        if file != 8 {
+            return Err(format!("Invalid FEN: row {} sums to {} (expected 8)", rank_idx + 1, file));
+        }
+    }
+
+    // Validate that each player has exactly one king
+    let white_kings = board.pieces[5].0.count_ones();
+    let black_kings = board.pieces[11].0.count_ones();
+    if white_kings != 1 || black_kings != 1 {
+        return Err(format!("Invalid FEN: must have exactly one king per side (White: {}, Black: {})", white_kings, black_kings));
     }
 
     // 2. Side to move

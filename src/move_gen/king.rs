@@ -22,8 +22,7 @@ pub fn generate_king_moves(board: &Board, square: Square, moves: &mut Vec<Move>)
     
     while bits != 0 {
         let to_index = bits.trailing_zeros();
-        // SAFETY: to_index from filtered king attacks, always 0-63
-        let to_square: Square = unsafe { std::mem::transmute(to_index as u8) };
+        let to_square = Square::from_u8_unchecked(to_index as u8);
         let flag = if board.occupancy[enemy_occupancy_index].get(to_index) {
             MoveFlag::Capture
         } else {
