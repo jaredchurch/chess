@@ -258,6 +258,16 @@
             <div class="controls">
                 <button onclick="resetGame()">Reset</button>
                 <button onclick="flipBoard()">Flip</button>
+                <span style="display:inline-flex;gap:5px;align-items:center">
+                    <select id="player-color" onchange="changePlayerColor()">
+                        <option value="random">Random</option>
+                        <option value="white">White</option>
+                        <option value="black">Black</option>
+                    </select>
+                </span>
+                <button onclick="exportHistory()">Export</button>
+                <button onclick="document.getElementById('import-file').click()">Import</button>
+                <input type="file" id="import-file" style="display:none" onchange="importHistory(this)">
             </div>
         </div>
         <div id="info-panel">

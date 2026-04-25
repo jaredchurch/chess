@@ -18,6 +18,7 @@ let legalMoves = [];
 let currentGame = null;
 let moveStartTime = Date.now();
 let activeProfile = null;
+let playerColor = window.playerColor || 'random';
 let capturedPieces = { white: [], black: [] };
 let boardOrientation = 'white';
 
@@ -92,9 +93,10 @@ function restoreInProgressGame() {
         
         if (inProgress) {
             currentGame = inProgress;
+            const playerSide = inProgress.player_side || determinePlayerSide();
             
             if (inProgress.moves && inProgress.moves.length > 0) {
-                let fen = INITIAL_FEN;
+                let fen = inProgress.initial_fen || INITIAL_FEN;
                 capturedPieces = { white: [], black: [] };
                 
                 for (const moveRecord of inProgress.moves) {
@@ -114,7 +116,14 @@ function restoreInProgressGame() {
                     }
                 }
                 currentFen = fen;
+            } else {
+                currentFen = inProgress.initial_fen || INITIAL_FEN;
             }
+            
+            boardOrientation = playerSide === 'black' ? 'black' : 'white';
+            
+            const select = document.getElementById('player-color');
+            if (select) select.value = playerSide === 'black' ? 'black' : 'white';
         } else {
             startNewGame();
         }
@@ -125,9 +134,11 @@ function restoreInProgressGame() {
 }
 
 function startNewGame() {
+    const playerSide = determinePlayerSide();
     currentGame = {
         game_id: generateUUID(),
         profile_id: activeProfile?.id || "default",
+        player_side: playerSide,
         timestamp: Date.now(),
         last_modified: Date.now(),
         moves: [],
@@ -136,6 +147,14 @@ function startNewGame() {
         initial_fen: INITIAL_FEN
     };
     capturedPieces = { white: [], black: [] };
+    
+    if (playerSide === 'black') {
+        currentFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR b KQkq - 0 1";
+        boardOrientation = 'black';
+    } else {
+        currentFen = INITIAL_FEN;
+        boardOrientation = 'white';
+    }
 }
 
 function getCapturedPiece(oldFen, move) {
@@ -227,10 +246,25 @@ function calculateScore(capturedList) {
     }, 0);
 }
 
+function determinePlayerSide() {
+    if (playerColor === 'random') {
+        return Math.random() < 0.5 ? 'white' : 'black';
+    }
+    return playerColor;
+}
+
+function isPlayerTurn(gameState) {
+    if (playerColor === 'random') {
+        return true;
+    }
+    return gameState.side_to_move === (playerColor === 'white' ? 'w' : 'b');
+}
+
 function updateUI() {
     const gameState = get_game_state(currentFen);
     const statusEl = document.getElementById('status');
     const fenEl = document.getElementById('fen');
+    const playerSide = currentGame?.player_side || determinePlayerSide();
     
     fenEl.innerText = currentFen;
 
@@ -244,7 +278,8 @@ function updateUI() {
     } else {
         statusEl.innerText = `${gameState.side_to_move === 'w' ? 'White' : 'Black'}'s turn${gameState.is_check ? ' (Check!)' : ''}`;
         
-        if (gameState.side_to_move === 'b' && !gameState.is_checkmate && !gameState.is_draw) {
+        const notPlayerTurn = playerSide !== (gameState.side_to_move === 'w' ? 'white' : 'black');
+        if (notPlayerTurn && !gameState.is_checkmate && !gameState.is_draw) {
             setTimeout(makeAiMove, 500);
         }
     }
@@ -508,6 +543,83 @@ window.resetGame = () => {
 window.flipBoard = () => {
     boardOrientation = boardOrientation === 'white' ? 'black' : 'white';
     renderBoard();
+};
+
+window.changePlayerColor = () => {
+    const select = document.getElementById('player-color');
+    if (select) {
+        window.playerColor = select.value;
+        playerColor = select.value;
+    }
+};
+
+window.exportHistory = () => {
+    if (!activeProfile) return;
+    const key = `chess_games_${activeProfile.id}`;
+    const gamesJson = getStorageItem(key);
+    const games = gamesJson ? JSON.parse(gamesJson) : [];
+    const exportData = {
+        version: 1,
+        profile: activeProfile,
+        games: games
+    };
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `chess-history-${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+};
+
+window.importHistory = (input) => {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        try {
+            const data = JSON.parse(e.target.result);
+            if (data.version !== 1 || !data.games) {
+                alert('Invalid import file');
+                return;
+            }
+            const importedProfile = data.profile;
+            const importedGames = data.games;
+            
+            if (!activeProfile || activeProfile.id !== importedProfile.id) {
+                const profilesJson = getStorageItem(STORAGE_KEY_PROFILES);
+                let profiles = profilesJson ? JSON.parse(profilesJson) : [];
+                const existing = profiles.find(p => p.id === importedProfile.id);
+                if (!existing) {
+                    profiles.push(importedProfile);
+                    setStorageItem(STORAGE_KEY_PROFILES, JSON.stringify(profiles));
+                }
+                setStorageItem(STORAGE_KEY_ACTIVE_PROFILE, importedProfile.id);
+                activeProfile = importedProfile;
+            }
+            
+            const key = `chess_games_${activeProfile.id}`;
+            const existingJson = getStorageItem(key);
+            let existingGames = existingJson ? JSON.parse(existingJson) : [];
+            
+            for (const game of importedGames) {
+                const existingIdx = existingGames.findIndex(g => g.game_id === game.game_id);
+                if (existingIdx >= 0) {
+                    existingGames[existingIdx] = game;
+                } else {
+                    existingGames.push(game);
+                }
+            }
+            
+            setStorageItem(key, JSON.stringify(existingGames));
+            alert(`Imported ${importedGames.length} games`);
+            resetGame();
+        } catch (err) {
+            alert('Failed to import: ' + err.message);
+        }
+    };
+    reader.readAsText(file);
+    input.value = '';
 };
 
 window.updateMoveHistoryCard = updateMoveHistoryCard;
