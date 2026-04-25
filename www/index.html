@@ -282,16 +282,16 @@
     
     <script type="module" src="./index.js"></script>
     <script>
+        var moveHistoryCollapsed = false;
         window.toggleMenu = function() {
             document.getElementById('info-panel').classList.toggle('open');
         };
         window.toggleMoveHistory = function() {
-            moveHistoryCollapsed = !moveHistoryCollapsed;
+            window.moveHistoryCollapsed = !window.moveHistoryCollapsed;
+            moveHistoryCollapsed = window.moveHistoryCollapsed;
             const btn = document.querySelector('.card-toggle');
             btn.textContent = moveHistoryCollapsed ? '+' : '−';
-            if (!moveHistoryCollapsed) {
-                updateMoveHistoryCard();
-            }
+            updateMoveHistoryCard();
         };
     </script>
 </body>

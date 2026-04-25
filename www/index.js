@@ -393,13 +393,17 @@ function isWhitePiece(piece) {
     return piece === piece.toUpperCase();
 }
 
-let moveHistoryCollapsed = false;
+let currentFen = INITIAL_FEN;
+let moveHistoryCollapsed = window.moveHistoryCollapsed || false;
 
 function updateMoveHistoryCard() {
     const historyCard = document.getElementById('move-history');
     if (!historyCard || !currentGame) return;
     
-    if (moveHistoryCollapsed) return;
+    if (moveHistoryCollapsed) {
+        historyCard.innerHTML = '';
+        return;
+    }
     
     const moves = currentGame.moves;
     let html = '';
