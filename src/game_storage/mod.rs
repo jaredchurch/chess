@@ -62,7 +62,10 @@ impl GameRecord {
 
     pub fn add_move(&mut self, from: &str, to: &str, duration_ms: u64) {
         let coords = format!("{}{}", from, to);
-        self.moves.push(MoveRecord { coords, duration_ms });
+        self.moves.push(MoveRecord {
+            coords,
+            duration_ms,
+        });
         self.last_modified = current_timestamp_ms();
     }
 
