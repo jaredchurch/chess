@@ -19,3 +19,6 @@ Thumbs.db
 
 # Gemini CLI temporary files
 .gemini/tmp/
+
+# Temp folder
+tmp

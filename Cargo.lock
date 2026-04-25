@@ -52,10 +52,12 @@ name = "chess_core"
 version = "0.1.0"
 dependencies = [
  "criterion",
+ "js-sys",
  "serde",
  "serde-wasm-bindgen",
  "serde_json",
  "wasm-bindgen",
+ "web-sys",
 ]
 
 [[package]]
