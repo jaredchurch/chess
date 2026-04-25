@@ -393,9 +393,13 @@ function isWhitePiece(piece) {
     return piece === piece.toUpperCase();
 }
 
+let moveHistoryCollapsed = false;
+
 function updateMoveHistoryCard() {
     const historyCard = document.getElementById('move-history');
     if (!historyCard || !currentGame) return;
+    
+    if (moveHistoryCollapsed) return;
     
     const moves = currentGame.moves;
     let html = '';

@@ -121,18 +121,15 @@
         
         /* Move History */
         #move-history {
-            max-height: 300px;
+            max-height: 250px;
             overflow-y: auto;
-            transition: max-height 0.3s ease;
-        }
-        #move-history.collapsed {
-            max-height: 60px;
-            overflow-y: hidden;
         }
         .card-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
+        }
+        .card-title {
             cursor: pointer;
         }
         .card-toggle {
@@ -141,6 +138,7 @@
             color: white;
             font-size: 1.2em;
             cursor: pointer;
+            line-height: 1;
         }
         .move-row {
             display: flex;
@@ -266,11 +264,15 @@
                     </div>
                 </div>
             </div>
-            <div class="card">
+<div class="card">
                 <div class="card-header">
-                    <div class="card-title" onclick="toggleMoveHistory()">Move History</div>
-                    <button class="card-toggle" onclick="event.stopPropagation(); toggleMoveHistory()">−</button>
+                    <div class="card-title">Move History</div>
+                    <button class="card-toggle" onclick="toggleMoveHistory()">−</button>
                 </div>
+                <div id="move-history">
+                    <div class="no-moves">No moves yet</div>
+                </div>
+            </div>
                 <div id="move-history">
                     <div class="no-moves">No moves yet</div>
                 </div>
@@ -284,17 +286,11 @@
             document.getElementById('info-panel').classList.toggle('open');
         };
         window.toggleMoveHistory = function() {
-            const el = document.getElementById('move-history');
+            moveHistoryCollapsed = !moveHistoryCollapsed;
             const btn = document.querySelector('.card-toggle');
-            if (el.classList.contains('collapsed')) {
-                el.classList.remove('collapsed');
-                el.innerHTML = el.dataset.content || '';
-                btn.textContent = '−';
-            } else {
-                el.dataset.content = el.innerHTML;
-                el.innerHTML = '<div class="no-moves">0 moves</div>';
-                el.classList.add('collapsed');
-                btn.textContent = '+';
+            btn.textContent = moveHistoryCollapsed ? '+' : '−';
+            if (!moveHistoryCollapsed) {
+                updateMoveHistoryCard();
             }
         };
     </script>
