@@ -267,9 +267,9 @@
                 </div>
             </div>
             <div class="card">
-                <div class="card-header" onclick="toggleMoveHistory()">
-                    <div class="card-title">Move History</div>
-                    <button class="card-toggle">−</button>
+                <div class="card-header">
+                    <div class="card-title" onclick="toggleMoveHistory()">Move History</div>
+                    <button class="card-toggle" onclick="event.stopPropagation(); toggleMoveHistory()">−</button>
                 </div>
                 <div id="move-history">
                     <div class="no-moves">No moves yet</div>
@@ -285,9 +285,17 @@
         };
         window.toggleMoveHistory = function() {
             const el = document.getElementById('move-history');
-            const btn = document.querySelector('#move-history').parentElement.querySelector('.card-toggle');
-            el.classList.toggle('collapsed');
-            btn.textContent = el.classList.contains('collapsed') ? '+' : '−';
+            const btn = document.querySelector('.card-toggle');
+            if (el.classList.contains('collapsed')) {
+                el.classList.remove('collapsed');
+                el.innerHTML = el.dataset.content || '';
+                btn.textContent = '−';
+            } else {
+                el.dataset.content = el.innerHTML;
+                el.innerHTML = '<div class="no-moves">0 moves</div>';
+                el.classList.add('collapsed');
+                btn.textContent = '+';
+            }
         };
     </script>
 </body>
