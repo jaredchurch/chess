@@ -15,4 +15,4 @@ Once we have worked through doing the spec for them, they should be marked as do
 - [x] 11. give user option to play as white or black, or random selection (50:50 odds on the calculation) - note that game history should tell which side the user was playing.
 - [x] BUG2. when a move is reviewed the dialog pops up but the board displayed has some squares are shorter than they should be. all the squares should be squares.
 - [] BUG3. when user plays a black white player should still go first.
-- [] BUG4. reloading seems to reset the board to some random point (not clear what) - it should always reload to the last state before the reload was done.
+- [x] BUG4. reloading seems to reset the board to some random point (not clear what) - it should always reload to the last state before the reload was done.

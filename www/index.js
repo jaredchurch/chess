@@ -99,27 +99,30 @@ function restoreInProgressGame() {
         const games = JSON.parse(gamesJson);
         const inProgress = games.find(g => g.result === "in_progress");
         
-        if (inProgress && inProgress.moves && inProgress.moves.length > 0) {
-            console.log("Restoring game with", inProgress.moves.length, "moves");
+        if (inProgress) {
+            console.log("Restoring game, moves:", inProgress.moves?.length || 0);
             currentGame = inProgress;
             
+            // Replay all moves from start
             let fen = INITIAL_FEN;
             capturedPieces = { white: [], black: [] };
             
-            for (const moveRecord of inProgress.moves) {
-                const moveObj = {
-                    from: moveRecord.coords.substring(0, 2),
-                    to: moveRecord.coords.substring(2, 4)
-                };
-                const nextFen = apply_move(fen, moveObj);
-                if (nextFen) {
-                    const captured = getCapturedPiece(fen, moveObj);
-                    if (captured) {
-                        const isWhiteCapture = fen.includes(captured.toUpperCase());
-                        if (isWhiteCapture) capturedPieces.white.push(captured);
-                        else capturedPieces.black.push(captured);
+            if (inProgress.moves) {
+                for (const moveRecord of inProgress.moves) {
+                    const moveObj = {
+                        from: moveRecord.coords.substring(0, 2),
+                        to: moveRecord.coords.substring(2, 4)
+                    };
+                    const nextFen = apply_move(fen, moveObj);
+                    if (nextFen) {
+                        const captured = getCapturedPiece(fen, moveObj);
+                        if (captured) {
+                            const isWhiteCapture = fen.includes(captured.toUpperCase());
+                            if (isWhiteCapture) capturedPieces.white.push(captured);
+                            else capturedPieces.black.push(captured);
+                        }
+                        fen = nextFen;
                     }
-                    fen = nextFen;
                 }
             }
             currentFen = fen;
@@ -547,9 +550,31 @@ window.resetGame = () => {
     selectedSquare = null;
     boardOrientation = 'white';
     startNewGame();
+    saveCurrentGameState();  // Save the new game to localStorage
     moveStartTime = Date.now();
     updateUI();
 };
+
+function saveCurrentGameState() {
+    if (!currentGame) return;
+    try {
+        const key = `chess_games_${currentGame.profile_id}`;
+        let gamesJson = getStorageItem(key);
+        let games = gamesJson ? JSON.parse(gamesJson) : [];
+        
+        const existingIdx = games.findIndex(g => g.game_id === currentGame.game_id);
+        if (existingIdx >= 0) {
+            games[existingIdx] = currentGame;
+        } else {
+            games.push(currentGame);
+        }
+        
+        setStorageItem(key, JSON.stringify(games));
+        console.log("Saved game state:", currentGame.game_id, currentGame.moves.length, "moves");
+    } catch (e) {
+        console.warn("Save game state failed:", e);
+    }
+}
 
 window.flipBoard = () => {
     boardOrientation = boardOrientation === 'white' ? 'black' : 'white';
