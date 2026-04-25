@@ -123,6 +123,10 @@
         #move-history {
             max-height: 250px;
             overflow-y: auto;
+            display: block;
+        }
+        #move-history.hidden {
+            display: none;
         }
         .card-header {
             display: flex;
@@ -291,7 +295,13 @@
             moveHistoryCollapsed = window.moveHistoryCollapsed;
             const btn = document.querySelector('.card-toggle');
             btn.textContent = moveHistoryCollapsed ? '+' : '−';
-            updateMoveHistoryCard();
+            const historyCard = document.getElementById('move-history');
+            if (moveHistoryCollapsed) {
+                historyCard.style.display = 'none';
+            } else {
+                historyCard.style.display = 'block';
+                updateMoveHistoryCard();
+            }
         };
     </script>
 </body>
