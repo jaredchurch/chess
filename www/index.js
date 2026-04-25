@@ -124,7 +124,7 @@ function restoreInProgressGame() {
             
             currentGame = inProgress;
             
-            // Replay all moves from start
+            // Always start from standard position (white to move first)
             let fen = INITIAL_FEN;
             capturedPieces = { white: [], black: [] };
             
@@ -149,6 +149,7 @@ function restoreInProgressGame() {
             currentFen = fen;
             
             const playerSide = inProgress.player_side || 'white';
+            // Orient board based on player, but white always moves first
             boardOrientation = playerSide;
             
             const select = document.getElementById('player-color');
@@ -180,11 +181,13 @@ function startNewGame() {
     };
     capturedPieces = { white: [], black: [] };
     
+    // Always start with white to move (standard chess rule)
+    currentFen = INITIAL_FEN;
+    
+    // But orient the board based on player choice
     if (playerSide === 'black') {
-        currentFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR b KQkq - 0 1";
         boardOrientation = 'black';
     } else {
-        currentFen = INITIAL_FEN;
         boardOrientation = 'white';
     }
     
@@ -339,8 +342,12 @@ function updateUI() {
     } else {
         statusEl.innerText = `${gameState.side_to_move === 'w' ? 'White' : 'Black'}'s turn${gameState.is_check ? ' (Check!)' : ''}`;
         
-        const notPlayerTurn = playerSide !== (gameState.side_to_move === 'w' ? 'white' : 'black');
-        if (notPlayerTurn && !gameState.is_checkmate && !gameState.is_draw) {
+        // AI moves when it's NOT player's turn
+        const playerIsWhite = playerSide === 'white';
+        const isWhiteTurn = gameState.side_to_move === 'w';
+        const isAiTurn = playerIsWhite ? !isWhiteTurn : isWhiteTurn;
+        
+        if (isAiTurn && !gameState.is_checkmate && !gameState.is_draw) {
             setTimeout(makeAiMove, 500);
         }
     }
