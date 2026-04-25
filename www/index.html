@@ -22,6 +22,7 @@
             max-width: 1200px;
             margin: 0 auto;
             width: 100%;
+            align-items: flex-start;
         }
         #board-container {
             flex: 1;
@@ -54,8 +55,7 @@
         .piece-white { color: #ffffff; text-shadow: 0 0 2px rgba(0,0,0,0.8); }
         .piece-black { color: #000000; }
         #status { font-size: 1.2em; text-align: center; }
-        #fen { font-size: 0.8em; color: #bdc3c7; word-break: break-all; text-align: center; }
-        .controls { display: flex; gap: 10px; }
+        .controls { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
         button {
             padding: 10px 20px;
             font-size: 1em;
@@ -67,7 +67,6 @@
         }
         button:hover { background: #2980b9; }
         
-        /* Info Cards */
         #info-panel {
             width: 280px;
             display: flex;
@@ -90,9 +89,7 @@
             border: none;
             border-radius: 5px;
         }
-        .card button:hover {
-            background: #2980b9;
-        }
+        .card button:hover { background: #2980b9; }
         .card select {
             width: 100%;
             padding: 10px;
@@ -110,170 +107,29 @@
             border-bottom: 1px solid #4a5f7f;
             padding-bottom: 8px;
         }
-        
-        /* Score Card */
-        #score-card {
-            display: flex;
-            justify-content: space-around;
-        }
-        .score-section {
-            text-align: center;
-        }
-        .score-title {
-            font-size: 0.9em;
-            color: #bdc3c7;
-        }
-        .score-value {
-            font-size: 1.5em;
-            font-weight: bold;
-            color: #2ecc71;
-        }
-        .captured-pieces {
-            font-size: 1.2em;
-            min-height: 24px;
-            margin-top: 5px;
-        }
-        .captured-pieces .piece-white {
-            color: #ffffff;
-            text-shadow: 0 0 2px rgba(0,0,0,0.8);
-            margin-right: 2px;
-        }
-        .captured-pieces .piece-black {
-            color: #000000;
-            margin-right: 2px;
-        }
-        
-        /* Move History */
-        #move-history {
-            max-height: 250px;
-            overflow-y: auto;
-            display: block;
-        }
-        #move-history.hidden {
-            display: none;
-        }
-        .card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .card-title {
-            cursor: pointer;
-        }
-        .card-toggle {
-            background: transparent;
-            border: none;
-            color: white;
-            font-size: 1.2em;
-            cursor: pointer;
-            line-height: 1;
-        }
-        .move-row {
-            display: flex;
-            gap: 8px;
-            padding: 4px 0;
-            border-bottom: 1px solid #4a5f7f;
-        }
-        .move-number {
-            color: #bdc3c7;
-            width: 30px;
-        }
-        .move-item {
-            cursor: pointer;
-            padding: 2px 6px;
-            border-radius: 3px;
-        }
-        .move-item:hover {
-            background: #3498db;
-        }
-        .no-moves {
-            color: #bdc3c7;
-            text-align: center;
-        }
-        
-        /* Preview Dialog */
-        .preview-dialog {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.7);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-        }
-        .preview-content {
-            background: #34495e;
-            border-radius: 10px;
-            padding: 20px;
-            max-width: 90vw;
-        }
-        .preview-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-        .preview-close {
-            background: transparent;
-            border: none;
-            color: white;
-            font-size: 1.5em;
-            cursor: pointer;
-        }
-        .preview-board {
-            display: grid;
-            grid-template-columns: repeat(8, 1fr);
-            grid-template-rows: repeat(8, 1fr);
-            width: min(60vw, 350px);
-            aspect-ratio: 1;
-        }
-        .preview-board .square {
-            font-size: min(6vmin, 30px);
-        }
-        @media (min-width: 500px) {
-            .preview-board .square {
-                font-size: 30px;
-            }
-        }
-        
-        /* Menu button */
-        #menu-btn {
-            display: none;
-            position: fixed;
-            top: 10px;
-            right: 10px;
-            z-index: 100;
-            padding: 10px 15px;
-        }
-        
-        /* Responsive */
+        #score-card { display: flex; justify-content: space-around; }
+        .score-section { text-align: center; }
+        .score-title { font-size: 0.9em; color: #bdc3c7; }
+        .score-value { font-size: 1.5em; font-weight: bold; color: #2ecc71; }
+        .captured-pieces { font-size: 1.2em; min-height: 24px; margin-top: 5px; }
+        .captured-pieces .piece-white { color: #ffffff; text-shadow: 0 0 2px rgba(0,0,0,0.8); margin-right: 2px; }
+        .captured-pieces .piece-black { color: #000000; margin-right: 2px; }
+        #move-history { max-height: 250px; overflow-y: auto; display: block; }
+        .move-row { display: flex; gap: 8px; padding: 4px 0; border-bottom: 1px solid #4a5f7f; }
+        .move-number { color: #bdc3c7; width: 30px; }
+        .move-item { cursor: pointer; padding: 2px 6px; border-radius: 3px; }
+        .move-item:hover { background: #3498db; }
+        .card-header { display: flex; justify-content: space-between; align-items: center; }
+        .card-toggle { background: transparent; border: none; color: white; font-size: 1.2em; cursor: pointer; line-height: 1; }
         @media (max-width: 700px) {
-            #app {
-                flex-direction: column;
-                align-items: center;
-            }
-            #info-panel {
-                width: 100%;
-                max-width: 500px;
-                display: none;
-            }
-            #info-panel.open {
-                display: flex;
-            }
-            #menu-btn {
-                display: block;
-            }
-            .preview-board {
-                width: min(80vw, 300px);
-            }
+            #app { flex-direction: column; align-items: center; }
+            #info-panel { width: 100%; max-width: 500px; display: none; }
+            #info-panel.open { display: flex; }
         }
     </style>
+    <button id="menu-btn" onclick="showGameMenu()" style="position:fixed;top:10px;right:10px;z-index:100;padding:10px 15px;">Menu</button>
 </head>
 <body>
-    <button id="menu-btn" onclick="toggleMenu()">Menu</button>
     <div id="app">
         <div id="board-container">
             <div id="status">Initializing...</div>
@@ -282,7 +138,6 @@
             <div class="controls">
                 <button onclick="resetGame()">Reset</button>
                 <button onclick="flipBoard()">Flip</button>
-                <button onclick="toggleMenu()">Menu</button>
                 <select id="player-color" onchange="changePlayerColor()">
                     <option value="random">Random</option>
                     <option value="white">White</option>
@@ -290,8 +145,8 @@
                 </select>
             </div>
         </div>
-<div id="info-panel">
-            <div class="card">
+        <div id="info-panel">
+            <div class="card" id="score-card-wrapper">
                 <div class="card-title">Score</div>
                 <div id="score-card">
                     <div class="score-section">
@@ -306,46 +161,19 @@
                     </div>
                 </div>
             </div>
-            <div class="card">
-                <div class="card-title">Move History</div>
+            <div class="card" id="history-card-wrapper">
                 <div class="card-header">
                     <div class="card-title">Move History</div>
                     <button class="card-toggle" onclick="toggleMoveHistory()">−</button>
                 </div>
-                <div id="move-history">
-                </div>
+                <div id="move-history"></div>
             </div>
-            <div class="card">
-                <div class="card-title">Data</div>
-                <button onclick="exportHistory()">Export History</button>
-                <button onclick="document.getElementById('import-file').click()">Import History</button>
-                <input type="file" id="import-file" style="display:none" onchange="importHistory(this)">
-            </div>
-        </div>
-                    <div class="score-section">
-                        <div class="score-title">Black</div>
-                        <div class="score-value">+0</div>
-                        <div class="captured-pieces"></div>
-                    </div>
-                </div>
-            </div>
-<div class="card">
-                <div class="card-header">
-                    <div class="card-title">Move History</div>
-                    <button class="card-toggle" onclick="toggleMoveHistory()">−</button>
-                </div>
-                <div id="move-history">
-                </div>
-            </div>
-                <div id="move-history">
         </div>
     </div>
     
     <script type="module" src="./index.js"></script>
     <script>
-        window.toggleMenu = function() {
-            document.getElementById('info-panel').classList.toggle('open');
-        };
+        var moveHistoryCollapsed = false;
         window.toggleMoveHistory = function() {
             window.moveHistoryCollapsed = !window.moveHistoryCollapsed;
             const btn = document.querySelector('.card-toggle');
@@ -357,6 +185,38 @@
                 historyCard.style.display = 'block';
                 updateMoveHistoryCard();
             }
+        };
+        window.showGameMenu = function() {
+            const dialog = document.createElement('div');
+            dialog.id = 'game-menu-dialog';
+            dialog.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.8);z-index:1000;display:flex;align-items:center;justify-content:center;';
+            dialog.innerHTML = `
+                <div style="background:#34495e;border-radius:10px;padding:20px;min-width:250px;">
+                    <div style="margin-bottom:15px;font-size:1.2em;font-weight:bold;">Game Menu</div>
+                    <label style="display:block;margin:10px 0;cursor:pointer;">
+                        <input type="checkbox" id="show-score" checked onchange="togglePanelDisplay('score-card-wrapper', this.checked)"> Show Score
+                    </label>
+                    <label style="display:block;margin:10px 0;cursor:pointer;">
+                        <input type="checkbox" id="show-history" checked onchange="togglePanelDisplay('history-card-wrapper', this.checked)"> Show Move History
+                    </label>
+                    <hr style="border-color:#4a5f7f;margin:15px 0;">
+                    <button onclick="exportHistory();closeGameMenu();">Export History</button>
+                    <button onclick="document.getElementById('import-file').click();closeGameMenu();">Import History</button>
+                    <input type="file" id="import-file" style="display:none" onchange="importHistory(this)">
+                    <hr style="border-color:#4a5f7f;margin:15px 0;">
+                    <button onclick="closeGameMenu()">Close</button>
+                </div>
+            `;
+            document.body.appendChild(dialog);
+            dialog.onclick = (e) => { if (e.target === dialog) closeGameMenu(); };
+        };
+        window.closeGameMenu = function() {
+            const dialog = document.getElementById('game-menu-dialog');
+            if (dialog) dialog.remove();
+        };
+        window.togglePanelDisplay = function(id, visible) {
+            const el = document.getElementById(id);
+            if (el) el.style.display = visible ? 'block' : 'none';
         };
     </script>
 </body>
