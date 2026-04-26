@@ -16,12 +16,11 @@
         }
         #app {
             display: flex;
-            flex: 1;
             gap: 20px;
             padding: 20px;
-            max-width: 1200px;
             margin: 0 auto;
             width: 100%;
+            height: 100vh;
             align-items: flex-start;
         }
         #board-container {
@@ -29,15 +28,16 @@
             display: flex;
             flex-direction: column;
             align-items: center;
+            justify-content: center;
             gap: 10px;
+            height: 100%;
         }
         #board {
             display: grid;
             grid-template-columns: repeat(8, 1fr);
             grid-template-rows: repeat(8, 1fr);
-            width: 100%;
-            max-width: min(calc(100vh - 150px), 100vw - 300px);
-            aspect-ratio: 1;
+            width: min(calc(100vw - 340px), calc(100vh - 140px));
+            height: min(calc(100vw - 340px), calc(100vh - 140px));
             border: 2px solid #34495e;
             box-shadow: 0 4px 15px rgba(0,0,0,0.3);
         }
@@ -45,7 +45,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            font-size: min(8vmin, 40px);
+            font-size: calc(min(calc(100vw - 340px), calc(100vh - 140px)) / 10);
             cursor: pointer;
             user-select: none;
         }
@@ -191,9 +191,11 @@
         }
         
         @media (max-width: 700px) {
-            #app { flex-direction: column; align-items: center; }
-            #board { max-width: min(calc(100vh - 150px), 100vw - 40px); }
-            #info-panel { width: 100%; max-width: min(calc(100vh - 150px), 100vw - 40px); display: none; margin-top: 50px; }
+            #app { flex-direction: column; align-items: center; height: auto; min-height: 100vh; padding: 10px; }
+            #board-container { height: auto; }
+            #board { width: min(calc(100vw - 20px), calc(100vh - 120px)); height: min(calc(100vw - 20px), calc(100vh - 120px)); }
+            .square { font-size: calc(min(calc(100vw - 20px), calc(100vh - 120px)) / 10); }
+            #info-panel { width: 100%; max-width: 100%; display: none; margin-top: 20px; }
             #info-panel.open { display: flex; }
         }
     </style>
