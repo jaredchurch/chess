@@ -1,7 +1,9 @@
 // storage.js - localStorage persistence for game data
 
-const STORAGE_KEY_PROFILES = "chess_profiles";
-const STORAGE_KEY_ACTIVE_PROFILE = "chess_active_profile";
+import { generateUUID } from './game.js';
+
+export const STORAGE_KEY_PROFILES = "chess_profiles";
+export const STORAGE_KEY_ACTIVE_PROFILE = "chess_active_profile";
 
 export function getStorageItem(key) {
     try {
@@ -99,7 +101,3 @@ export function exportHistory(profileId) {
     a.click();
     URL.revokeObjectURL(url);
 }
-
-import { generateUUID } from './game.js';
-
-export { STORAGE_KEY_PROFILES, STORAGE_KEY_ACTIVE_PROFILE };

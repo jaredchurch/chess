@@ -4,13 +4,31 @@ import init, {
     apply_move, 
     get_best_move_wasm, 
     get_game_state
-} from './pkg/chess_core.js';
+} from '../pkg/chess_core.js';
 
-const INITIAL_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-const STORAGE_KEY_PROFILES = "chess_profiles";
-const STORAGE_KEY_ACTIVE_PROFILE = "chess_active_profile";
+import { 
+    pieceUnicode, 
+    pieceValues, 
+    calculateScore, 
+    isWhitePiece, 
+    INITIAL_FEN 
+} from './ui.js';
 
-const pieceValues = { 'P': 1, 'N': 3, 'B': 3, 'R': 5, 'Q': 9, 'K': 0 };
+import { 
+    parseFenPieces, 
+    generateUUID 
+} from './game.js';
+
+import { 
+    getStorageItem, 
+    setStorageItem,
+    initializeProfile as initProfile,
+    saveGame as persistGame,
+    loadInProgressGame,
+    STORAGE_KEY_PROFILES,
+    STORAGE_KEY_ACTIVE_PROFILE,
+    exportHistory
+} from './storage.js';
 
 let currentFen = INITIAL_FEN;
 let selectedSquare = null;
@@ -22,63 +40,11 @@ let playerColor = window.playerColor || 'random';
 let capturedPieces = { white: [], black: [] };
 let boardOrientation = 'white';
 
-const pieceUnicode = {
-    'K': '♚\uFE0E', 'Q': '♛\uFE0E', 'R': '♜\uFE0E', 'B': '♝\uFE0E', 'N': '♞\uFE0E', 'P': '♟\uFE0E',
-    'k': '♚\uFE0E', 'q': '♛\uFE0E', 'r': '♜\uFE0E', 'b': '♝\uFE0E', 'n': '♞\uFE0E', 'p': '♟\uFE0E'
-};
-
-function localStorage() {
-    return window.localStorage;
-}
-
-function getStorageItem(key) {
-    try {
-        return localStorage().getItem(key);
-    } catch (e) {
-        return null;
-    }
-}
-
-function setStorageItem(key, value) {
-    try {
-        localStorage().setItem(key, value);
-        return true;
-    } catch (e) {
-        return false;
-    }
-}
-
 async function start() {
     await init();
-    initializeProfile();
+    activeProfile = initProfile();
     restoreInProgressGame();
     updateUI();
-}
-
-function initializeProfile() {
-    try {
-        let profileId = getStorageItem(STORAGE_KEY_ACTIVE_PROFILE);
-        let profilesJson = getStorageItem(STORAGE_KEY_PROFILES);
-        let profiles = profilesJson ? JSON.parse(profilesJson) : [];
-        
-        if (profileId) {
-            activeProfile = profiles.find(p => p.id === profileId) || null;
-        }
-        
-        if (!activeProfile) {
-            profileId = generateUUID();
-            activeProfile = {
-                id: profileId,
-                name: "Player",
-                created_at: Date.now()
-            };
-            profiles.push(activeProfile);
-            setStorageItem(STORAGE_KEY_PROFILES, JSON.stringify(profiles));
-            setStorageItem(STORAGE_KEY_ACTIVE_PROFILE, profileId);
-        }
-    } catch (e) {
-        console.warn("Profile init failed:", e);
-    }
 }
 
 function restoreInProgressGame() {
@@ -137,9 +103,9 @@ function restoreInProgressGame() {
                     if (nextFen) {
                         const captured = getCapturedPiece(fen, moveObj);
                         if (captured) {
-                            const isWhiteCapture = fen.includes(captured.toUpperCase());
-                            if (isWhiteCapture) capturedPieces.white.push(captured);
-                            else capturedPieces.black.push(captured);
+                            const isWhitePiece = captured === captured.toUpperCase();
+                            if (isWhitePiece) capturedPieces.black.push(captured);
+                            else capturedPieces.white.push(captured);
                         }
                         fen = nextFen;
                     }
@@ -244,9 +210,9 @@ function saveCurrentGame(from, to) {
         
         const captured = getCapturedPiece(currentFen, { from, to });
         if (captured) {
-            const isWhiteCapture = currentFen.includes(captured.toUpperCase());
-            if (isWhiteCapture) capturedPieces.white.push(captured);
-            else capturedPieces.black.push(captured);
+            const isWhitePiece = captured === captured.toUpperCase();
+            if (isWhitePiece) capturedPieces.black.push(captured);
+            else capturedPieces.white.push(captured);
         }
         
         const coords = from + to;
@@ -297,21 +263,6 @@ function finishGame(result, method) {
     } catch (e) {
         console.warn("Finish game failed:", e);
     }
-}
-
-function generateUUID() {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-        const r = Math.random() * 16 | 0;
-        const v = c === 'x' ? r : (r & 0x3 | 0x8);
-        return v.toString(16);
-    });
-}
-
-function calculateScore(capturedList) {
-    return capturedList.reduce((sum, piece) => {
-        const value = pieceValues[piece.toUpperCase()] || 0;
-        return sum + value;
-    }, 0);
 }
 
 function determinePlayerSide() {
@@ -426,27 +377,6 @@ function makeAiMove() {
     }
 }
 
-function parseFenPieces(fen) {
-    const placement = fen.split(' ')[0];
-    const rows = placement.split('/');
-    const pieces = {};
-
-    rows.forEach((row, i) => {
-        const rank = 8 - i;
-        let file = 0;
-        for (const char of row) {
-            if (isNaN(char)) {
-                const squareName = String.fromCharCode(97 + file) + rank;
-                pieces[squareName] = char;
-                file++;
-            } else {
-                file += parseInt(char);
-            }
-        }
-    });
-    return pieces;
-}
-
 function getBoardStateAtMove(moveIndex) {
     let fen = INITIAL_FEN;
     const tempCaptures = { white: [], black: [] };
@@ -461,9 +391,9 @@ function getBoardStateAtMove(moveIndex) {
         if (nextFen) {
             const captured = getCapturedPiece(fen, moveObj);
             if (captured) {
-                const isWhiteCapture = fen.includes(captured.toUpperCase());
-                if (isWhiteCapture) tempCaptures.white.push(captured);
-                else tempCaptures.black.push(captured);
+                const isWhitePiece = captured === captured.toUpperCase();
+                if (isWhitePiece) tempCaptures.black.push(captured);
+                else tempCaptures.white.push(captured);
             }
             fen = nextFen;
         }
@@ -494,10 +424,6 @@ function updateScoreCard() {
             ).join('')}</div>
         </div>
     `;
-}
-
-function isWhitePiece(piece) {
-    return piece === piece.toUpperCase();
 }
 
 window.moveHistoryCollapsed = window.moveHistoryCollapsed || false;
