@@ -21,6 +21,8 @@
 
 set -e
 
+export PATH="$HOME/.cargo/bin:$PATH"
+
 # Determine project root
 if [ -n "$1" ]; then
     PROJECT_ROOT="$1"
