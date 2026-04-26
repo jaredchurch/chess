@@ -196,7 +196,8 @@
             #info-panel.open { display: flex; }
         }
     </style>
-    <button id="menu-btn" onclick="showGameMenu()" style="position:fixed;top:10px;right:10px;z-index:100;padding:10px 15px;">Menu</button>
+    <button id="menu-btn" onclick="showGameMenu()" style="position:fixed;top:10px;right:10px;z-index:100;background:transparent;border:none;color:white;font-size:20px;padding:8px;">&#9776;</button>
+    <button id="settings-btn" onclick="showSettingsMenu()" style="position:fixed;top:10px;right:45px;z-index:100;background:transparent;border:none;color:white;font-size:18px;padding:8px;">&#9881;</button>
 </head>
 <body>
     <div id="app">
@@ -206,7 +207,6 @@
             <div id="fen" style="display:none"></div>
             <div class="controls">
                 <button onclick="resetGame()">Reset</button>
-                <button onclick="flipBoard()">Flip</button>
                 <select id="player-color" onchange="changePlayerColor()">
                     <option value="random">Random</option>
                     <option value="white">White</option>
@@ -241,30 +241,20 @@
     <script>
         var moveHistoryCollapsed = false;
         window.showGameMenu = function() {
-            const scoreWrapper = document.getElementById('score-card-wrapper');
-            const historyWrapper = document.getElementById('history-card-wrapper');
-            const scoreShown = scoreWrapper.style.display !== 'none';
-            const historyShown = historyWrapper.style.display !== 'none';
-            const scoreChecked = scoreShown ? 'checked' : '';
-            const historyChecked = historyShown ? 'checked' : '';
+            const existing = document.getElementById('game-menu-dialog');
+            if (existing) { existing.remove(); return; }
             const dialog = document.createElement('div');
             dialog.id = 'game-menu-dialog';
             dialog.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.8);z-index:1000;display:flex;align-items:center;justify-content:center;';
             dialog.innerHTML = `
-                <div style="background:#34495e;border-radius:10px;padding:20px;min-width:250px;">
-                    <div style="margin-bottom:15px;font-size:1.2em;font-weight:bold;">Game Menu</div>
-                    <label style="display:block;margin:10px 0;cursor:pointer;">
-                        <input type="checkbox" id="show-score" ${scoreChecked} onchange="togglePanelDisplay('score-card-wrapper', this.checked)"> Show Score
-                    </label>
-                    <label style="display:block;margin:10px 0;cursor:pointer;">
-                        <input type="checkbox" id="show-history" ${historyChecked} onchange="togglePanelDisplay('history-card-wrapper', this.checked)"> Show Move History
-                    </label>
-                    <hr style="border-color:#4a5f7f;margin:15px 0;">
-                    <button onclick="exportHistory();closeGameMenu();">Export History</button>
-                    <button onclick="document.getElementById('import-file').click();closeGameMenu();">Import History</button>
+                <div style="background:#34495e;border-radius:10px;padding:20px;min-width:200px;">
+                    <button onclick="exportHistory();" style="display:block;width:100%;margin:8px 0;padding:10px;">Export</button>
+                    <button onclick="document.getElementById('import-file').click();" style="display:block;width:100%;margin:8px 0;padding:10px;">Import</button>
                     <input type="file" id="import-file" style="display:none" onchange="importHistory(this)">
                     <hr style="border-color:#4a5f7f;margin:15px 0;">
-                    <button onclick="closeGameMenu()">Close</button>
+                    <button onclick="flipBoard();closeGameMenu();" style="display:block;width:100%;margin:8px 0;padding:10px;">Rotate View</button>
+                    <hr style="border-color:#4a5f7f;margin:15px 0;">
+                    <button onclick="closeGameMenu();" style="display:block;width:100%;margin:8px 0;padding:10px;">Close</button>
                 </div>
             `;
             document.body.appendChild(dialog);
@@ -272,6 +262,45 @@
         };
         window.closeGameMenu = function() {
             const dialog = document.getElementById('game-menu-dialog');
+            if (dialog) dialog.remove();
+        };
+        window.showSettingsMenu = function() {
+            const existing = document.getElementById('settings-menu-dialog');
+            if (existing) { existing.remove(); return; }
+            const scoreWrapper = document.getElementById('score-card-wrapper');
+            const historyWrapper = document.getElementById('history-card-wrapper');
+            const scoreChecked = scoreWrapper.style.display !== 'none' ? 'checked' : '';
+            const historyChecked = historyWrapper.style.display !== 'none' ? 'checked' : '';
+            const profiles = window.getAllProfiles() || [];
+            const activeId = window.activeProfile?.id || '';
+            let profileOptions = profiles.map(p => 
+                `<option value="${p.id}" ${p.id === activeId ? 'selected' : ''}>${p.name}</option>`
+            ).join('');
+            const dialog = document.createElement('div');
+            dialog.id = 'settings-menu-dialog';
+            dialog.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.8);z-index:1000;display:flex;align-items:center;justify-content:center;';
+            dialog.innerHTML = `
+                <div style="background:#34495e;border-radius:10px;padding:20px;min-width:250px;">
+                    <div style="margin-bottom:15px;font-size:1.2em;font-weight:bold;">Settings</div>
+                    <label style="display:block;margin:10px 0;cursor:pointer;">
+                        <input type="checkbox" id="show-score" ${scoreChecked} onchange="togglePanelDisplay('score-card-wrapper', this.checked)"> Show Score
+                    </label>
+                    <label style="display:block;margin:10px 0;cursor:pointer;">
+                        <input type="checkbox" id="show-history" ${historyChecked} onchange="togglePanelDisplay('history-card-wrapper', this.checked)"> Show Move History
+                    </label>
+                    <hr style="border-color:#4a5f7f;margin:15px 0;">
+                    <div style="margin-bottom:10px;font-weight:bold;">Profile</div>
+                    <select id="profile-select" style="width:100%;padding:8px;margin-bottom:10px;" onchange="window.switchProfile(this.value)">
+                        ${profileOptions}
+                    </select>
+                    <!-- <button onclick="const name=prompt('New profile name:');if(name)window.createProfile(name);" style="display:block;width:100%;margin:8px 0;padding:10px;">New Profile</button> -->
+                </div>
+            `;
+            document.body.appendChild(dialog);
+            dialog.onclick = (e) => { if (e.target === dialog) closeSettingsMenu(); };
+        };
+        window.closeSettingsMenu = function() {
+            const dialog = document.getElementById('settings-menu-dialog');
             if (dialog) dialog.remove();
         };
         window.togglePanelDisplay = function(id, visible) {

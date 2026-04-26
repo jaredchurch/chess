@@ -27,7 +27,11 @@ import {
     loadInProgressGame,
     STORAGE_KEY_PROFILES,
     STORAGE_KEY_ACTIVE_PROFILE,
-    exportHistory
+    exportHistory,
+    getAllProfiles,
+    switchProfile,
+    createProfile,
+    deleteProfile
 } from './storage.js';
 
 let currentFen = INITIAL_FEN;
@@ -626,5 +630,10 @@ window.importHistory = (input) => {
 };
 
 window.updateMoveHistoryCard = updateMoveHistoryCard;
+window.getAllProfiles = getAllProfiles;
+window.switchProfile = (id) => { switchProfile(id); location.reload(); };
+window.createProfile = (name) => { createProfile(name); location.reload(); };
+window.deleteProfile = (id) => { deleteProfile(id); location.reload(); };
+window.activeProfile = activeProfile;
 
 start();

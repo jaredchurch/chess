@@ -101,3 +101,52 @@ export function exportHistory(profileId) {
     a.click();
     URL.revokeObjectURL(url);
 }
+
+export function getAllProfiles() {
+    try {
+        const profilesJson = getStorageItem(STORAGE_KEY_PROFILES);
+        return profilesJson ? JSON.parse(profilesJson) : [];
+    } catch (e) {
+        return [];
+    }
+}
+
+export function switchProfile(profileId) {
+    try {
+        setStorageItem(STORAGE_KEY_ACTIVE_PROFILE, profileId);
+        return true;
+    } catch (e) {
+        return false;
+    }
+}
+
+export function createProfile(name) {
+    try {
+        const profiles = getAllProfiles();
+        const newProfile = {
+            id: generateUUID(),
+            name: name || "New Player",
+            created_at: Date.now()
+        };
+        profiles.push(newProfile);
+        setStorageItem(STORAGE_KEY_PROFILES, JSON.stringify(profiles));
+        setStorageItem(STORAGE_KEY_ACTIVE_PROFILE, newProfile.id);
+        return newProfile;
+    } catch (e) {
+        return null;
+    }
+}
+
+export function deleteProfile(profileId) {
+    try {
+        let profiles = getAllProfiles();
+        profiles = profiles.filter(p => p.id !== profileId);
+        setStorageItem(STORAGE_KEY_PROFILES, JSON.stringify(profiles));
+        if (getStorageItem(STORAGE_KEY_ACTIVE_PROFILE) === profileId && profiles.length > 0) {
+            setStorageItem(STORAGE_KEY_ACTIVE_PROFILE, profiles[0].id);
+        }
+        return true;
+    } catch (e) {
+        return false;
+    }
+}
