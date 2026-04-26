@@ -45,6 +45,7 @@ run_test() {
 run_fmt() {
     echo "=== Running Format Check ==="
     ~/.cargo/bin/cargo fmt -- --check
+    ~/.cargo/bin/cargo fmt
 }
 
 run_wasm() {
