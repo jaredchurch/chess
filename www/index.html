@@ -297,9 +297,17 @@
                         ${profileOptions}
                     </select>
                     <!-- <button onclick="const name=prompt('New profile name:');if(name)window.createProfile(name);" style="display:block;width:100%;margin:8px 0;padding:10px;">New Profile</button> -->
+                    <hr style="border-color:#4a5f7f;margin:15px 0;">
+                    <div style="font-size:0.75em;color:#bdc3c7;text-align:center;"><span id="build-info"></span></div>
                 </div>
             `;
             document.body.appendChild(dialog);
+            let buildLabel = window.buildTimestamp || '?';
+            if (window.buildProfile === 'dev') {
+                buildLabel = 'dev ' + buildLabel;
+            }
+            const buildInfo = document.getElementById('build-info');
+            if (buildInfo) buildInfo.textContent = buildLabel;
             dialog.onclick = (e) => { if (e.target === dialog) closeSettingsMenu(); };
         };
         window.closeSettingsMenu = function() {

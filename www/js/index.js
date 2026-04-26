@@ -3,7 +3,9 @@ import init, {
     get_legal_moves, 
     apply_move, 
     get_best_move_wasm, 
-    get_game_state
+    get_game_state,
+    get_build_timestamp,
+    get_build_profile
 } from '../pkg/chess_core.js';
 
 import { 
@@ -46,6 +48,8 @@ let boardOrientation = 'white';
 
 async function start() {
     await init();
+    window.buildTimestamp = get_build_timestamp();
+    window.buildProfile = get_build_profile();
     activeProfile = initProfile();
     restoreInProgressGame();
     updateUI();

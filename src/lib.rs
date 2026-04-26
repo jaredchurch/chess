@@ -1,6 +1,8 @@
 // Copyright (c) 2026 Chess Core Team
 // Licensed under the MIT License. See LICENSE file in the project root for details.
 
+include!(concat!(env!("OUT_DIR"), "/build_info.rs"));
+
 pub mod ai;
 pub mod board;
 pub mod game_storage;
