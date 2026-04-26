@@ -138,3 +138,13 @@ fn square_to_string(sq: Square) -> String {
     let rank = (idx / 8) + b'1';
     format!("{}{}", file as char, rank as char)
 }
+
+#[wasm_bindgen]
+pub fn get_build_timestamp() -> String {
+    crate::BUILD_TIMESTAMP.to_string()
+}
+
+#[wasm_bindgen]
+pub fn get_build_profile() -> String {
+    crate::BUILD_PROFILE.to_string()
+}

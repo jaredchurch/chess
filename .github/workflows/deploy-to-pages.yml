@@ -31,7 +31,7 @@ jobs:
           curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 
       - name: Build WASM
-        run: wasm-pack build --target web --out-dir www/pkg
+        run: PROD_BUILD=1 wasm-pack build --target web --out-dir www/pkg
 
       - name: Setup Pages
         uses: actions/configure-pages@v4

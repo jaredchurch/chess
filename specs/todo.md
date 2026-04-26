@@ -18,3 +18,7 @@ Once we have worked through doing the spec for them, they should be marked as do
 - [x] BUG4. reloading seems to reset the board to some random point (not clear what) - it should always reload to the last state before the reload was done.
 - [x] bug5. dialog box to show previous move has broken and is not appearing as expected, instead it's displaying oddly below the board.
 - [x] bug6. when reset game is called with random colour (white/black) the the colour selector changes to match the result of the random selection. the colour selector should stay on random for the next reset.
+- [] 12. add card that shows number of games in history as well as number that ended in each way a game can end (win, loss etc)
+- [x] BUG7. points being awarded to white when black takes pieces.
+- [x] BUG8. On iPhone the board is flakey and keeps changing size of rows. The board size needs to be enforced as static on each screen. Board size and position is paramount and should be prioritised over other visual elements.
+- [x] BUG9 - If lots of pieces get taken, then card displaying taken piece icons is not graceful - the icons and points move to overflow the card, suggest there should be a wrapping mechanism or some other more graceful method.
