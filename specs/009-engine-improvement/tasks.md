@@ -38,3 +38,7 @@
 - [ ] T019 Create automated benchmark script for Level vs. Level matches
 - [ ] T020 Tune evaluation weights and PST values based on match results
 - [ ] T021 Verify performance in browser via WASM
+
+## UAT Feedback
+- [] BUG001: the search algorithms take too long.
+- [] BUG002: Even at "advanced" level I don't seem the machine driving hard to checkmate me, and everything seems more one piece at a time focussed rather than setting up strategies to pin, skewer or fork me.
