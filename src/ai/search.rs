@@ -11,6 +11,7 @@ use crate::lookup_position;
 use rand::seq::SliceRandom;
 use rand::Rng;
 use rand::thread_rng;
+use web_sys::console;
 
 /// Returns a random legal move (Level 1 - Novice).
 /// Includes 50% randomness - may pick a sub-optimal move.
@@ -24,11 +25,13 @@ pub fn get_best_move_novice(board: &Board) -> Option<Move> {
 
     // 50% chance of picking a random move (blunder)
     if rng.gen_bool(0.5) {
+        console::log_1(&"Level 1 (Novice): Choosing random move (50% blunder chance)".into());
         moves.shuffle(&mut rng);
         return Some(moves[0]);
     }
 
     // Otherwise pick the best move using greedy evaluation
+    console::log_1(&"Level 1 (Novice): Evaluating moves greedily...".into());
     let side = board.side_to_move;
     let mut best_move = None;
     let mut best_score = if side == Color::White {
@@ -36,8 +39,9 @@ pub fn get_best_move_novice(board: &Board) -> Option<Move> {
     } else {
         i32::MAX
     };
+    let start = web_sys::js_sys::Date::now();
 
-    for m in &moves {
+    for (_i, m) in moves.iter().enumerate() {
         let mut board_copy = board.clone();
         board_copy.make_move(*m);
         let score = evaluate(&board_copy);
@@ -55,6 +59,8 @@ pub fn get_best_move_novice(board: &Board) -> Option<Move> {
         }
     }
 
+    let elapsed = web_sys::js_sys::Date::now() - start;
+    console::log_1(&format!("Level 1 (Novice): Selected best move from {} options in {:.0}ms", moves.len(), elapsed).into());
     best_move
 }
 
@@ -69,6 +75,9 @@ pub fn get_best_move_with_depth(board: &Board, max_depth: u8) -> Option<Move> {
 
     let side = board.side_to_move;
     let mut best_move: Option<Move> = None;
+    let total_start = js_sys::Date::now();
+    
+    console::log_1(&format!("Engine: Starting iterative deepening search (max depth: {})", max_depth).into());
     
     // Iterative deepening: search at increasing depths
     for depth in 1..=max_depth {
@@ -76,6 +85,9 @@ pub fn get_best_move_with_depth(board: &Board, max_depth: u8) -> Option<Move> {
         if depth == 1 {
             crate::clear_tt();
         }
+        
+        let depth_start = js_sys::Date::now();
+        console::log_1(&format!("Engine: depth {}/{} searching...", depth, max_depth).into());
         
         let mut current_best = None;
         let mut best_score = i32::MIN;
@@ -103,8 +115,14 @@ pub fn get_best_move_with_depth(board: &Board, max_depth: u8) -> Option<Move> {
         if let Some(m) = current_best {
             best_move = Some(m);
         }
+        
+        let depth_elapsed = js_sys::Date::now() - depth_start;
+        console::log_1(&format!("Engine: depth {}/{} [{}ms] score={}", depth, max_depth, depth_elapsed as u32, best_score).into());
     }
 
+    let total_elapsed = js_sys::Date::now() - total_start;
+    console::log_1(&format!("Engine: Search complete in {:.0}ms", total_elapsed).into());
+    
     best_move
 }
 
