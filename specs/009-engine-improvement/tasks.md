@@ -13,23 +13,23 @@
 
 ## Phase2: Tactical Refinement
 
-- [ ] T006 Implement Quiescence Search in `src/ai/search.rs` to handle captures
-- [ ] T007 Implement Mobility evaluation in `src/ai/evaluation.rs`
-- [ ] T008 Implement King Safety evaluation in `src/ai/evaluation.rs`
-- [ ] T009 Implement Level 5 & 6 (Advanced, Skilled) with Mobility and King Safety
-- [ ] T010 Implement Level 7 (Expert) with Quiescence Search and Pawn Structure
+- [x] T006 Implement Quiescence Search in `src/ai/search.rs` to handle captures
+- [x] T007 Implement Mobility evaluation in `src/ai/evaluation.rs`
+- [x] T008 Implement King Safety evaluation in `src/ai/evaluation.rs`
+- [x] T009 Implement Level 5 & 6 (Advanced, Skilled) with Mobility and King Safety
+- [x] T010 Implement Level 7 (Expert) with Quiescence Search and Pawn Structure
 
 ## Phase3: Search Optimizations
 
-- [ ] T011 Implement Zobrist Hashing for board positions in `src/board/mod.rs`
-- [ ] T012 Implement Transposition Tables in `src/ai/transposition.rs`
-- [ ] T013 Implement Move Ordering (MVV-LVA) in `src/ai/move_ordering.rs`
-- [ ] T014 Implement Level 8 (Master) with Transposition Tables
+- [x] T011 Implement Zobrist Hashing for board positions in `src/board/mod.rs`
+- [x] T012 Implement Transposition Tables in `src/ai/transposition.rs`
+- [x] T013 Implement Move Ordering (MVV-LVA) in `src/ai/move_ordering.rs`
+- [x] T014 Implement Level 8 (Master) with Transposition Tables
 
 ## Phase4: Advanced Control & WASM
 
-- [x] T015 Implement Iterative Deepening in `src/ai/search.rs` (basic depth-based search implemented)
-- [ ] T016 Implement Level 9 & 10 (Grandmaster, Engine) with Iterative Deepening
+- [x] T015 Implement Iterative Deepening in `src/ai/search.rs`
+- [x] T016 Implement Level 9 & 10 (Grandmaster, Engine) with Iterative Deepening
 - [x] T017 Update WASM bridge in `src/wasm.rs` to expose difficulty levels
 - [x] T018 Integrate difficulty selector in the web UI (`www/js/index.js` and `www/index.html`)
 

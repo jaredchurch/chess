@@ -7,6 +7,8 @@
 pub mod greedy;
 pub mod evaluation;
 pub mod search;
+pub mod transposition;
+pub mod move_ordering;
 
 use crate::board::Board;
 use crate::board::move_struct::Move;

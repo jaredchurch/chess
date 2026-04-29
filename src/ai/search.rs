@@ -7,6 +7,7 @@ use crate::board::Board;
 use crate::board::move_struct::Move;
 use crate::board::types::Color;
 use crate::ai::evaluation::evaluate;
+use crate::lookup_position;
 use rand::seq::SliceRandom;
 use rand::Rng;
 use rand::thread_rng;
@@ -57,62 +58,185 @@ pub fn get_best_move_novice(board: &Board) -> Option<Move> {
     best_move
 }
 
-/// Finds the best move using Minimax with Alpha-Beta pruning at a given depth.
+/// Finds the best move using Iterative Deepening with Alpha-Beta pruning.
 /// Used for Levels 3+ (Casual and above).
-pub fn get_best_move_with_depth(board: &Board, depth: u8) -> Option<Move> {
+/// Gradually increases search depth, keeping the best move from each iteration.
+pub fn get_best_move_with_depth(board: &Board, max_depth: u8) -> Option<Move> {
     let moves = board.generate_legal_moves();
     if moves.is_empty() {
         return None;
     }
 
     let side = board.side_to_move;
-    let mut best_move = None;
-    let mut best_score = i32::MIN;
+    let mut best_move: Option<Move> = None;
+    
+    // Iterative deepening: search at increasing depths
+    for depth in 1..=max_depth {
+        // Clear transposition table for new search (optional, helps with memory)
+        if depth == 1 {
+            crate::clear_tt();
+        }
+        
+        let mut current_best = None;
+        let mut best_score = i32::MIN;
+        
+        // Re-sort moves with the previous best move first
+        let mut depth_moves = moves.clone();
+        if let Some(prev_move) = best_move {
+            if let Some(pos) = depth_moves.iter().position(|m| m.from == prev_move.from && m.to == prev_move.to) {
+                depth_moves.swap(0, pos);
+            }
+        }
+        
+        for m in &depth_moves {
+            let mut board_copy = board.clone();
+            board_copy.make_move(*m);
+            let score = -alpha_beta(&board_copy, depth - 1, i32::MIN, i32::MAX, side);
 
-    for m in &moves {
-        let mut board_copy = board.clone();
-        board_copy.make_move(*m);
-        let score = -alpha_beta(&board_copy, depth - 1, i32::MIN, i32::MAX, side);
-
-        if score > best_score {
-            best_score = score;
-            best_move = Some(*m);
+            if score > best_score {
+                best_score = score;
+                current_best = Some(*m);
+            }
+        }
+        
+        // Update best move found so far
+        if let Some(m) = current_best {
+            best_move = Some(m);
         }
     }
 
     best_move
 }
 
-/// Alpha-Beta pruning implementation.
+/// Alpha-Beta pruning implementation with transposition table.
 /// Returns the evaluated score for the position from the perspective of `maximizing_side`.
 fn alpha_beta(board: &Board, depth: u8, mut alpha: i32, mut beta: i32, maximizing_side: Color) -> i32 {
-    if depth == 0 {
-        return evaluate(board);
+    let board_hash = board.zobrist_hash;
+
+    // Check transposition table
+    if let Some(cached_score) = lookup_position(board_hash, depth, alpha, beta) {
+        return cached_score;
     }
 
-    let moves = board.generate_legal_moves();
+    if depth == 0 {
+        return quiescence(board, alpha, beta, maximizing_side);
+    }
+
+    let mut moves = board.generate_legal_moves();
     if moves.is_empty() {
         // Check if it's checkmate or stalemate
         if crate::move_gen::is_in_check(board, board.side_to_move) {
             // Checkmate: return a large negative score (bad for side to move)
-            return if board.side_to_move == maximizing_side {
+            let score = if board.side_to_move == maximizing_side {
                 -20000 - depth as i32
             } else {
                 20000 + depth as i32
             };
+            crate::store_position(board_hash, depth, score, true, None);
+            return score;
         }
         // Stalemate: return 0
+        crate::store_position(board_hash, depth, 0, true, None);
         return 0;
     }
 
     let is_maximizing = board.side_to_move == maximizing_side;
+    let mut best_move = None;
 
+    // Sort moves for better pruning (MVV-LVA)
+    crate::ai::move_ordering::sort_moves(&mut moves, board);
+    
     if is_maximizing {
         let mut max_eval = i32::MIN;
         for m in &moves {
             let mut board_copy = board.clone();
             board_copy.make_move(*m);
             let eval = alpha_beta(&board_copy, depth - 1, alpha, beta, maximizing_side);
+            if eval > max_eval {
+                max_eval = eval;
+                best_move = Some((m.from as u8, m.to as u8, move_flag_to_u8(&m.flag)));
+            }
+            alpha = alpha.max(eval);
+            if beta <= alpha {
+                break;
+            }
+        }
+        crate::store_position(board_hash, depth, max_eval, true, best_move);
+        max_eval
+    } else {
+        let mut min_eval = i32::MAX;
+        for m in &moves {
+            let mut board_copy = board.clone();
+            board_copy.make_move(*m);
+            let eval = alpha_beta(&board_copy, depth - 1, alpha, beta, maximizing_side);
+            if eval < min_eval {
+                min_eval = eval;
+                best_move = Some((m.from as u8, m.to as u8, move_flag_to_u8(&m.flag)));
+            }
+            beta = beta.min(eval);
+            if beta <= alpha {
+                break;
+            }
+        }
+        crate::store_position(board_hash, depth, min_eval, true, best_move);
+        min_eval
+    }
+}
+
+/// Converts MoveFlag to u8 for storage in transposition table.
+fn move_flag_to_u8(flag: &crate::board::move_struct::MoveFlag) -> u8 {
+    match flag {
+        crate::board::move_struct::MoveFlag::Quiet => 0,
+        crate::board::move_struct::MoveFlag::Capture => 1,
+        crate::board::move_struct::MoveFlag::DoublePawnPush => 2,
+        crate::board::move_struct::MoveFlag::KingsideCastling => 3,
+        crate::board::move_struct::MoveFlag::QueensideCastling => 4,
+        crate::board::move_struct::MoveFlag::EnPassantCapture => 5,
+        crate::board::move_struct::MoveFlag::Promotion(_) => 6,
+    }
+}
+
+/// Quiescence search to evaluate "quiet" positions at depth 0.
+/// Only explores capture moves to avoid the horizon effect.
+fn quiescence(board: &Board, mut alpha: i32, mut beta: i32, maximizing_side: Color) -> i32 {
+    // Stand pat: evaluate current position
+    let stand_pat = evaluate(board);
+    
+    let is_maximizing = board.side_to_move == maximizing_side;
+    
+    if is_maximizing {
+        if stand_pat > alpha {
+            alpha = stand_pat;
+        }
+        if alpha >= beta {
+            return alpha;
+        }
+    } else {
+        if stand_pat < beta {
+            beta = stand_pat;
+        }
+        if beta <= alpha {
+            return beta;
+        }
+    }
+    
+    // Only generate capture moves (pseudo-legal captures)
+    let moves = board.generate_legal_moves();
+    let capture_moves: Vec<_> = moves.into_iter().filter(|m| {
+        // Check if this is a capture by seeing if there's a piece at the destination
+        board.get_piece_at(m.to).is_some() || m.flag == crate::board::move_struct::MoveFlag::EnPassantCapture
+    }).collect();
+    
+    if capture_moves.is_empty() {
+        return stand_pat;
+    }
+    
+    if is_maximizing {
+        let mut max_eval = stand_pat;
+        for m in &capture_moves {
+            let mut board_copy = board.clone();
+            board_copy.make_move(*m);
+            let eval = quiescence(&board_copy, alpha, beta, maximizing_side);
             max_eval = max_eval.max(eval);
             alpha = alpha.max(eval);
             if beta <= alpha {
@@ -121,11 +245,11 @@ fn alpha_beta(board: &Board, depth: u8, mut alpha: i32, mut beta: i32, maximizin
         }
         max_eval
     } else {
-        let mut min_eval = i32::MAX;
-        for m in &moves {
+        let mut min_eval = stand_pat;
+        for m in &capture_moves {
             let mut board_copy = board.clone();
             board_copy.make_move(*m);
-            let eval = alpha_beta(&board_copy, depth - 1, alpha, beta, maximizing_side);
+            let eval = quiescence(&board_copy, alpha, beta, maximizing_side);
             min_eval = min_eval.min(eval);
             beta = beta.min(eval);
             if beta <= alpha {

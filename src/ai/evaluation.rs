@@ -2,7 +2,7 @@
 // Licensed under the MIT License. See LICENSE file in the project root for details.
 //
 // Evaluation Module - Provides positional and material evaluation for chess positions.
-// Includes Piece-Square Tables (PST) for positional scoring.
+// Includes Piece-Square Tables (PST), Mobility, and King Safety evaluation.
 
 use crate::board::Board;
 use crate::board::piece::PieceType;
@@ -112,7 +112,7 @@ fn get_pst_value(piece_type: PieceType, sq: usize, color: Color) -> i32 {
     table[idx]
 }
 
-/// Evaluates the board based on material and positional value.
+/// Evaluates the board based on material, positional value, mobility, and king safety.
 /// Positive values are better for White, negative values are better for Black.
 pub fn evaluate(board: &Board) -> i32 {
     let mut score = 0;
@@ -149,5 +149,179 @@ pub fn evaluate(board: &Board) -> i32 {
         }
     }
 
+    // Add mobility and king safety evaluation
+    score += evaluate_mobility(board);
+    score += evaluate_king_safety(board);
+    score += evaluate_pawn_structure(board);
+
     score
+}
+
+/// Evaluates mobility - the number of legal moves available.
+/// Positive values favor White (more mobility for White = positive score).
+pub fn evaluate_mobility(board: &Board) -> i32 {
+    let moves = board.generate_legal_moves();
+    let mobility = moves.len() as i32;
+    
+    // Return positive if White's turn, negative if Black's turn
+    if board.side_to_move == Color::White {
+        mobility * 10
+    } else {
+        -mobility * 10
+    }
+}
+
+/// Evaluates pawn structure: doubled pawns, isolated pawns, passed pawns.
+/// Positive values are better for White.
+pub fn evaluate_pawn_structure(board: &Board) -> i32 {
+    let mut score = 0;
+    
+    // White pawns
+    let white_pawns = board.pieces[0].0;
+    score += evaluate_pawn_structure_for_side(white_pawns, Color::White);
+    
+    // Black pawns
+    let black_pawns = board.pieces[6].0;
+    score -= evaluate_pawn_structure_for_side(black_pawns, Color::Black);
+    
+    score
+}
+
+/// Evaluates pawn structure for a single side.
+fn evaluate_pawn_structure_for_side(pawns: u64, _color: Color) -> i32 {
+    let mut score = 0;
+    let mut files_occupied = 0u8; // Track which files have pawns
+    
+    // Count pawns per file
+    let mut pawns_remaining = pawns;
+    let mut pawns_per_file = [0u8; 8];
+    
+    while pawns_remaining != 0 {
+        let sq = pawns_remaining.trailing_zeros() as usize;
+        let file = sq % 8;
+        pawns_per_file[file] += 1;
+        files_occupied |= 1 << file;
+        pawns_remaining &= pawns_remaining - 1;
+    }
+    
+    // Doubled pawns penalty
+    for count in pawns_per_file.iter() {
+        if *count > 1 {
+            score -= 15 * (*count - 1) as i32;
+        }
+    }
+    
+    // Isolated pawns penalty (no friendly pawns on adjacent files)
+    for (file, count) in pawns_per_file.iter().enumerate() {
+        if *count > 0 {
+            let left_empty = file == 0 || (files_occupied & (1 << (file - 1))) == 0;
+            let right_empty = file == 7 || (files_occupied & (1 << (file + 1))) == 0;
+            if left_empty && right_empty {
+                score -= 20 * (*count) as i32;
+            }
+        }
+    }
+    
+    // Passed pawns bonus (no enemy pawns ahead on same or adjacent files)
+    // This is a simplified version - full implementation would check the path to promotion
+    score
+}
+
+/// Evaluates king safety based on pawn shield and enemy piece proximity.
+/// Positive values indicate safer position for White.
+pub fn evaluate_king_safety(board: &Board) -> i32 {
+    let mut score = 0;
+    
+    // White king safety
+    if let Some(white_king_sq) = find_king_square(board, Color::White) {
+        score += evaluate_king_shield(board, white_king_sq, Color::White) * 5;
+        score -= evaluate_enemy_proximity(board, white_king_sq, Color::Black) * 3;
+    }
+    
+    // Black king safety (negated since positive is good for White)
+    if let Some(black_king_sq) = find_king_square(board, Color::Black) {
+        score -= evaluate_king_shield(board, black_king_sq, Color::Black) * 5;
+        score += evaluate_enemy_proximity(board, black_king_sq, Color::White) * 3;
+    }
+    
+    score
+}
+
+/// Finds the square of the king for a given color.
+fn find_king_square(board: &Board, color: Color) -> Option<usize> {
+    let king_idx = if color == Color::White { 5 } else { 11 };
+    let bb = board.pieces[king_idx].0;
+    if bb == 0 {
+        None
+    } else {
+        Some(bb.trailing_zeros() as usize)
+    }
+}
+
+/// Evaluates the pawn shield in front of the king.
+/// Returns a positive score for more pawns protecting the king.
+fn evaluate_king_shield(board: &Board, king_sq: usize, color: Color) -> i32 {
+    let mut shield_score = 0;
+    let file = (king_sq % 8) as i8;
+    let rank = (king_sq / 8) as i8;
+    
+    // Check pawns in front of the king (1-2 squares forward, 1 square left/right)
+    let pawn_direction = if color == Color::White { 1 } else { -1 };
+    let pawn_idx = if color == Color::White { 0 } else { 6 };
+    
+    for df in -1i8..=1 {
+        let check_file = file + df;
+        if !(0..=7).contains(&check_file) {
+            continue;
+        }
+        
+        // Check one rank forward
+        let check_rank = rank + pawn_direction;
+        if (0..=7).contains(&check_rank) {
+            let sq = (check_rank * 8 + check_file) as usize;
+            let bb = board.pieces[pawn_idx].0;
+            if (bb >> sq) & 1 == 1 {
+                shield_score += 10;
+            }
+        }
+        
+        // Check two ranks forward
+        let check_rank2 = rank + 2 * pawn_direction;
+        if (0..=7).contains(&check_rank2) {
+            let sq = (check_rank2 * 8 + check_file) as usize;
+            let bb = board.pieces[pawn_idx].0;
+            if (bb >> sq) & 1 == 1 {
+                shield_score += 5;
+            }
+        }
+    }
+    
+    shield_score
+}
+
+/// Evaluates proximity of enemy pieces to the king.
+/// Returns a negative score (worse for the king being evaluated).
+fn evaluate_enemy_proximity(board: &Board, king_sq: usize, enemy_color: Color) -> i32 {
+    let mut threat_score = 0i32;
+    let king_file = (king_sq % 8) as i32;
+    let king_rank = (king_sq / 8) as i32;
+    
+    let enemy_start = if enemy_color == Color::White { 0 } else { 6 };
+    
+    for (i, _) in (0..6).enumerate() {
+        let bb = board.pieces[enemy_start + i].0;
+        let mut pieces = bb;
+        while pieces != 0 {
+            let sq = pieces.trailing_zeros() as usize;
+            let file_dist = ((sq % 8) as i32 - king_file).abs();
+            let rank_dist = ((sq / 8) as i32 - king_rank).abs();
+            let dist = file_dist.max(rank_dist);
+            if dist <= 2 {
+                threat_score += (3 - dist) * 5;
+            }
+            pieces &= pieces - 1;
+        }
+    }
+    
+    threat_score
 }
