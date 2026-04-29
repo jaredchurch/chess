@@ -77,4 +77,7 @@ window.closeSettingsMenu = function() {
 window.togglePanelDisplay = function(id, visible) {
     const el = document.getElementById(id);
     if (el) el.style.display = visible ? 'block' : 'none';
+    requestAnimationFrame(() => {
+        if (typeof updateBoardSize === 'function') updateBoardSize();
+    });
 };

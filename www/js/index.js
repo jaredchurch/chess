@@ -46,12 +46,42 @@ let playerColor = window.playerColor || 'random';
 let capturedPieces = { white: [], black: [] };
 let boardOrientation = 'white';
 
+window.updateBoardSize = function() {
+    const board = document.getElementById('board');
+    if (!board) return;
+    const isMobile = window.innerWidth <= 700;
+    let size;
+    if (isMobile) {
+        const availableWidth = window.innerWidth - 20;
+        const availableHeight = window.innerHeight - 120;
+        size = Math.min(availableWidth, availableHeight);
+    } else {
+        const infoPanel = document.getElementById('info-panel');
+        const panelWidth = infoPanel ? infoPanel.offsetWidth + 20 : 300;
+        const availableWidth = window.innerWidth - panelWidth - 40;
+        const availableHeight = window.innerHeight - 140;
+        size = Math.min(availableWidth, availableHeight);
+    }
+    size = Math.floor(Math.max(size, 200));
+    board.style.width = size + 'px';
+    board.style.height = size + 'px';
+    const squareFontSize = Math.floor(size / 10);
+    board.style.fontSize = squareFontSize + 'px';
+};
+
+let resizeTimeout;
+window.addEventListener('resize', () => {
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(() => requestAnimationFrame(updateBoardSize), 100);
+});
+
 async function start() {
     await init();
     window.buildTimestamp = get_build_timestamp();
     window.buildProfile = get_build_profile();
     activeProfile = initProfile();
     restoreInProgressGame();
+    updateBoardSize();
     updateUI();
 }
 
