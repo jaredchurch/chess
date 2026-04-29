@@ -40,5 +40,5 @@
 - [ ] T021 Verify performance in browser via WASM
 
 ## UAT Feedback
-- [] BUG001: the search algorithms take too long.
+- [] BUG001: the search algorithms take too long (in level 10 it seems to get stuck at step 5 search (per console log) - not sure if this is a bug in step 5, or just that step 5 takes a really long time.
 - [] BUG002: Even at "advanced" level I don't seem the machine driving hard to checkmate me, and everything seems more one piece at a time focussed rather than setting up strategies to pin, skewer or fork me.

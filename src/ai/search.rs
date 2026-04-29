@@ -83,6 +83,7 @@ pub fn get_best_move_with_depth(board: &Board, max_depth: u8) -> Option<Move> {
         return None;
     }
 
+    #[allow(unused_variables)]
     let side = board.side_to_move;
     let mut best_move: Option<Move> = None;
     let total_start = js_sys::Date::now();
@@ -106,8 +107,8 @@ pub fn get_best_move_with_depth(board: &Board, max_depth: u8) -> Option<Move> {
         console::log_1(&format!("Engine: depth {}/{} searching...", depth, max_depth).into());
         
         let mut current_best = None;
-        let mut best_score = i32::MIN;
-        let mut alpha = i32::MIN;
+        let mut best_score = i32::MIN + 1;
+        let mut alpha = i32::MIN + 1;
         let beta = i32::MAX;
         
         // Re-sort moves with the previous best move first
@@ -127,8 +128,10 @@ pub fn get_best_move_with_depth(board: &Board, max_depth: u8) -> Option<Move> {
             
             let mut board_copy = board.clone();
             board_copy.make_move(*m);
-            let score = -alpha_beta(&board_copy, depth - 1, -beta, -alpha, side, total_start);
-
+            // Negamax: score is from perspective of side to move after the move
+            // So we negate the result, and the opponent's alpha/beta become our -beta/-alpha
+            let score = -alpha_beta(&board_copy, depth - 1, -beta, -alpha, total_start);
+            
             if score > best_score {
                 best_score = score;
                 current_best = Some(*m);
@@ -162,13 +165,12 @@ pub fn get_best_move_with_depth(board: &Board, max_depth: u8) -> Option<Move> {
     best_move
 }
 
-/// Alpha-Beta pruning implementation with transposition table.
-/// Returns the evaluated score for the position from the perspective of `maximizing_side`.
+/// Alpha-Beta pruning implementation using Negamax formulation.
+/// Returns the evaluated score for the position from the perspective of the side to move.
 /// Checks for timeout at each node to prevent excessively long searches.
-fn alpha_beta(board: &Board, depth: u8, mut alpha: i32, mut beta: i32, maximizing_side: Color, start_time: f64) -> i32 {
+fn alpha_beta(board: &Board, depth: u8, mut alpha: i32, beta: i32, start_time: f64) -> i32 {
     // Check timeout at each node
     if is_timeout(start_time) {
-        // Return a neutral score if timeout occurs
         return evaluate(board);
     }
     
@@ -180,7 +182,7 @@ fn alpha_beta(board: &Board, depth: u8, mut alpha: i32, mut beta: i32, maximizin
     }
 
     if depth == 0 {
-        return quiescence(board, alpha, beta, maximizing_side, start_time);
+        return quiescence(board, alpha, beta, start_time);
     }
 
     let mut moves = board.generate_legal_moves();
@@ -188,11 +190,8 @@ fn alpha_beta(board: &Board, depth: u8, mut alpha: i32, mut beta: i32, maximizin
         // Check if it's checkmate or stalemate
         if crate::move_gen::is_in_check(board, board.side_to_move) {
             // Checkmate: return a large negative score (bad for side to move)
-            let score = if board.side_to_move == maximizing_side {
-                -20000 - depth as i32
-            } else {
-                20000 + depth as i32
-            };
+            // Negate because we return from perspective of side to move
+            let score = -20000 - depth as i32;
             crate::store_position(board_hash, depth, score, true, None);
             return score;
         }
@@ -201,47 +200,31 @@ fn alpha_beta(board: &Board, depth: u8, mut alpha: i32, mut beta: i32, maximizin
         return 0;
     }
 
-    let is_maximizing = board.side_to_move == maximizing_side;
     let mut best_move = None;
+    let mut best_value = i32::MIN + 1; // Use MIN+1 to avoid overflow issues
 
     // Sort moves for better pruning (MVV-LVA)
     crate::ai::move_ordering::sort_moves(&mut moves, board);
     
-    if is_maximizing {
-        let mut max_eval = i32::MIN;
-        for m in &moves {
-            let mut board_copy = board.clone();
-            board_copy.make_move(*m);
-            let eval = alpha_beta(&board_copy, depth - 1, alpha, beta, maximizing_side, start_time);
-            if eval > max_eval {
-                max_eval = eval;
-                best_move = Some((m.from as u8, m.to as u8, move_flag_to_u8(&m.flag)));
-            }
-            alpha = alpha.max(eval);
-            if beta <= alpha {
-                break;
-            }
+    for m in &moves {
+        let mut board_copy = board.clone();
+        board_copy.make_move(*m);
+        // Negamax: negate the returned score and swap alpha/beta
+        let eval = -alpha_beta(&board_copy, depth - 1, -beta, -alpha, start_time);
+        
+        if eval > best_value {
+            best_value = eval;
+            best_move = Some((m.from as u8, m.to as u8, move_flag_to_u8(&m.flag)));
         }
-        crate::store_position(board_hash, depth, max_eval, true, best_move);
-        max_eval
-    } else {
-        let mut min_eval = i32::MAX;
-        for m in &moves {
-            let mut board_copy = board.clone();
-            board_copy.make_move(*m);
-            let eval = alpha_beta(&board_copy, depth - 1, alpha, beta, maximizing_side, start_time);
-            if eval < min_eval {
-                min_eval = eval;
-                best_move = Some((m.from as u8, m.to as u8, move_flag_to_u8(&m.flag)));
-            }
-            beta = beta.min(eval);
-            if beta <= alpha {
-                break;
-            }
+        
+        alpha = alpha.max(eval);
+        if alpha >= beta {
+            break; // Beta cutoff
         }
-        crate::store_position(board_hash, depth, min_eval, true, best_move);
-        min_eval
     }
+    
+    crate::store_position(board_hash, depth, best_value, true, best_move);
+    best_value
 }
 
 /// Converts MoveFlag to u8 for storage in transposition table.
@@ -259,32 +242,22 @@ fn move_flag_to_u8(flag: &crate::board::move_struct::MoveFlag) -> u8 {
 
 /// Quiescence search to evaluate "quiet" positions at depth 0.
 /// Only explores capture moves to avoid the horizon effect.
+/// Uses Negamax formulation - returns score from perspective of side to move.
 /// Includes timeout checking to prevent excessive capture sequence searches.
-fn quiescence(board: &Board, mut alpha: i32, mut beta: i32, maximizing_side: Color, start_time: f64) -> i32 {
+fn quiescence(board: &Board, mut alpha: i32, beta: i32, start_time: f64) -> i32 {
     // Check timeout
     if is_timeout(start_time) {
         return evaluate(board);
     }
     
-    // Stand pat: evaluate current position
+    // Stand pat: evaluate current position from perspective of side to move
     let stand_pat = evaluate(board);
     
-    let is_maximizing = board.side_to_move == maximizing_side;
-    
-    if is_maximizing {
-        if stand_pat > alpha {
-            alpha = stand_pat;
-        }
-        if alpha >= beta {
-            return alpha;
-        }
-    } else {
-        if stand_pat < beta {
-            beta = stand_pat;
-        }
-        if beta <= alpha {
-            return beta;
-        }
+    if stand_pat > alpha {
+        alpha = stand_pat;
+    }
+    if alpha >= beta {
+        return alpha;
     }
     
     // Only generate capture moves
@@ -301,41 +274,22 @@ fn quiescence(board: &Board, mut alpha: i32, mut beta: i32, maximizing_side: Col
     let max_captures = 15;
     let capture_moves: Vec<_> = capture_moves.into_iter().take(max_captures).collect();
     
-    if is_maximizing {
-        let mut max_eval = stand_pat;
-        for m in &capture_moves {
-            // Check timeout during quiescence search
-            if is_timeout(start_time) {
-                return max_eval;
-            }
-            
-            let mut board_copy = board.clone();
-            board_copy.make_move(*m);
-            let eval = quiescence(&board_copy, alpha, beta, maximizing_side, start_time);
-            max_eval = max_eval.max(eval);
-            alpha = alpha.max(eval);
-            if beta <= alpha {
-                break;
-            }
+    let mut best_value = stand_pat;
+    for m in &capture_moves {
+        // Check timeout during quiescence search
+        if is_timeout(start_time) {
+            return best_value;
         }
-        max_eval
-    } else {
-        let mut min_eval = stand_pat;
-        for m in &capture_moves {
-            // Check timeout during quiescence search
-            if is_timeout(start_time) {
-                return min_eval;
-            }
-            
-            let mut board_copy = board.clone();
-            board_copy.make_move(*m);
-            let eval = quiescence(&board_copy, alpha, beta, maximizing_side, start_time);
-            min_eval = min_eval.min(eval);
-            beta = beta.min(eval);
-            if beta <= alpha {
-                break;
-            }
+        
+        let mut board_copy = board.clone();
+        board_copy.make_move(*m);
+        // Negamax: negate the score
+        let eval = -quiescence(&board_copy, -beta, -alpha, start_time);
+        best_value = best_value.max(eval);
+        alpha = alpha.max(eval);
+        if alpha >= beta {
+            break;
         }
-        min_eval
     }
+    best_value
 }
