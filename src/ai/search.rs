@@ -13,6 +13,16 @@ use rand::Rng;
 use rand::thread_rng;
 use web_sys::console;
 
+/// Maximum time allowed for engine search (in milliseconds)
+const MAX_SEARCH_TIME_MS: f64 = 30000.0; // 30 seconds
+
+/// Checks if the search has exceeded the maximum allowed time.
+/// Returns true if timeout occurred, false otherwise.
+fn is_timeout(start_time: f64) -> bool {
+    let elapsed = js_sys::Date::now() - start_time;
+    elapsed > MAX_SEARCH_TIME_MS
+}
+
 /// Returns a random legal move (Level 1 - Novice).
 /// Includes 50% randomness - may pick a sub-optimal move.
 pub fn get_best_move_novice(board: &Board) -> Option<Move> {
@@ -77,13 +87,19 @@ pub fn get_best_move_with_depth(board: &Board, max_depth: u8) -> Option<Move> {
     let mut best_move: Option<Move> = None;
     let total_start = js_sys::Date::now();
     
-    console::log_1(&format!("Engine: Starting iterative deepening search (max depth: {})", max_depth).into());
+    console::log_1(&format!("Engine: Starting iterative deepening search (max depth: {}, max time: {}ms)", max_depth, MAX_SEARCH_TIME_MS).into());
     
     // Iterative deepening: search at increasing depths
     for depth in 1..=max_depth {
-        // Clear transposition table for new search (optional, helps with memory)
+        // Clear transposition table for new search
         if depth == 1 {
             crate::clear_tt();
+        }
+        
+        // Check timeout before starting new depth
+        if is_timeout(total_start) {
+            console::log_1(&format!("Engine: Timeout reached after {}ms, returning best move found", MAX_SEARCH_TIME_MS).into());
+            break;
         }
         
         let depth_start = js_sys::Date::now();
@@ -91,6 +107,8 @@ pub fn get_best_move_with_depth(board: &Board, max_depth: u8) -> Option<Move> {
         
         let mut current_best = None;
         let mut best_score = i32::MIN;
+        let mut alpha = i32::MIN;
+        let beta = i32::MAX;
         
         // Re-sort moves with the previous best move first
         let mut depth_moves = moves.clone();
@@ -101,23 +119,41 @@ pub fn get_best_move_with_depth(board: &Board, max_depth: u8) -> Option<Move> {
         }
         
         for m in &depth_moves {
+            // Check timeout during move evaluation
+            if is_timeout(total_start) {
+                console::log_1(&"Engine: Timeout reached during move evaluation".into());
+                break;
+            }
+            
             let mut board_copy = board.clone();
             board_copy.make_move(*m);
-            let score = -alpha_beta(&board_copy, depth - 1, i32::MIN, i32::MAX, side);
+            let score = -alpha_beta(&board_copy, depth - 1, -beta, -alpha, side, total_start);
 
             if score > best_score {
                 best_score = score;
                 current_best = Some(*m);
             }
+            
+            // Update alpha for root pruning
+            if score > alpha {
+                alpha = score;
+            }
+            
+            // Beta cutoff at root
+            if alpha >= beta {
+                break;
+            }
         }
         
-        // Update best move found so far
+        // Update best move found so far (only if we completed the depth)
         if let Some(m) = current_best {
             best_move = Some(m);
+            let depth_elapsed = js_sys::Date::now() - depth_start;
+            console::log_1(&format!("Engine: depth {}/{} [{}ms] score={}", depth, max_depth, depth_elapsed as u32, best_score).into());
+        } else {
+            // Timeout occurred, don't update best_move
+            break;
         }
-        
-        let depth_elapsed = js_sys::Date::now() - depth_start;
-        console::log_1(&format!("Engine: depth {}/{} [{}ms] score={}", depth, max_depth, depth_elapsed as u32, best_score).into());
     }
 
     let total_elapsed = js_sys::Date::now() - total_start;
@@ -128,7 +164,14 @@ pub fn get_best_move_with_depth(board: &Board, max_depth: u8) -> Option<Move> {
 
 /// Alpha-Beta pruning implementation with transposition table.
 /// Returns the evaluated score for the position from the perspective of `maximizing_side`.
-fn alpha_beta(board: &Board, depth: u8, mut alpha: i32, mut beta: i32, maximizing_side: Color) -> i32 {
+/// Checks for timeout at each node to prevent excessively long searches.
+fn alpha_beta(board: &Board, depth: u8, mut alpha: i32, mut beta: i32, maximizing_side: Color, start_time: f64) -> i32 {
+    // Check timeout at each node
+    if is_timeout(start_time) {
+        // Return a neutral score if timeout occurs
+        return evaluate(board);
+    }
+    
     let board_hash = board.zobrist_hash;
 
     // Check transposition table
@@ -137,7 +180,7 @@ fn alpha_beta(board: &Board, depth: u8, mut alpha: i32, mut beta: i32, maximizin
     }
 
     if depth == 0 {
-        return quiescence(board, alpha, beta, maximizing_side);
+        return quiescence(board, alpha, beta, maximizing_side, start_time);
     }
 
     let mut moves = board.generate_legal_moves();
@@ -169,7 +212,7 @@ fn alpha_beta(board: &Board, depth: u8, mut alpha: i32, mut beta: i32, maximizin
         for m in &moves {
             let mut board_copy = board.clone();
             board_copy.make_move(*m);
-            let eval = alpha_beta(&board_copy, depth - 1, alpha, beta, maximizing_side);
+            let eval = alpha_beta(&board_copy, depth - 1, alpha, beta, maximizing_side, start_time);
             if eval > max_eval {
                 max_eval = eval;
                 best_move = Some((m.from as u8, m.to as u8, move_flag_to_u8(&m.flag)));
@@ -186,7 +229,7 @@ fn alpha_beta(board: &Board, depth: u8, mut alpha: i32, mut beta: i32, maximizin
         for m in &moves {
             let mut board_copy = board.clone();
             board_copy.make_move(*m);
-            let eval = alpha_beta(&board_copy, depth - 1, alpha, beta, maximizing_side);
+            let eval = alpha_beta(&board_copy, depth - 1, alpha, beta, maximizing_side, start_time);
             if eval < min_eval {
                 min_eval = eval;
                 best_move = Some((m.from as u8, m.to as u8, move_flag_to_u8(&m.flag)));
@@ -216,7 +259,13 @@ fn move_flag_to_u8(flag: &crate::board::move_struct::MoveFlag) -> u8 {
 
 /// Quiescence search to evaluate "quiet" positions at depth 0.
 /// Only explores capture moves to avoid the horizon effect.
-fn quiescence(board: &Board, mut alpha: i32, mut beta: i32, maximizing_side: Color) -> i32 {
+/// Includes timeout checking to prevent excessive capture sequence searches.
+fn quiescence(board: &Board, mut alpha: i32, mut beta: i32, maximizing_side: Color, start_time: f64) -> i32 {
+    // Check timeout
+    if is_timeout(start_time) {
+        return evaluate(board);
+    }
+    
     // Stand pat: evaluate current position
     let stand_pat = evaluate(board);
     
@@ -238,10 +287,9 @@ fn quiescence(board: &Board, mut alpha: i32, mut beta: i32, maximizing_side: Col
         }
     }
     
-    // Only generate capture moves (pseudo-legal captures)
+    // Only generate capture moves
     let moves = board.generate_legal_moves();
     let capture_moves: Vec<_> = moves.into_iter().filter(|m| {
-        // Check if this is a capture by seeing if there's a piece at the destination
         board.get_piece_at(m.to).is_some() || m.flag == crate::board::move_struct::MoveFlag::EnPassantCapture
     }).collect();
     
@@ -249,12 +297,21 @@ fn quiescence(board: &Board, mut alpha: i32, mut beta: i32, maximizing_side: Col
         return stand_pat;
     }
     
+    // Limit number of capture moves to explore (prevent explosion in late game)
+    let max_captures = 15;
+    let capture_moves: Vec<_> = capture_moves.into_iter().take(max_captures).collect();
+    
     if is_maximizing {
         let mut max_eval = stand_pat;
         for m in &capture_moves {
+            // Check timeout during quiescence search
+            if is_timeout(start_time) {
+                return max_eval;
+            }
+            
             let mut board_copy = board.clone();
             board_copy.make_move(*m);
-            let eval = quiescence(&board_copy, alpha, beta, maximizing_side);
+            let eval = quiescence(&board_copy, alpha, beta, maximizing_side, start_time);
             max_eval = max_eval.max(eval);
             alpha = alpha.max(eval);
             if beta <= alpha {
@@ -265,9 +322,14 @@ fn quiescence(board: &Board, mut alpha: i32, mut beta: i32, maximizing_side: Col
     } else {
         let mut min_eval = stand_pat;
         for m in &capture_moves {
+            // Check timeout during quiescence search
+            if is_timeout(start_time) {
+                return min_eval;
+            }
+            
             let mut board_copy = board.clone();
             board_copy.make_move(*m);
-            let eval = quiescence(&board_copy, alpha, beta, maximizing_side);
+            let eval = quiescence(&board_copy, alpha, beta, maximizing_side, start_time);
             min_eval = min_eval.min(eval);
             beta = beta.min(eval);
             if beta <= alpha {
