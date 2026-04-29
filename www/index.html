@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chess WASM</title>
     <link rel="stylesheet" href="./css/styles.css">
+    <link rel="icon" href="./favicon.ico" type="image/x-icon">
+    <link rel="icon" href="./favicon-light.png" type="image/png" media="(prefers-color-scheme: light)">
+    <link rel="icon" href="./favicon-dark.png" type="image/png" media="(prefers-color-scheme: dark)">
     <button id="menu-btn" onclick="showGameMenu()" style="position:fixed;top:10px;right:10px;z-index:100;background:transparent;border:none;color:white;font-size:20px;padding:8px;">&#9776;</button>
     <button id="settings-btn" onclick="showSettingsMenu()" style="position:fixed;top:10px;right:45px;z-index:100;background:transparent;border:none;color:white;font-size:18px;padding:8px;">&#9881;</button>
 </head>
@@ -20,6 +23,18 @@
                     <option value="random">Random</option>
                     <option value="white">White</option>
                     <option value="black">Black</option>
+                </select>
+                <select id="ai-difficulty" onchange="changeAiDifficulty()">
+                    <option value="1">Level 1 - Novice</option>
+                    <option value="2" selected>Level 2 - Beginner</option>
+                    <option value="3">Level 3 - Casual</option>
+                    <option value="4">Level 4 - Intermediate</option>
+                    <option value="5">Level 5 - Advanced</option>
+                    <option value="6">Level 6 - Skilled</option>
+                    <option value="7">Level 7 - Expert</option>
+                    <option value="8">Level 8 - Master</option>
+                    <option value="9">Level 9 - Grandmaster</option>
+                    <option value="10">Level 10 - Engine</option>
                 </select>
             </div>
         </div>

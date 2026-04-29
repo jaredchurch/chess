@@ -43,6 +43,7 @@ let currentGame = null;
 let moveStartTime = Date.now();
 let activeProfile = null;
 let playerColor = window.playerColor || 'random';
+let aiDifficulty = window.aiDifficulty || 2; // Default to Beginner (Level 2)
 let capturedPieces = { white: [], black: [] };
 let boardOrientation = 'white';
 
@@ -403,7 +404,7 @@ function handleSquareClick(square) {
 }
 
 function makeAiMove() {
-    const move = get_best_move_wasm(currentFen);
+    const move = get_best_move_wasm(currentFen, aiDifficulty);
     if (move) {
         const nextFen = apply_move(currentFen, move);
         if (nextFen) {
@@ -591,6 +592,14 @@ window.changePlayerColor = () => {
     if (select) {
         window.playerColor = select.value;
         playerColor = select.value;
+    }
+};
+
+window.changeAiDifficulty = () => {
+    const select = document.getElementById('ai-difficulty');
+    if (select) {
+        window.aiDifficulty = parseInt(select.value, 10);
+        aiDifficulty = window.aiDifficulty;
     }
 };
 

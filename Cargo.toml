@@ -16,6 +16,10 @@ serde_json = "1.0"
 js-sys = "0.3"
 web-sys = { version = "0.3", features = ["Window", "Storage", "console"] }
 chrono = "0.4"
+rand = { version = "0.8", features = ["getrandom"] }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+getrandom = { version = "0.2", features = ["js"] }
 
 [build-dependencies]
 chrono = "0.4"

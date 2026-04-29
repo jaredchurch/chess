@@ -27,8 +27,8 @@ export function applyMove(fen, move) {
     return apply_move(fen, move);
 }
 
-export function getBestMove(fen) {
-    return get_best_move_wasm(fen);
+export function getBestMove(fen, level = 2) {
+    return get_best_move_wasm(fen, level);
 }
 
 export function getGameState(fen) {
