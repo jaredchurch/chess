@@ -1,6 +1,5 @@
-use chess_core::board::Board;
 use chess_core::serialization::fen::parse_fen;
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{criterion_group, criterion_main, Criterion};
 
 fn bench_move_generation(c: &mut Criterion) {
     let start_pos = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";

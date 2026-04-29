@@ -22,3 +22,4 @@ Once we have worked through doing the spec for them, they should be marked as do
 - [x] BUG7. points being awarded to white when black takes pieces.
 - [x] BUG8. On iPhone the board is flakey and keeps changing size of rows. The board size needs to be enforced as static on each screen. Board size and position is paramount and should be prioritised over other visual elements.
 - [x] BUG9 - If lots of pieces get taken, then card displaying taken piece icons is not graceful - the icons and points move to overflow the card, suggest there should be a wrapping mechanism or some other more graceful method.
+- [x] BUG10 - similar to bug8, but is affecting chrome browser on macOS & Windows.
