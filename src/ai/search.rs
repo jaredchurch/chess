@@ -92,9 +92,10 @@ pub fn get_best_move_with_depth(board: &Board, max_depth: u8) -> Option<Move> {
     
     // Iterative deepening: search at increasing depths
     for depth in 1..=max_depth {
-        // Clear transposition table for new search
+        // Clear transposition table and ordering tables for new search
         if depth == 1 {
             crate::clear_tt();
+            crate::ai::move_ordering::clear_ordering_tables();
         }
         
         // Check timeout before starting new depth
@@ -190,7 +191,6 @@ fn alpha_beta(board: &Board, depth: u8, mut alpha: i32, beta: i32, start_time: f
         // Check if it's checkmate or stalemate
         if crate::move_gen::is_in_check(board, board.side_to_move) {
             // Checkmate: return a large negative score (bad for side to move)
-            // Negate because we return from perspective of side to move
             let score = -20000 - depth as i32;
             crate::store_position(board_hash, depth, score, true, None);
             return score;
@@ -201,10 +201,10 @@ fn alpha_beta(board: &Board, depth: u8, mut alpha: i32, beta: i32, start_time: f
     }
 
     let mut best_move = None;
-    let mut best_value = i32::MIN + 1; // Use MIN+1 to avoid overflow issues
+    let mut best_value = i32::MIN + 1;
 
-    // Sort moves for better pruning (MVV-LVA)
-    crate::ai::move_ordering::sort_moves(&mut moves, board);
+    // Sort moves using improved ordering (MVV-LVA + Killer + History)
+    crate::ai::move_ordering::sort_moves(&mut moves, board, depth);
     
     for m in &moves {
         let mut board_copy = board.clone();
@@ -215,11 +215,17 @@ fn alpha_beta(board: &Board, depth: u8, mut alpha: i32, beta: i32, start_time: f
         if eval > best_value {
             best_value = eval;
             best_move = Some((m.from as u8, m.to as u8, move_flag_to_u8(&m.flag)));
+            // Record successful quiet moves in history table
+            if board.get_piece_at(m.to).is_none() && !matches!(m.flag, crate::board::move_struct::MoveFlag::Promotion(_)) {
+                crate::ai::move_ordering::record_history(m, depth);
+            }
         }
         
         alpha = alpha.max(eval);
         if alpha >= beta {
-            break; // Beta cutoff
+            // Beta cutoff - record killer move
+            crate::ai::move_ordering::record_killer(depth, m);
+            break;
         }
     }
     
