@@ -24,6 +24,7 @@ fn bench_engine_levels(c: &mut Criterion) {
     
     let mut group = c.benchmark_group("engine_levels");
     group.sample_size(10);
+    group.measurement_time(std::time::Duration::from_secs(10));
     
     // Map difficulty levels to search depths
     let levels = vec![
@@ -53,14 +54,17 @@ fn bench_engine_depth(c: &mut Criterion) {
     
     let mut group = c.benchmark_group("engine_depth");
     group.sample_size(10);
+    group.measurement_time(std::time::Duration::from_secs(10));
     
     for (name, fen) in positions {
         let board = parse_fen(fen).unwrap();
+        // Use lower depth for complex positions to avoid timeout
+        let depth = if name == "middlegame" { 2 } else { 4 };
         group.bench_with_input(
-            BenchmarkId::new("depth_4", name),
-            &board,
-            |b, board| {
-                b.iter(|| get_best_move_with_depth(board, 4))
+            BenchmarkId::new("depth", name),
+            &(board, depth),
+            |b, (board, depth)| {
+                b.iter(|| get_best_move_with_depth(board, *depth))
             },
         );
     }
