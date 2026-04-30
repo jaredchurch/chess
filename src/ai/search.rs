@@ -34,6 +34,17 @@ use js_sys;
 /// Maximum time allowed for engine search (in milliseconds)
 const MAX_SEARCH_TIME_MS: f64 = 30000.0; // 30 seconds
 
+/// Maximum nodes to evaluate before stopping (safety check)
+const MAX_NODES: u32 = 5_000_000; // 5 million nodes
+
+/// Global node counter (reset at start of each search)
+static NODE_COUNT: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
+
+/// Checks if we've exceeded the maximum node count
+fn is_node_limit_reached() -> bool {
+    NODE_COUNT.fetch_add(1, std::sync::atomic::Ordering::SeqCst) > MAX_NODES
+}
+
 /// Gets current time in milliseconds (platform-specific)
 #[cfg(target_arch = "wasm32")]
 fn get_time_ms() -> f64 {
@@ -46,17 +57,17 @@ fn get_time_ms() -> f64 {
     0.0
 }
 
-/// Checks if the search has exceeded the maximum allowed time.
+/// Checks if the search has exceeded the maximum allowed time or node limit.
 /// Returns true if timeout occurred, false otherwise.
 #[cfg(target_arch = "wasm32")]
 fn is_timeout(start_time: f64) -> bool {
     let elapsed = get_time_ms() - start_time;
-    elapsed > MAX_SEARCH_TIME_MS
+    elapsed > MAX_SEARCH_TIME_MS || is_node_limit_reached()
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 fn is_timeout(_start_time: f64) -> bool {
-    false
+    is_node_limit_reached()
 }
 
 /// Returns a random legal move (Level 1 - Novice).
@@ -132,9 +143,9 @@ pub fn get_best_move_with_depth(board: &Board, max_depth: u8) -> Option<Move> {
         if depth == 1 {
             crate::clear_tt();
             crate::ai::move_ordering::clear_ordering_tables();
+            NODE_COUNT.store(0, std::sync::atomic::Ordering::SeqCst);
         }
         
-        // Check timeout before starting new depth
         if is_timeout(total_start) {
             log_message(&format!("Engine: Timeout reached after {}ms, returning best move found", MAX_SEARCH_TIME_MS));
             break;
@@ -206,10 +217,11 @@ pub fn get_best_move_with_depth(board: &Board, max_depth: u8) -> Option<Move> {
 /// Returns the evaluated score for the position from the perspective of the side to move.
 /// Checks for timeout at each node to prevent excessively long searches.
 fn alpha_beta(board: &Board, depth: u8, mut alpha: i32, beta: i32, start_time: f64) -> i32 {
-    // Check timeout at each node
+    // Check timeout and node limit at each node
     if is_timeout(start_time) {
         return evaluate(board);
     }
+    NODE_COUNT.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
     
     let board_hash = board.zobrist_hash;
 
@@ -313,7 +325,8 @@ fn quiescence(board: &Board, mut alpha: i32, beta: i32, start_time: f64) -> i32 
     }
     
     // Limit number of capture moves to explore (prevent explosion in late game)
-    let max_captures = 15;
+    // Reduce further for deeper searches to prevent exponential blowup
+    let max_captures = if stand_pat.abs() > 5000 { 8 } else { 15 };
     let capture_moves: Vec<_> = capture_moves.into_iter().take(max_captures).collect();
     
     let mut best_value = stand_pat;
@@ -325,7 +338,7 @@ fn quiescence(board: &Board, mut alpha: i32, beta: i32, start_time: f64) -> i32 
         
         let mut board_copy = board.clone();
         board_copy.make_move(*m);
-        // Negamax: negate the score
+        // Negamax: negate the score and swap alpha/beta
         let eval = -quiescence(&board_copy, -beta, -alpha, start_time);
         best_value = best_value.max(eval);
         alpha = alpha.max(eval);
