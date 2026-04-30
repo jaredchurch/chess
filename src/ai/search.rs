@@ -11,16 +11,46 @@ use crate::lookup_position;
 use rand::seq::SliceRandom;
 use rand::Rng;
 use rand::thread_rng;
+
+// Only use console on WASM targets
+#[cfg(target_arch = "wasm32")]
 use web_sys::console;
+
+/// Conditionally logs a message (only on WASM, no-op on native)
+fn log_message(msg: &str) {
+    #[cfg(target_arch = "wasm32")]
+    console::log_1(&msg.into());
+}
+
+// Only import js_sys when targeting WASM
+#[cfg(target_arch = "wasm32")]
+use js_sys;
 
 /// Maximum time allowed for engine search (in milliseconds)
 const MAX_SEARCH_TIME_MS: f64 = 30000.0; // 30 seconds
 
+/// Gets current time in milliseconds (platform-specific)
+#[cfg(target_arch = "wasm32")]
+fn get_time_ms() -> f64 {
+    js_sys::Date::now()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+fn get_time_ms() -> f64 {
+    // For benchmarks, we don't need real timing
+    0.0
+}
+
 /// Checks if the search has exceeded the maximum allowed time.
 /// Returns true if timeout occurred, false otherwise.
 fn is_timeout(start_time: f64) -> bool {
-    let elapsed = js_sys::Date::now() - start_time;
-    elapsed > MAX_SEARCH_TIME_MS
+    #[cfg(target_arch = "wasm32")]
+    {
+        let elapsed = get_time_ms() - start_time;
+        return elapsed > MAX_SEARCH_TIME_MS;
+    }
+    #[cfg(not(target_arch = "wasm32"))]
+    false
 }
 
 /// Returns a random legal move (Level 1 - Novice).
@@ -35,13 +65,13 @@ pub fn get_best_move_novice(board: &Board) -> Option<Move> {
 
     // 50% chance of picking a random move (blunder)
     if rng.gen_bool(0.5) {
-        console::log_1(&"Level 1 (Novice): Choosing random move (50% blunder chance)".into());
+        log_message("Level 1 (Novice): Choosing random move (50% blunder chance)");
         moves.shuffle(&mut rng);
         return Some(moves[0]);
     }
 
     // Otherwise pick the best move using greedy evaluation
-    console::log_1(&"Level 1 (Novice): Evaluating moves greedily...".into());
+    log_message("Level 1 (Novice): Evaluating moves greedily...");
     let side = board.side_to_move;
     let mut best_move = None;
     let mut best_score = if side == Color::White {
@@ -49,7 +79,7 @@ pub fn get_best_move_novice(board: &Board) -> Option<Move> {
     } else {
         i32::MAX
     };
-    let start = web_sys::js_sys::Date::now();
+    let start = get_time_ms();
 
     for (_i, m) in moves.iter().enumerate() {
         let mut board_copy = board.clone();
@@ -69,8 +99,8 @@ pub fn get_best_move_novice(board: &Board) -> Option<Move> {
         }
     }
 
-    let elapsed = web_sys::js_sys::Date::now() - start;
-    console::log_1(&format!("Level 1 (Novice): Selected best move from {} options in {:.0}ms", moves.len(), elapsed).into());
+    let elapsed = get_time_ms() - start;
+    log_message(&format!("Level 1 (Novice): Selected best move from {} options in {:.0}ms", moves.len(), elapsed));
     best_move
 }
 
@@ -86,9 +116,9 @@ pub fn get_best_move_with_depth(board: &Board, max_depth: u8) -> Option<Move> {
     #[allow(unused_variables)]
     let side = board.side_to_move;
     let mut best_move: Option<Move> = None;
-    let total_start = js_sys::Date::now();
+    let total_start = get_time_ms();
     
-    console::log_1(&format!("Engine: Starting iterative deepening search (max depth: {}, max time: {}ms)", max_depth, MAX_SEARCH_TIME_MS).into());
+    log_message(&format!("Engine: Starting iterative deepening search (max depth: {}, max time: {}ms)", max_depth, MAX_SEARCH_TIME_MS));
     
     // Iterative deepening: search at increasing depths
     for depth in 1..=max_depth {
@@ -100,12 +130,12 @@ pub fn get_best_move_with_depth(board: &Board, max_depth: u8) -> Option<Move> {
         
         // Check timeout before starting new depth
         if is_timeout(total_start) {
-            console::log_1(&format!("Engine: Timeout reached after {}ms, returning best move found", MAX_SEARCH_TIME_MS).into());
+            log_message(&format!("Engine: Timeout reached after {}ms, returning best move found", MAX_SEARCH_TIME_MS));
             break;
         }
         
-        let depth_start = js_sys::Date::now();
-        console::log_1(&format!("Engine: depth {}/{} searching...", depth, max_depth).into());
+        let depth_start = get_time_ms();
+        log_message(&format!("Engine: depth {}/{} searching...", depth, max_depth));
         
         let mut current_best = None;
         let mut best_score = i32::MIN + 1;
@@ -123,7 +153,7 @@ pub fn get_best_move_with_depth(board: &Board, max_depth: u8) -> Option<Move> {
         for m in &depth_moves {
             // Check timeout during move evaluation
             if is_timeout(total_start) {
-                console::log_1(&"Engine: Timeout reached during move evaluation".into());
+                log_message("Engine: Timeout reached during move evaluation");
                 break;
             }
             
@@ -152,16 +182,16 @@ pub fn get_best_move_with_depth(board: &Board, max_depth: u8) -> Option<Move> {
         // Update best move found so far (only if we completed the depth)
         if let Some(m) = current_best {
             best_move = Some(m);
-            let depth_elapsed = js_sys::Date::now() - depth_start;
-            console::log_1(&format!("Engine: depth {}/{} [{}ms] score={}", depth, max_depth, depth_elapsed as u32, best_score).into());
+            let depth_elapsed = get_time_ms() - depth_start;
+            log_message(&format!("Engine: depth {}/{} [{}ms] score={}", depth, max_depth, depth_elapsed as u32, best_score));
         } else {
             // Timeout occurred, don't update best_move
             break;
         }
     }
 
-    let total_elapsed = js_sys::Date::now() - total_start;
-    console::log_1(&format!("Engine: Search complete in {:.0}ms", total_elapsed).into());
+    let total_elapsed = get_time_ms() - total_start;
+    log_message(&format!("Engine: Search complete in {:.0}ms", total_elapsed));
     
     best_move
 }

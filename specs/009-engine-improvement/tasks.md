@@ -35,7 +35,7 @@
 
 ## Phase5: Verification & Tuning
 
-- [ ] T019 Create automated benchmark script for Level vs. Level matches
+- [x] T019 Create automated benchmark script for Level vs. Level matches
 - [ ] T020 Tune evaluation weights and PST values based on match results
 - [ ] T021 Verify performance in browser via WASM
 
