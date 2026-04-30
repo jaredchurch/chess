@@ -4,13 +4,15 @@
 // - Use generous 300s timeout to get stable baseline measurements
 // - Valid FEN strings are critical (invalid FEN will cause panics)
 
+use chrono::Local;
 use chess_core::serialization::fen::parse_fen;
 use chess_core::ai::search::get_best_move_with_depth;
 use criterion::{criterion_group, criterion_main, Criterion, BenchmarkId};
 
 fn bench_move_generation(c: &mut Criterion) {
     let start = std::time::Instant::now();
-    println!("[{}] Starting move_generation benchmarks...", start.elapsed().as_secs());
+    let now = chrono::Local::now().format("%H:%M:%S");
+    println!("[{}] Starting move_generation benchmarks...", now);
     
     let start_pos = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
     let board = parse_fen(start_pos).unwrap();
@@ -26,12 +28,14 @@ fn bench_move_generation(c: &mut Criterion) {
         b.iter(|| board.generate_legal_moves())
     });
     
-    println!("[{}] Finished move_generation benchmarks", start.elapsed().as_secs());
+    let now = chrono::Local::now().format("%H:%M:%S");
+    println!("[{}] Finished move_generation benchmarks", now);
 }
 
 fn bench_engine_levels(c: &mut Criterion) {
     let start = std::time::Instant::now();
-    println!("[{}] Starting engine_levels benchmarks...", start.elapsed().as_secs());
+    let now = chrono::Local::now().format("%H:%M:%S");
+    println!("[{}] Starting engine_levels benchmarks...", now);
     
     let start_pos = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
     let board = parse_fen(start_pos).unwrap();
@@ -57,12 +61,14 @@ fn bench_engine_levels(c: &mut Criterion) {
     }
     
     group.finish();
-    println!("[{}] Finished engine_levels benchmarks", start.elapsed().as_secs());
+    let now = chrono::Local::now().format("%H:%M:%S");
+    println!("[{}] Finished engine_levels benchmarks", now);
 }
 
 fn bench_engine_depth(c: &mut Criterion) {
     let start = std::time::Instant::now();
-    println!("[{}] Starting engine_depth benchmarks...", start.elapsed().as_secs());
+    let now = chrono::Local::now().format("%H:%M:%S");
+    println!("[{}] Starting engine_depth benchmarks...", now);
     
     let positions = vec![
         ("start_pos", "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"),
@@ -88,7 +94,8 @@ fn bench_engine_depth(c: &mut Criterion) {
     }
     
     group.finish();
-    println!("[{}] Finished engine_depth benchmarks", start.elapsed().as_secs());
+    let now = chrono::Local::now().format("%H:%M:%S");
+    println!("[{}] Finished engine_depth benchmarks", now);
 }
 
 criterion_group!(benches, bench_move_generation, bench_engine_levels, bench_engine_depth);
