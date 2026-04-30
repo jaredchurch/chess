@@ -9,6 +9,9 @@ use chess_core::ai::search::get_best_move_with_depth;
 use criterion::{criterion_group, criterion_main, Criterion, BenchmarkId};
 
 fn bench_move_generation(c: &mut Criterion) {
+    let start = std::time::Instant::now();
+    println!("[{}] Starting move_generation benchmarks...", start.elapsed().as_secs());
+    
     let start_pos = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
     let board = parse_fen(start_pos).unwrap();
 
@@ -22,9 +25,14 @@ fn bench_move_generation(c: &mut Criterion) {
     c.bench_function("generate_legal_moves_kiwipete", |b| {
         b.iter(|| board.generate_legal_moves())
     });
+    
+    println!("[{}] Finished move_generation benchmarks", start.elapsed().as_secs());
 }
 
 fn bench_engine_levels(c: &mut Criterion) {
+    let start = std::time::Instant::now();
+    println!("[{}] Starting engine_levels benchmarks...", start.elapsed().as_secs());
+    
     let start_pos = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
     let board = parse_fen(start_pos).unwrap();
     
@@ -49,9 +57,13 @@ fn bench_engine_levels(c: &mut Criterion) {
     }
     
     group.finish();
+    println!("[{}] Finished engine_levels benchmarks", start.elapsed().as_secs());
 }
 
 fn bench_engine_depth(c: &mut Criterion) {
+    let start = std::time::Instant::now();
+    println!("[{}] Starting engine_depth benchmarks...", start.elapsed().as_secs());
+    
     let positions = vec![
         ("start_pos", "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"),
         ("middlegame", "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1"),
@@ -76,6 +88,7 @@ fn bench_engine_depth(c: &mut Criterion) {
     }
     
     group.finish();
+    println!("[{}] Finished engine_depth benchmarks", start.elapsed().as_secs());
 }
 
 criterion_group!(benches, bench_move_generation, bench_engine_levels, bench_engine_depth);
