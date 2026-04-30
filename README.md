@@ -45,6 +45,22 @@ To run the perft (performance test) suite:
 cargo test perft
 ```
 
+### Running Benchmarks
+The project includes Criterion benchmarks for move generation and engine performance:
+```bash
+cargo bench
+```
+
+This will run benchmarks for:
+- **Move generation** - Start position and Kiwipete position
+- **Engine levels** - Novice, Casual, Intermediate
+- **Engine depth** - Different positions at fixed depth
+
+Benchmark results are saved to `target/criterion/` and can be compared across runs:
+```bash
+cargo bench --allow-dirty  # Run without requiring clean working tree
+```
+
 ### Running WASM Prototype
 The project includes a WebAssembly bridge and a basic web prototype in the `www/` directory.
 
