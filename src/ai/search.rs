@@ -17,9 +17,14 @@ use rand::thread_rng;
 use web_sys::console;
 
 /// Conditionally logs a message (only on WASM, no-op on native)
+#[cfg(target_arch = "wasm32")]
 fn log_message(msg: &str) {
-    #[cfg(target_arch = "wasm32")]
     console::log_1(&msg.into());
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+fn log_message(_msg: &str) {
+    // No-op on native targets
 }
 
 // Only import js_sys when targeting WASM
@@ -43,13 +48,14 @@ fn get_time_ms() -> f64 {
 
 /// Checks if the search has exceeded the maximum allowed time.
 /// Returns true if timeout occurred, false otherwise.
+#[cfg(target_arch = "wasm32")]
 fn is_timeout(start_time: f64) -> bool {
-    #[cfg(target_arch = "wasm32")]
-    {
-        let elapsed = get_time_ms() - start_time;
-        return elapsed > MAX_SEARCH_TIME_MS;
-    }
-    #[cfg(not(target_arch = "wasm32"))]
+    let elapsed = get_time_ms() - start_time;
+    elapsed > MAX_SEARCH_TIME_MS
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+fn is_timeout(_start_time: f64) -> bool {
     false
 }
 
