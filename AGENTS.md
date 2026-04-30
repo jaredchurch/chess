@@ -79,3 +79,10 @@ src/
 2. **Consistency**: Follow existing code patterns
 3. **Clarity over Cleverness**: Write readable, maintainable code
 4. **No Magic Numbers**: Use named constants with explanation
+
+## Commit Discipline
+
+- **Never commit without explicit instruction**
+- Wait for the user to explicitly say "commit", "push", or similar
+- Stage and prepare commits when asked, but do not commit until told
+- When user says "commit", include a clear message explaining what and why
