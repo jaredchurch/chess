@@ -10,7 +10,7 @@ use chess_core::ai::search::get_best_move_with_depth;
 use criterion::{criterion_group, criterion_main, Criterion, BenchmarkId};
 
 fn bench_move_generation(c: &mut Criterion) {
-    let start = std::time::Instant::now();
+    let _start = std::time::Instant::now();
     let now = chrono::Local::now().format("%H:%M:%S");
     println!("[{}] Starting move_generation benchmarks...", now);
     
@@ -33,7 +33,7 @@ fn bench_move_generation(c: &mut Criterion) {
 }
 
 fn bench_engine_levels(c: &mut Criterion) {
-    let start = std::time::Instant::now();
+    let _start = std::time::Instant::now();
     let now = chrono::Local::now().format("%H:%M:%S");
     println!("[{}] Starting engine_levels benchmarks...", now);
     
@@ -66,13 +66,12 @@ fn bench_engine_levels(c: &mut Criterion) {
 }
 
 fn bench_engine_depth(c: &mut Criterion) {
-    let start = std::time::Instant::now();
+    let _start = std::time::Instant::now();
     let now = chrono::Local::now().format("%H:%M:%S");
     println!("[{}] Starting engine_depth benchmarks...", now);
     
     let positions = vec![
         ("start_pos", "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"),
-        ("middlegame", "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1"),
         ("endgame", "8/8/8/8/8/8/PPPPPPPP/RNBQKBNR w - 0 1"),
     ];
     
