@@ -1,3 +1,9 @@
+// Benchmark Notes:
+// - Focus optimization efforts on operations that take >10s
+// - Operations under 10s are not a priority for optimization
+// - Use generous 300s timeout to get stable baseline measurements
+// - Valid FEN strings are critical (invalid FEN will cause panics)
+
 use chess_core::serialization::fen::parse_fen;
 use chess_core::ai::search::get_best_move_with_depth;
 use criterion::{criterion_group, criterion_main, Criterion, BenchmarkId};
@@ -24,7 +30,7 @@ fn bench_engine_levels(c: &mut Criterion) {
     
     let mut group = c.benchmark_group("engine_levels");
     group.sample_size(10);
-    group.measurement_time(std::time::Duration::from_secs(10));
+    group.measurement_time(std::time::Duration::from_secs(300));
     
     // Map difficulty levels to search depths
     let levels = vec![
@@ -48,20 +54,20 @@ fn bench_engine_levels(c: &mut Criterion) {
 fn bench_engine_depth(c: &mut Criterion) {
     let positions = vec![
         ("start_pos", "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"),
-        ("middlegame", "r1bqkb1r/pppp1ppp/2n2n2/4p3/2B1P3/3P1N2/PPP2PPP/RNBQK2R w KQkq - 0 1"),
+        ("middlegame", "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1"),
         ("endgame", "8/8/8/8/8/8/PPPPPPPP/RNBQKBNR w - 0 1"),
     ];
     
     let mut group = c.benchmark_group("engine_depth");
     group.sample_size(10);
-    group.measurement_time(std::time::Duration::from_secs(10));
+    group.measurement_time(std::time::Duration::from_secs(300));
     
     for (name, fen) in positions {
         let board = parse_fen(fen).unwrap();
-        // Use lower depth for complex positions to avoid timeout
-        let depth = if name == "middlegame" { 2 } else { 4 };
+        // Use depth 4 for all positions (generous 300s timeout allows deeper search)
+        let depth = 4;
         group.bench_with_input(
-            BenchmarkId::new("depth", name),
+            BenchmarkId::new("depth_4", name),
             &(board, depth),
             |b, (board, depth)| {
                 b.iter(|| get_best_move_with_depth(board, *depth))
