@@ -47,6 +47,68 @@ let aiDifficulty = window.aiDifficulty || 1; // Default to Level 1
 let capturedPieces = { white: [], black: [] };
 let boardOrientation = 'white';
 
+// Timer variables
+let gameStartTime = Date.now();
+let whiteTotalTime = 0;
+let blackTotalTime = 0;
+let currentMoveTimer = null;
+let isWhitesTurn = true;
+let lastMoveTimestamp = Date.now();
+let gameActive = true;
+
+function formatTime(ms) {
+    return (ms / 1000).toFixed(1) + 's';
+}
+
+function updateTimerDisplay() {
+    const now = Date.now();
+    const gameTotal = now - gameStartTime;
+    const currentMoveElapsed = now - lastMoveTimestamp;
+    
+    const currentTotal = isWhitesTurn ? whiteTotalTime + currentMoveElapsed : blackTotalTime + currentMoveElapsed;
+    const whiteDisplay = isWhitesTurn ? whiteTotalTime + currentMoveElapsed : whiteTotalTime;
+    const blackDisplay = isWhitesTurn ? blackTotalTime : blackTotalTime + currentMoveElapsed;
+    
+    const currentMoveEl = document.getElementById('current-move-time');
+    const whiteTotalEl = document.getElementById('white-total-time');
+    const blackTotalEl = document.getElementById('black-total-time');
+    const gameTotalEl = document.getElementById('game-total-time');
+    
+    if (currentMoveEl) currentMoveEl.textContent = formatTime(currentMoveElapsed);
+    if (whiteTotalEl) whiteTotalEl.textContent = formatTime(whiteDisplay);
+    if (blackTotalEl) blackTotalEl.textContent = formatTime(blackDisplay);
+    if (gameTotalEl) gameTotalEl.textContent = formatTime(gameTotal);
+}
+
+function startMoveTimer() {
+    if (!gameActive) return;
+    stopMoveTimer();
+    lastMoveTimestamp = Date.now();
+    currentMoveTimer = setInterval(updateTimerDisplay, 100);
+}
+
+function stopMoveTimer() {
+    if (currentMoveTimer) {
+        clearInterval(currentMoveTimer);
+        currentMoveTimer = null;
+    }
+}
+
+function recordMoveTime() {
+    const now = Date.now();
+    const elapsed = now - lastMoveTimestamp;
+    
+    if (isWhitesTurn) {
+        whiteTotalTime += elapsed;
+    } else {
+        blackTotalTime += elapsed;
+    }
+    
+    isWhitesTurn = !isWhitesTurn;
+    lastMoveTimestamp = now;
+    updateTimerDisplay();
+}
+
 window.updateBoardSize = function() {
     const board = document.getElementById('board');
     if (!board) return;
@@ -173,10 +235,13 @@ function restoreInProgressGame() {
 }
 
 function startNewGame() {
-    const playerSide = determinePlayerSide();
+    const playerSide = playerColor === 'random' 
+        ? (Math.random() < 0.5 ? 'white' : 'black') 
+        : playerColor;
+    
     currentGame = {
         game_id: generateUUID(),
-        profile_id: activeProfile?.id || "default",
+        profile_id: activeProfile ? activeProfile.id : null,
         player_side: playerSide,
         timestamp: Date.now(),
         last_modified: Date.now(),
@@ -186,6 +251,15 @@ function startNewGame() {
         initial_fen: INITIAL_FEN
     };
     capturedPieces = { white: [], black: [] };
+    
+    // Reset timers
+    gameStartTime = Date.now();
+    whiteTotalTime = 0;
+    blackTotalTime = 0;
+    isWhitesTurn = true;
+    lastMoveTimestamp = Date.now();
+    gameActive = true;
+    stopMoveTimer();
     
     // Always start with white to move (standard chess rule)
     currentFen = INITIAL_FEN;
@@ -282,6 +356,14 @@ function saveCurrentGame(from, to) {
 function finishGame(result, method) {
     if (!currentGame) return;
     
+    // Mark game as inactive to prevent timer restarts
+    gameActive = false;
+    
+    // Stop timer and record final move time
+    stopMoveTimer();
+    recordMoveTime();
+    updateTimerDisplay();
+    
     try {
         currentGame.result = result;
         currentGame.method = method;
@@ -343,12 +425,15 @@ function updateUI() {
         
         if (isAiTurn && !gameState.is_checkmate && !gameState.is_draw) {
             setTimeout(makeAiMove, 500);
+        } else {
+            startMoveTimer();
         }
     }
 
     renderBoard();
     updateScoreCard();
     updateMoveHistoryCard();
+    updateTimerDisplay();
 }
 
 function renderBoard() {
@@ -386,6 +471,9 @@ function handleSquareClick(square) {
     } else if (selectedSquare) {
         const move = legalMoves.find(m => m.from === selectedSquare && m.to === square);
         if (move) {
+            recordMoveTime();
+            stopMoveTimer();
+            
             const nextFen = apply_move(currentFen, move);
             if (nextFen) {
                 saveCurrentGame(selectedSquare, square);
@@ -393,6 +481,7 @@ function handleSquareClick(square) {
                 selectedSquare = null;
                 moveStartTime = Date.now();
                 updateUI();
+                startMoveTimer();
                 return;
             }
         }
@@ -406,6 +495,9 @@ function handleSquareClick(square) {
 function makeAiMove() {
     const move = get_best_move_wasm(currentFen, aiDifficulty);
     if (move) {
+        recordMoveTime();
+        stopMoveTimer();
+        
         const nextFen = apply_move(currentFen, move);
         if (nextFen) {
             saveCurrentGame(move.from, move.to);

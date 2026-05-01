@@ -12,6 +12,8 @@ window.showGameMenu = function() {
             <button onclick="document.getElementById('import-file').click();" style="display:block;width:100%;margin:8px 0;padding:10px;">Import</button>
             <input type="file" id="import-file" style="display:none" onchange="importHistory(this)">
             <hr style="border-color:#4a5f7f;margin:15px 0;">
+            <button onclick="showFenDialog();closeGameMenu();" style="display:block;width:100%;margin:8px 0;padding:10px;">Show FEN</button>
+            <hr style="border-color:#4a5f7f;margin:15px 0;">
             <button onclick="flipBoard();closeGameMenu();" style="display:block;width:100%;margin:8px 0;padding:10px;">Rotate View</button>
             <hr style="border-color:#4a5f7f;margin:15px 0;">
             <button onclick="closeGameMenu();" style="display:block;width:100%;margin:8px 0;padding:10px;">Close</button>
@@ -80,4 +82,23 @@ window.togglePanelDisplay = function(id, visible) {
     requestAnimationFrame(() => {
         if (typeof updateBoardSize === 'function') updateBoardSize();
     });
+};
+
+window.showFenDialog = function() {
+    const existing = document.getElementById('fen-dialog');
+    if (existing) { existing.remove(); return; }
+    const fen = window.currentFen || '';
+    const dialog = document.createElement('div');
+    dialog.id = 'fen-dialog';
+    dialog.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.8);z-index:1000;display:flex;align-items:center;justify-content:center;';
+    dialog.innerHTML = `
+        <div style="background:#34495e;border-radius:10px;padding:20px;min-width:300px;max-width:90%;">
+            <div style="margin-bottom:15px;font-size:1.2em;font-weight:bold;">Current FEN</div>
+            <div style="background:#2c3e50;padding:10px;border-radius:5px;font-family:monospace;word-break:break-all;margin-bottom:15px;">${fen}</div>
+            <button onclick="navigator.clipboard.writeText('${fen}'); closeGameMenu();" style="display:block;width:100%;margin:8px 0;padding:10px;">Copy to Clipboard</button>
+            <button onclick="closeGameMenu();" style="display:block;width:100%;margin:8px 0;padding:10px;">Close</button>
+        </div>
+    `;
+    document.body.appendChild(dialog);
+    dialog.onclick = (e) => { if (e.target === dialog) closeGameMenu(); };
 };
