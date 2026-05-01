@@ -149,26 +149,16 @@ pub fn evaluate(board: &Board) -> i32 {
         }
     }
 
-    // Add mobility and king safety evaluation
-    score += evaluate_mobility(board);
+    // Add king safety and pawn structure evaluation
     score += evaluate_king_safety(board);
     score += evaluate_pawn_structure(board);
 
     score
 }
 
-/// Evaluates mobility - the number of legal moves available.
-/// Positive values favor White (more mobility for White = positive score).
-pub fn evaluate_mobility(board: &Board) -> i32 {
-    let moves = board.generate_legal_moves();
-    let mobility = moves.len() as i32;
-    
-    // Return positive if White's turn, negative if Black's turn
-    if board.side_to_move == Color::White {
-        mobility * 10
-    } else {
-        -mobility * 10
-    }
+/// Evaluates mobility (Temporarily disabled due to performance overhead)
+pub fn evaluate_mobility(_board: &Board) -> i32 {
+    0
 }
 
 /// Evaluates pawn structure: doubled pawns, isolated pawns, passed pawns.

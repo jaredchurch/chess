@@ -6,6 +6,7 @@ pub mod knight;
 pub mod pawn;
 pub mod sliding;
 pub mod termination;
+pub mod lookup;
 
 use crate::board::move_struct::Move;
 use crate::board::piece::PieceType;
@@ -114,4 +115,55 @@ pub fn is_square_attacked(board: &Board, square: Square, attacker_color: Color) 
     }
 
     false
+}
+
+/// Generates only pseudo-legal capture moves for the current side to move.
+pub fn generate_pseudo_legal_captures(board: &Board) -> Vec<Move> {
+    let mut moves = Vec::with_capacity(64);
+    let color_offset = match board.side_to_move {
+        Color::White => 0,
+        Color::Black => 6,
+    };
+
+    for piece_type_idx in 0..6 {
+        let piece_type = match piece_type_idx {
+            0 => PieceType::Pawn,
+            1 => PieceType::Knight,
+            2 => PieceType::Bishop,
+            3 => PieceType::Rook,
+            4 => PieceType::Queen,
+            5 => PieceType::King,
+            _ => unreachable!(),
+        };
+
+        let bitboard = board.pieces[color_offset + piece_type_idx];
+        let mut bits = bitboard.0;
+
+        while bits != 0 {
+            let square_idx = bits.trailing_zeros();
+            let square = Square::from_u8_unchecked(square_idx as u8);
+            
+            // For now, we use the same generators but filter them.
+            // A more optimized version would pass a 'captures_only' flag down.
+            let mut all_piece_moves = Vec::with_capacity(32);
+            match piece_type {
+                PieceType::Pawn => pawn::generate_pawn_moves(board, square, &mut all_piece_moves),
+                PieceType::Knight => knight::generate_knight_moves(board, square, &mut all_piece_moves),
+                PieceType::Bishop => sliding::generate_bishop_moves(board, square, &mut all_piece_moves),
+                PieceType::Rook => sliding::generate_rook_moves(board, square, &mut all_piece_moves),
+                PieceType::Queen => sliding::generate_queen_moves(board, square, &mut all_piece_moves),
+                PieceType::King => king::generate_king_moves(board, square, &mut all_piece_moves),
+            }
+
+            for m in all_piece_moves {
+                if board.get_piece_at(m.to).is_some() || m.flag == crate::board::move_struct::MoveFlag::EnPassantCapture {
+                    moves.push(m);
+                }
+            }
+
+            bits &= bits - 1;
+        }
+    }
+
+    moves
 }

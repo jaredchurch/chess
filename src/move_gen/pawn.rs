@@ -36,6 +36,20 @@ pub fn generate_pawn_moves(board: &Board, square: Square, moves: &mut Vec<Move>)
                 }
             }
         }
+
+        // Captures
+        let attacks = get_pawn_attacks(square, Color::White);
+        let mut capture_bits = attacks.0 & enemy_occupancy.0;
+        while capture_bits != 0 {
+            let to_idx = capture_bits.trailing_zeros();
+            let to_sq = Square::from_u8_unchecked(to_idx as u8);
+            if to_idx / 8 == 7 {
+                add_promotion_capture_moves(square, to_sq, moves);
+            } else {
+                moves.push(Move::new(square, to_sq, MoveFlag::Capture));
+            }
+            capture_bits &= capture_bits - 1;
+        }
     } else {
         // Black push
         if bit_index >= 8 {
@@ -58,25 +72,26 @@ pub fn generate_pawn_moves(board: &Board, square: Square, moves: &mut Vec<Move>)
                 }
             }
         }
-    }
 
-    // Captures
-    let attacks = get_pawn_attacks(square, color);
-    let mut capture_bits = attacks.0 & enemy_occupancy.0;
-    while capture_bits != 0 {
-        let to_idx = capture_bits.trailing_zeros();
-        let to_sq = Square::from_u8_unchecked(to_idx as u8);
-        if to_idx / 8 == (if color == Color::White { 7 } else { 0 }) {
-            add_promotion_capture_moves(square, to_sq, moves);
-        } else {
-            moves.push(Move::new(square, to_sq, MoveFlag::Capture));
+        // Captures
+        let attacks = get_pawn_attacks(square, Color::Black);
+        let mut capture_bits = attacks.0 & enemy_occupancy.0;
+        while capture_bits != 0 {
+            let to_idx = capture_bits.trailing_zeros();
+            let to_sq = Square::from_u8_unchecked(to_idx as u8);
+            if to_idx / 8 == 0 {
+                add_promotion_capture_moves(square, to_sq, moves);
+            } else {
+                moves.push(Move::new(square, to_sq, MoveFlag::Capture));
+            }
+            capture_bits &= capture_bits - 1;
         }
-        capture_bits &= capture_bits - 1;
     }
 
-    // En Passant
+    // En passant
     if let Some(ep_sq) = board.en_passant_square {
         let ep_idx = ep_sq.as_u32();
+        let attacks = get_pawn_attacks(square, color);
         if (attacks.0 & (1 << ep_idx)) != 0 {
             moves.push(Move::new(square, ep_sq, MoveFlag::EnPassantCapture));
         }
@@ -91,13 +106,16 @@ fn add_promotion_moves(from: Square, to: Square, moves: &mut Vec<Move>) {
 }
 
 fn add_promotion_capture_moves(from: Square, to: Square, moves: &mut Vec<Move>) {
-    // Note: We might want a separate flag for PromotionCapture if we want to be very specific,
-    // but usually Promotion(PieceType) is enough and we know it's a capture if there's an enemy piece at 'to'.
-    // For now, let's just use Promotion.
     add_promotion_moves(from, to, moves);
 }
 
 pub fn get_pawn_attacks(square: Square, color: Color) -> Bitboard {
+    let color_idx = if color == Color::White { 0 } else { 1 };
+    super::lookup::get_lookup_tables().pawn_attacks[color_idx][square as usize]
+}
+
+#[allow(dead_code)]
+pub fn get_pawn_attacks_slow(square: Square, color: Color) -> Bitboard {
     let bit_index = square.as_u32() as i32;
     let file = bit_index % 8;
     let mut attacks = 0u64;

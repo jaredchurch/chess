@@ -62,6 +62,9 @@ impl Board {
     /// Removes a piece from the board at the given square.
     pub fn remove_piece(&mut self, square: Square) {
         let bit_index = square.as_u32();
+        if !self.occupancy[2].get(bit_index) {
+            return;
+        }
         for i in 0..12 {
             self.pieces[i].clear(bit_index);
         }
@@ -71,6 +74,9 @@ impl Board {
     /// Gets the piece at the given square, if any.
     pub fn get_piece_at(&self, square: Square) -> Option<Piece> {
         let bit_index = square.as_u32();
+        if !self.occupancy[2].get(bit_index) {
+            return None;
+        }
         for i in 0..12 {
             if self.pieces[i].get(bit_index) {
                 let color = if i < 6 { Color::White } else { Color::Black };
@@ -286,5 +292,21 @@ impl Board {
         }
 
         legal_moves
+    }
+
+    /// Generates all strictly legal capture moves for the current side to move.
+    pub fn generate_legal_captures(&self) -> Vec<Move> {
+        let pseudo_captures = crate::move_gen::generate_pseudo_legal_captures(self);
+        let mut legal_captures = Vec::with_capacity(pseudo_captures.len());
+
+        for m in pseudo_captures {
+            let mut board_copy = self.clone();
+            board_copy.make_move(m);
+            if !crate::move_gen::is_in_check(&board_copy, self.side_to_move) {
+                legal_captures.push(m);
+            }
+        }
+
+        legal_captures
     }
 }

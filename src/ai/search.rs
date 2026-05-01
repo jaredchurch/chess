@@ -231,7 +231,7 @@ fn alpha_beta(board: &Board, depth: u8, mut alpha: i32, beta: i32, start_time: f
     }
 
     if depth == 0 {
-        return quiescence(board, alpha, beta, start_time);
+        return quiescence(board, alpha, beta, start_time, 0);
     }
 
     let mut moves = board.generate_legal_moves();
@@ -298,9 +298,9 @@ fn move_flag_to_u8(flag: &crate::board::move_struct::MoveFlag) -> u8 {
 /// Only explores capture moves to avoid the horizon effect.
 /// Uses Negamax formulation - returns score from perspective of side to move.
 /// Includes timeout checking to prevent excessive capture sequence searches.
-fn quiescence(board: &Board, mut alpha: i32, beta: i32, start_time: f64) -> i32 {
+fn quiescence(board: &Board, mut alpha: i32, beta: i32, start_time: f64, q_depth: u8) -> i32 {
     // Check timeout
-    if is_timeout(start_time) {
+    if is_timeout(start_time) || q_depth > 4 {
         return evaluate(board);
     }
     
@@ -315,18 +315,17 @@ fn quiescence(board: &Board, mut alpha: i32, beta: i32, start_time: f64) -> i32 
     }
     
     // Only generate capture moves
-    let moves = board.generate_legal_moves();
-    let capture_moves: Vec<_> = moves.into_iter().filter(|m| {
-        board.get_piece_at(m.to).is_some() || m.flag == crate::board::move_struct::MoveFlag::EnPassantCapture
-    }).collect();
+    let mut capture_moves = board.generate_legal_captures();
     
     if capture_moves.is_empty() {
         return stand_pat;
     }
+
+    // Order captures for better pruning (MVV-LVA)
+    crate::ai::move_ordering::sort_moves(&mut capture_moves, board, 0);
     
-    // Limit number of capture moves to explore (prevent explosion in late game)
-    // Reduce further for deeper searches to prevent exponential blowup
-    let max_captures = if stand_pat.abs() > 5000 { 8 } else { 15 };
+    // Limit number of capture moves to explore
+    let max_captures = if q_depth > 2 { 4 } else { 8 };
     let capture_moves: Vec<_> = capture_moves.into_iter().take(max_captures).collect();
     
     let mut best_value = stand_pat;
@@ -339,7 +338,7 @@ fn quiescence(board: &Board, mut alpha: i32, beta: i32, start_time: f64) -> i32 
         let mut board_copy = board.clone();
         board_copy.make_move(*m);
         // Negamax: negate the score and swap alpha/beta
-        let eval = -quiescence(&board_copy, -beta, -alpha, start_time);
+        let eval = -quiescence(&board_copy, -beta, -alpha, start_time, q_depth + 1);
         best_value = best_value.max(eval);
         alpha = alpha.max(eval);
         if alpha >= beta {

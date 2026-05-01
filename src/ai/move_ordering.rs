@@ -177,11 +177,16 @@ pub fn score_move(m: &Move, board: &crate::board::Board, depth: u8) -> i32 {
 
 /// Sorts moves in place for Alpha-Beta search order (best first).
 pub fn sort_moves(moves: &mut [Move], board: &crate::board::Board, depth: u8) {
-    moves.sort_by(|a, b| {
-        let score_a = score_move(a, board, depth);
-        let score_b = score_move(b, board, depth);
-        score_b.cmp(&score_a) // Descending order
-    });
+    let mut scored_moves: Vec<(Move, i32)> = moves
+        .iter()
+        .map(|&m| (m, score_move(&m, board, depth)))
+        .collect();
+
+    scored_moves.sort_by(|a, b| b.1.cmp(&a.1)); // Descending order
+
+    for (i, (m, _)) in scored_moves.into_iter().enumerate() {
+        moves[i] = m;
+    }
 }
 
 /// Returns the piece value for MVV-LVA scoring.
