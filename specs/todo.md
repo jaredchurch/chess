@@ -6,7 +6,7 @@ Once we have worked through doing the spec for them, they should be marked as do
 - [x] 3. On a wide screen Add a card on right hand side of screen that shows scores for the current game based on taking pieces using standard scoring mechanisms. On a small screen this should be available from a global context menu. a second card (also accessible through global context menu should display the move history for the current game, with ability to select a specific move and have a dialog that shows the board immediately before the move and highlights the piece that made the move and the destination square).
 - [x] 4. When game ends the ending result should show as a dialog box over the board including an explanation of the result, when thid dialog is closed it just shows the board, with highlights around key pieces that contribute to the checkmate or the stalemate. If the game ends in some other method than checkmate or stalemate there are no special highlights.
 - [] 5. Add a 3D display mode where angle of view is more like a real-world board.
-- [] 6. Improve the engine that selects moves and have it's skill level configurable from novice to expert with 10 steps.
+- [x] 6. Improve the engine that selects moves and have it's skill level configurable from novice to expert with 10 steps.
 - [] 7. Use play history to recommend the level for you on the skill level, by default games should start with that recommended level, recommendation should be based on a % configurable likelihood to win (default to 75% likely).
 - [] 8. Support mulitple profiles for users in the play history for people who share a single environment that they play in.
 - [x] 9. Make play history exportable & importable to end user to support portability and backup.

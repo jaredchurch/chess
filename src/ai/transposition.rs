@@ -18,7 +18,7 @@ struct TTEntry {
 /// Entry type for transposition table entries.
 #[derive(Clone, Copy, PartialEq)]
 enum EntryType {
-    Exact,   // Exact evaluation
+    Exact, // Exact evaluation
 }
 
 /// Transposition table for caching board evaluations.
@@ -39,56 +39,61 @@ impl TranspositionTable {
             hits: 0,
         }
     }
-    
+
     /// Stores a position in the table.
     /// Uses replacement strategy: replace if new depth >= existing depth, or random replacement if full.
     fn store(&mut self, hash: u64, depth: u8, score: i32, entry_type: EntryType) {
         self.accesses += 1;
-        
+
         // Check if we need to make room
         if self.table.len() >= self.max_size {
             // Simple strategy: clear half the table when full
             if self.table.len() >= self.max_size {
                 // Keep only entries with depth >= 4 (more likely to be useful)
-                let to_remove: Vec<u64> = self.table.iter()
+                let to_remove: Vec<u64> = self
+                    .table
+                    .iter()
                     .filter(|(_, entry)| entry.depth < 4)
                     .map(|(k, _)| *k)
                     .take(self.max_size / 2)
                     .collect();
-                
+
                 for k in to_remove {
                     self.table.remove(&k);
                 }
-                
+
                 // If still full, clear everything (should be rare)
                 if self.table.len() >= self.max_size {
                     self.table.clear();
                 }
             }
         }
-        
+
         // Insert or replace based on depth
         let should_insert = match self.table.get(&hash) {
             Some(existing) => depth >= existing.depth,
             None => true,
         };
-        
+
         if should_insert {
-            self.table.insert(hash, TTEntry {
-                depth,
-                score,
-                entry_type,
-            });
+            self.table.insert(
+                hash,
+                TTEntry {
+                    depth,
+                    score,
+                    entry_type,
+                },
+            );
         }
     }
-    
+
     /// Retrieves a position from the table.
     fn lookup(&mut self, hash: u64, depth: u8, _alpha: i32, _beta: i32) -> Option<i32> {
         self.accesses += 1;
-        
+
         if let Some(entry) = self.table.get(&hash) {
             self.hits += 1;
-            
+
             if entry.depth >= depth {
                 match entry.entry_type {
                     EntryType::Exact => return Some(entry.score),
@@ -97,14 +102,14 @@ impl TranspositionTable {
         }
         None
     }
-    
+
     /// Clears the transposition table.
     fn clear(&mut self) {
         self.table.clear();
         self.accesses = 0;
         self.hits = 0;
     }
-    
+
     /// Returns hit rate for diagnostics.
     #[allow(dead_code)]
     fn hit_rate(&self) -> f64 {
@@ -133,7 +138,13 @@ pub fn clear_tt() {
 }
 
 /// Stores a position in the transposition table.
-pub fn store_position(hash: u64, depth: u8, score: i32, _is_exact: bool, _best_move: Option<(u8, u8, u8)>) {
+pub fn store_position(
+    hash: u64,
+    depth: u8,
+    score: i32,
+    _is_exact: bool,
+    _best_move: Option<(u8, u8, u8)>,
+) {
     let tt = get_transposition_table();
     let mut table = tt.lock().unwrap();
     table.store(hash, depth, score, EntryType::Exact);

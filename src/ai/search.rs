@@ -3,14 +3,14 @@
 //
 // Search Module - Implements Minimax with Alpha-Beta pruning for chess engine.
 // Supports configurable search depth and includes Level 1 random move selection.
-use crate::board::Board;
+use crate::ai::evaluation::evaluate;
 use crate::board::move_struct::Move;
 use crate::board::types::Color;
-use crate::ai::evaluation::evaluate;
+use crate::board::Board;
 use crate::lookup_position;
 use rand::seq::SliceRandom;
-use rand::Rng;
 use rand::thread_rng;
+use rand::Rng;
 
 // Only use console on WASM targets
 #[cfg(target_arch = "wasm32")]
@@ -98,7 +98,7 @@ pub fn get_best_move_novice(board: &Board) -> Option<Move> {
     };
     let start = get_time_ms();
 
-    for (_i, m) in moves.iter().enumerate() {
+    for m in moves.iter() {
         let mut board_copy = board.clone();
         board_copy.make_move(*m);
         let score = evaluate(&board_copy);
@@ -117,7 +117,11 @@ pub fn get_best_move_novice(board: &Board) -> Option<Move> {
     }
 
     let elapsed = get_time_ms() - start;
-    log_message(&format!("Level 1 (Novice): Selected best move from {} options in {:.0}ms", moves.len(), elapsed));
+    log_message(&format!(
+        "Level 1 (Novice): Selected best move from {} options in {:.0}ms",
+        moves.len(),
+        elapsed
+    ));
     best_move
 }
 
@@ -134,9 +138,12 @@ pub fn get_best_move_with_depth(board: &Board, max_depth: u8) -> Option<Move> {
     let side = board.side_to_move;
     let mut best_move: Option<Move> = None;
     let total_start = get_time_ms();
-    
-    log_message(&format!("Engine: Starting iterative deepening search (max depth: {}, max time: {}ms)", max_depth, MAX_SEARCH_TIME_MS));
-    
+
+    log_message(&format!(
+        "Engine: Starting iterative deepening search (max depth: {}, max time: {}ms)",
+        max_depth, MAX_SEARCH_TIME_MS
+    ));
+
     // Iterative deepening: search at increasing depths
     for depth in 1..=max_depth {
         // Clear transposition table and ordering tables for new search
@@ -145,62 +152,74 @@ pub fn get_best_move_with_depth(board: &Board, max_depth: u8) -> Option<Move> {
             crate::ai::move_ordering::clear_ordering_tables();
             NODE_COUNT.store(0, std::sync::atomic::Ordering::SeqCst);
         }
-        
+
         if is_timeout(total_start) {
-            log_message(&format!("Engine: Timeout reached after {}ms, returning best move found", MAX_SEARCH_TIME_MS));
+            log_message(&format!(
+                "Engine: Timeout reached after {}ms, returning best move found",
+                MAX_SEARCH_TIME_MS
+            ));
             break;
         }
-        
+
         let depth_start = get_time_ms();
-        log_message(&format!("Engine: depth {}/{} searching...", depth, max_depth));
-        
+        log_message(&format!(
+            "Engine: depth {}/{} searching...",
+            depth, max_depth
+        ));
+
         let mut current_best = None;
         let mut best_score = i32::MIN + 1;
         let mut alpha = i32::MIN + 1;
         let beta = i32::MAX;
-        
+
         // Re-sort moves with the previous best move first
         let mut depth_moves = moves.clone();
         if let Some(prev_move) = best_move {
-            if let Some(pos) = depth_moves.iter().position(|m| m.from == prev_move.from && m.to == prev_move.to) {
+            if let Some(pos) = depth_moves
+                .iter()
+                .position(|m| m.from == prev_move.from && m.to == prev_move.to)
+            {
                 depth_moves.swap(0, pos);
             }
         }
-        
+
         for m in &depth_moves {
             // Check timeout during move evaluation
             if is_timeout(total_start) {
                 log_message("Engine: Timeout reached during move evaluation");
                 break;
             }
-            
+
             let mut board_copy = board.clone();
             board_copy.make_move(*m);
             // Negamax: score is from perspective of side to move after the move
             // So we negate the result, and the opponent's alpha/beta become our -beta/-alpha
             let score = -alpha_beta(&board_copy, depth - 1, -beta, -alpha, total_start);
-            
+
             if score > best_score {
                 best_score = score;
                 current_best = Some(*m);
             }
-            
+
             // Update alpha for root pruning
             if score > alpha {
                 alpha = score;
             }
-            
+
             // Beta cutoff at root
             if alpha >= beta {
                 break;
             }
         }
-        
+
         // Update best move found so far (only if we completed the depth)
         if let Some(m) = current_best {
             best_move = Some(m);
             let depth_elapsed = get_time_ms() - depth_start;
-            log_message(&format!("Engine: depth {}/{} [{}ms] score={}", depth, max_depth, depth_elapsed as u32, best_score));
+            log_message(&format!(
+                "Engine: depth {}/{} [{}ms] score={}",
+                depth, max_depth, depth_elapsed as u32, best_score
+            ));
         } else {
             // Timeout occurred, don't update best_move
             break;
@@ -208,8 +227,11 @@ pub fn get_best_move_with_depth(board: &Board, max_depth: u8) -> Option<Move> {
     }
 
     let total_elapsed = get_time_ms() - total_start;
-    log_message(&format!("Engine: Search complete in {:.0}ms", total_elapsed));
-    
+    log_message(&format!(
+        "Engine: Search complete in {:.0}ms",
+        total_elapsed
+    ));
+
     best_move
 }
 
@@ -222,7 +244,7 @@ fn alpha_beta(board: &Board, depth: u8, mut alpha: i32, beta: i32, start_time: f
         return evaluate(board);
     }
     NODE_COUNT.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-    
+
     let board_hash = board.zobrist_hash;
 
     // Check transposition table
@@ -253,22 +275,24 @@ fn alpha_beta(board: &Board, depth: u8, mut alpha: i32, beta: i32, start_time: f
 
     // Sort moves using improved ordering (MVV-LVA + Killer + History)
     crate::ai::move_ordering::sort_moves(&mut moves, board, depth);
-    
+
     for m in &moves {
         let mut board_copy = board.clone();
         board_copy.make_move(*m);
         // Negamax: negate the returned score and swap alpha/beta
         let eval = -alpha_beta(&board_copy, depth - 1, -beta, -alpha, start_time);
-        
+
         if eval > best_value {
             best_value = eval;
             best_move = Some((m.from as u8, m.to as u8, move_flag_to_u8(&m.flag)));
             // Record successful quiet moves in history table
-            if board.get_piece_at(m.to).is_none() && !matches!(m.flag, crate::board::move_struct::MoveFlag::Promotion(_)) {
+            if board.get_piece_at(m.to).is_none()
+                && !matches!(m.flag, crate::board::move_struct::MoveFlag::Promotion(_))
+            {
                 crate::ai::move_ordering::record_history(m, depth);
             }
         }
-        
+
         alpha = alpha.max(eval);
         if alpha >= beta {
             // Beta cutoff - record killer move
@@ -276,7 +300,7 @@ fn alpha_beta(board: &Board, depth: u8, mut alpha: i32, beta: i32, start_time: f
             break;
         }
     }
-    
+
     crate::store_position(board_hash, depth, best_value, true, best_move);
     best_value
 }
@@ -303,38 +327,38 @@ fn quiescence(board: &Board, mut alpha: i32, beta: i32, start_time: f64, q_depth
     if is_timeout(start_time) || q_depth > 4 {
         return evaluate(board);
     }
-    
+
     // Stand pat: evaluate current position from perspective of side to move
     let stand_pat = evaluate(board);
-    
+
     if stand_pat > alpha {
         alpha = stand_pat;
     }
     if alpha >= beta {
         return alpha;
     }
-    
+
     // Only generate capture moves
     let mut capture_moves = board.generate_legal_captures();
-    
+
     if capture_moves.is_empty() {
         return stand_pat;
     }
 
     // Order captures for better pruning (MVV-LVA)
     crate::ai::move_ordering::sort_moves(&mut capture_moves, board, 0);
-    
+
     // Limit number of capture moves to explore
     let max_captures = if q_depth > 2 { 4 } else { 8 };
     let capture_moves: Vec<_> = capture_moves.into_iter().take(max_captures).collect();
-    
+
     let mut best_value = stand_pat;
     for m in &capture_moves {
         // Check timeout during quiescence search
         if is_timeout(start_time) {
             return best_value;
         }
-        
+
         let mut board_copy = board.clone();
         board_copy.make_move(*m);
         // Negamax: negate the score and swap alpha/beta

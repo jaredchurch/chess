@@ -11,11 +11,7 @@ pub mod serialization;
 pub mod wasm;
 
 // Re-export for convenience
-pub use crate::ai::transposition::{
-    clear_tt,
-    store_position,
-    lookup_position,
-};
+pub use crate::ai::transposition::{clear_tt, lookup_position, store_position};
 pub use crate::board::zobrist::compute_zobrist_hash;
 
 pub use crate::board::bitboard::Bitboard;

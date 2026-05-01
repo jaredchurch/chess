@@ -219,19 +219,19 @@ impl Board {
         // 7. Update side to move and clocks
         self.side_to_move = self.side_to_move.opposite();
         // (Half-move clock and full-move number updates could be added here)
-        
+
         // 8. Update Zobrist hash
         self.update_zobrist_hash(&m, &piece);
     }
-    
+
     /// Updates the Zobrist hash incrementally after a move.
     fn update_zobrist_hash(&mut self, m: &Move, piece: &Piece) {
         let tables = crate::board::zobrist::zobrist_tables();
-        
+
         // Remove piece from source square
         let piece_idx = self.get_piece_index(piece);
         self.zobrist_hash ^= tables.piece_keys[piece_idx][m.from as usize];
-        
+
         // Add piece at destination (handle promotion)
         let dest_piece = if let MoveFlag::Promotion(pt) = m.flag {
             Piece::new(pt, piece.color)
@@ -240,7 +240,7 @@ impl Board {
         };
         let dest_piece_idx = self.get_piece_index(&dest_piece);
         self.zobrist_hash ^= tables.piece_keys[dest_piece_idx][m.to as usize];
-        
+
         // Handle captures (remove captured piece)
         if m.flag == MoveFlag::EnPassantCapture {
             let capture_sq = if piece.color == Color::White {
@@ -256,14 +256,14 @@ impl Board {
                 self.zobrist_hash ^= tables.piece_keys[captured_idx][m.to as usize];
             }
         }
-        
+
         // Side to move
         self.zobrist_hash ^= tables.side_to_move_key;
-        
+
         // Castling rights (simplified - would need full update)
         // This is a simplified version; full implementation would track changes
     }
-    
+
     /// Gets the piece index for the piece array.
     fn get_piece_index(&self, piece: &Piece) -> usize {
         let color_offset = if piece.color == Color::White { 0 } else { 6 };

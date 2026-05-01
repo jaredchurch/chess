@@ -9,7 +9,7 @@ pub struct LookupTables {
     pub knight_attacks: [Bitboard; 64],
     pub king_attacks: [Bitboard; 64],
     pub pawn_attacks: [[Bitboard; 64]; 2], // [Color][Square]
-    pub rays: [[u64; 8]; 64],             // [Square][Direction]
+    pub rays: [[u64; 8]; 64],              // [Square][Direction]
 }
 
 // Direction indices

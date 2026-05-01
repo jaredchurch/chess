@@ -3,10 +3,10 @@
 
 pub mod king;
 pub mod knight;
+pub mod lookup;
 pub mod pawn;
 pub mod sliding;
 pub mod termination;
-pub mod lookup;
 
 use crate::board::move_struct::Move;
 use crate::board::piece::PieceType;
@@ -142,21 +142,31 @@ pub fn generate_pseudo_legal_captures(board: &Board) -> Vec<Move> {
         while bits != 0 {
             let square_idx = bits.trailing_zeros();
             let square = Square::from_u8_unchecked(square_idx as u8);
-            
+
             // For now, we use the same generators but filter them.
             // A more optimized version would pass a 'captures_only' flag down.
             let mut all_piece_moves = Vec::with_capacity(32);
             match piece_type {
                 PieceType::Pawn => pawn::generate_pawn_moves(board, square, &mut all_piece_moves),
-                PieceType::Knight => knight::generate_knight_moves(board, square, &mut all_piece_moves),
-                PieceType::Bishop => sliding::generate_bishop_moves(board, square, &mut all_piece_moves),
-                PieceType::Rook => sliding::generate_rook_moves(board, square, &mut all_piece_moves),
-                PieceType::Queen => sliding::generate_queen_moves(board, square, &mut all_piece_moves),
+                PieceType::Knight => {
+                    knight::generate_knight_moves(board, square, &mut all_piece_moves)
+                }
+                PieceType::Bishop => {
+                    sliding::generate_bishop_moves(board, square, &mut all_piece_moves)
+                }
+                PieceType::Rook => {
+                    sliding::generate_rook_moves(board, square, &mut all_piece_moves)
+                }
+                PieceType::Queen => {
+                    sliding::generate_queen_moves(board, square, &mut all_piece_moves)
+                }
                 PieceType::King => king::generate_king_moves(board, square, &mut all_piece_moves),
             }
 
             for m in all_piece_moves {
-                if board.get_piece_at(m.to).is_some() || m.flag == crate::board::move_struct::MoveFlag::EnPassantCapture {
+                if board.get_piece_at(m.to).is_some()
+                    || m.flag == crate::board::move_struct::MoveFlag::EnPassantCapture
+                {
                     moves.push(m);
                 }
             }

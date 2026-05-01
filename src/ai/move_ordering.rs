@@ -22,35 +22,39 @@ impl KillerTable {
             killers: [[None; KILLER_SLOTS]; MAX_DEPTH],
         }
     }
-    
+
     /// Records a killer move at a given depth
     fn record(&mut self, depth: u8, m: &Move) {
         let idx = depth as usize;
-        if idx >= MAX_DEPTH { return; }
-        
+        if idx >= MAX_DEPTH {
+            return;
+        }
+
         let entry = (m.from as u8, m.to as u8);
-        
+
         // Don't add duplicates
         if self.killers[idx][0] == Some(entry) {
             return;
         }
-        
+
         // Shift existing killers down and add new one at front
         for i in (1..KILLER_SLOTS).rev() {
-            self.killers[idx][i] = self.killers[idx][i-1];
+            self.killers[idx][i] = self.killers[idx][i - 1];
         }
         self.killers[idx][0] = Some(entry);
     }
-    
+
     /// Checks if a move is a killer at the given depth
     fn is_killer(&self, depth: u8, m: &Move) -> bool {
         let idx = depth as usize;
-        if idx >= MAX_DEPTH { return false; }
-        
+        if idx >= MAX_DEPTH {
+            return false;
+        }
+
         let entry = (m.from as u8, m.to as u8);
         self.killers[idx].iter().any(|k| k == &Some(entry))
     }
-    
+
     /// Clears the killer table
     fn clear(&mut self) {
         self.killers = [[None; KILLER_SLOTS]; MAX_DEPTH];
@@ -69,7 +73,7 @@ impl HistoryTable {
             scores: [[0; 64]; 6],
         }
     }
-    
+
     /// Records a successful quiet move with bonus proportional to depth
     fn record(&mut self, m: &Move, depth: u8) {
         // Get piece type from the move flag (for promotions) or we'd need board access
@@ -82,7 +86,7 @@ impl HistoryTable {
             self.scores[idx][to] = (self.scores[idx][to] + bonus).min(10000);
         }
     }
-    
+
     /// Gets the history score for a move
     fn get_score(&self, m: &Move) -> i32 {
         let to = m.to as usize;
@@ -93,7 +97,7 @@ impl HistoryTable {
             0
         }
     }
-    
+
     /// Clears the history table
     fn clear(&mut self) {
         self.scores = [[0; 64]; 6];
@@ -142,7 +146,7 @@ pub fn record_history(m: &Move, depth: u8) {
 /// Priority: Hash move > Captures (MVV-LVA) > Killer moves > History > Promotions
 pub fn score_move(m: &Move, board: &crate::board::Board, depth: u8) -> i32 {
     let mut score = 0;
-    
+
     // 1. Captures (MVV-LVA)
     if let Some(captured) = board.get_piece_at(m.to) {
         let victim_value = get_piece_value(&captured.piece_type);
@@ -156,22 +160,22 @@ pub fn score_move(m: &Move, board: &crate::board::Board, depth: u8) -> i32 {
         // MVV-LVA: high victim value, low attacker value = high score
         score += 100000 + victim_value * 100 - attacker_value;
     }
-    
+
     // 2. Promotions (without capture)
     if matches!(m.flag, MoveFlag::Promotion(_)) && board.get_piece_at(m.to).is_none() {
         score += 90000;
     }
-    
+
     // 3. Killer moves
     let kt = get_killer_table();
     if kt.lock().unwrap().is_killer(depth, m) {
         score += 80000;
     }
-    
+
     // 4. History heuristic
     let ht = get_history_table();
     score += ht.lock().unwrap().get_score(m);
-    
+
     score
 }
 
@@ -182,7 +186,7 @@ pub fn sort_moves(moves: &mut [Move], board: &crate::board::Board, depth: u8) {
         .map(|&m| (m, score_move(&m, board, depth)))
         .collect();
 
-    scored_moves.sort_by(|a, b| b.1.cmp(&a.1)); // Descending order
+    scored_moves.sort_by_key(|b| std::cmp::Reverse(b.1)); // Descending order
 
     for (i, (m, _)) in scored_moves.into_iter().enumerate() {
         moves[i] = m;

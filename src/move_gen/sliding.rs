@@ -61,7 +61,7 @@ pub fn generate_queen_moves(board: &Board, square: Square, moves: &mut Vec<Move>
     let rook_attacks = get_rook_attacks(square, board.occupancy[2]);
     let bishop_attacks = get_bishop_attacks(square, board.occupancy[2]);
     let attacks = Bitboard(rook_attacks.0 | bishop_attacks.0);
-    
+
     let own_occupancy = match board.side_to_move {
         crate::board::types::Color::White => board.occupancy[0],
         crate::board::types::Color::Black => board.occupancy[1],
@@ -129,7 +129,11 @@ fn get_ray_attacks(sq: usize, dir: usize, occupancy: u64) -> u64 {
 }
 
 #[allow(dead_code)]
-fn get_sliding_attacks_slow(square: Square, occupancy: Bitboard, directions: &[(i32, i32)]) -> Bitboard {
+fn get_sliding_attacks_slow(
+    square: Square,
+    occupancy: Bitboard,
+    directions: &[(i32, i32)],
+) -> Bitboard {
     let bit_index = square.as_u32() as i32;
     let file = bit_index % 8;
     let rank = bit_index / 8;

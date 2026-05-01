@@ -4,14 +4,14 @@
 // AI Engine Module - Provides difficulty-based move selection for the chess engine.
 // Implements levels 1-10 with increasing search depth and evaluation complexity.
 
-pub mod greedy;
 pub mod evaluation;
+pub mod greedy;
+pub mod move_ordering;
 pub mod search;
 pub mod transposition;
-pub mod move_ordering;
 
-use crate::board::Board;
 use crate::board::move_struct::Move;
+use crate::board::Board;
 
 /// Returns the search depth for the given difficulty level (1, 3-10).
 pub fn get_search_depth(level: u8) -> u8 {

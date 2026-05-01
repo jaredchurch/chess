@@ -26,33 +26,33 @@ impl ZobristTables {
             castling_keys: [0; 4],
             en_passant_keys: [0; 8],
         };
-        
+
         // Initialize with random values
         let mut hasher = DefaultHasher::new();
-        
+
         for piece_idx in 0..12 {
             for sq in 0..64 {
                 (piece_idx, sq).hash(&mut hasher);
                 tables.piece_keys[piece_idx][sq] = hasher.finish();
             }
         }
-        
+
         // Side to move key
         b"side_to_move".hash(&mut hasher);
         tables.side_to_move_key = hasher.finish();
-        
+
         // Castling rights keys
         for i in 0..4 {
             (b"castling", i).hash(&mut hasher);
             tables.castling_keys[i] = hasher.finish();
         }
-        
+
         // En passant file keys
         for file in 0..8 {
             (b"en_passant", file).hash(&mut hasher);
             tables.en_passant_keys[file] = hasher.finish();
         }
-        
+
         tables
     }
 }
@@ -68,7 +68,7 @@ pub fn zobrist_tables() -> &'static ZobristTables {
 pub fn compute_zobrist_hash(board: &crate::board::Board) -> u64 {
     let tables = zobrist_tables();
     let mut hash = 0u64;
-    
+
     // Piece positions
     for piece_idx in 0..12 {
         let mut bb = board.pieces[piece_idx].0;
@@ -78,12 +78,12 @@ pub fn compute_zobrist_hash(board: &crate::board::Board) -> u64 {
             bb &= bb - 1;
         }
     }
-    
+
     // Side to move
     if board.side_to_move == Color::Black {
         hash ^= tables.side_to_move_key;
     }
-    
+
     // Castling rights
     if board.castling_rights & 0x1 != 0 {
         hash ^= tables.castling_keys[0]; // White kingside
@@ -97,12 +97,12 @@ pub fn compute_zobrist_hash(board: &crate::board::Board) -> u64 {
     if board.castling_rights & 0x8 != 0 {
         hash ^= tables.castling_keys[3]; // Black queenside
     }
-    
+
     // En passant square
     if let Some(ep_sq) = board.en_passant_square {
         let file = ep_sq as usize % 8;
         hash ^= tables.en_passant_keys[file];
     }
-    
+
     hash
 }
