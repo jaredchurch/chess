@@ -14,7 +14,14 @@
 <body>
     <div id="app">
         <div id="board-container">
-            <div id="status">Initializing...</div>
+            <div id="status" style="display:flex;justify-content:space-between;">
+                <span id="status-text" style="align-self:center;">Initializing...</span>
+                <span id="compact-timer" style="font-size:0.85em;color:#95a5a6;font-family:monospace;font-variant-numeric:tabular-nums;align-self:flex-end;min-width:120px;text-align:right;">
+                    <span id="current-move-display">0:00.0</span>
+                    <span style="margin:0 5px;">/</span>
+                    <span id="game-total-display">0:00.0</span>
+                </span>
+            </div>
             <div id="board"></div>
             <div id="fen" style="display:none"></div>
             <div class="controls">
@@ -50,27 +57,6 @@
                         <div class="score-title">Black</div>
                         <div class="score-value">+0</div>
                         <div class="captured-pieces"></div>
-                    </div>
-                </div>
-            </div>
-            <div class="card" id="timer-card-wrapper">
-                <div class="card-title">Timer</div>
-                <div id="timer-card">
-                    <div class="timer-section">
-                        <div class="timer-title">Current Move</div>
-                        <div class="timer-value" id="current-move-time">0.0s</div>
-                    </div>
-                    <div class="timer-section">
-                        <div class="timer-title">White Total</div>
-                        <div class="timer-value" id="white-total-time">0.0s</div>
-                    </div>
-                    <div class="timer-section">
-                        <div class="timer-title">Black Total</div>
-                        <div class="timer-value" id="black-total-time">0.0s</div>
-                    </div>
-                    <div class="timer-section">
-                        <div class="timer-title">Game Total</div>
-                        <div class="timer-value" id="game-total-time">0.0s</div>
                     </div>
                 </div>
             </div>

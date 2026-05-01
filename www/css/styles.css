@@ -106,6 +106,12 @@ button:hover { background: #2980b9; }
     font-weight: bold;
     color: #2ecc71;
 }
+.score-timer {
+    font-size: 0.6em;
+    color: #95a5a6;
+    font-family: monospace;
+    font-variant-numeric: tabular-nums;
+}
 .captured-pieces {
     display: flex;
     flex-wrap: wrap;
@@ -118,31 +124,6 @@ button:hover { background: #2980b9; }
 }
 .captured-pieces .piece-white { color: #ffffff; text-shadow: 0 0 2px rgba(0,0,0,0.8); margin-right: 2px; }
 .captured-pieces .piece-black { color: #000000; margin-right: 2px; }
-
-/* Timer Card */
-#timer-card {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-.timer-section {
-    display: flex;
-    justify-content: space-between;
-    padding: 4px 0;
-    border-bottom: 1px solid #4a5f7f;
-}
-.timer-section:last-child {
-    border-bottom: none;
-}
-.timer-title {
-    color: #bdc3c7;
-    font-size: 0.9em;
-}
-.timer-value {
-    color: #ecf0f1;
-    font-weight: bold;
-    font-family: monospace;
-}
 
 /* Move History */
 #move-history {

@@ -57,7 +57,18 @@ let lastMoveTimestamp = Date.now();
 let gameActive = true;
 
 function formatTime(ms) {
-    return (ms / 1000).toFixed(1) + 's';
+    const totalSeconds = Math.floor(ms / 1000);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    const tenths = Math.floor((ms % 1000) / 100);
+    
+    let timeStr = '';
+    if (hours > 0) timeStr += hours + ':';
+    if (hours > 0 || minutes > 0) timeStr += String(minutes).padStart(hours > 0 ? 2 : 1, '0') + ':';
+    timeStr += String(seconds).padStart(minutes > 0 ? 2 : 1, '0') + '.' + tenths;
+    
+    return timeStr;
 }
 
 function updateTimerDisplay() {
@@ -65,19 +76,15 @@ function updateTimerDisplay() {
     const gameTotal = now - gameStartTime;
     const currentMoveElapsed = now - lastMoveTimestamp;
     
-    const currentTotal = isWhitesTurn ? whiteTotalTime + currentMoveElapsed : blackTotalTime + currentMoveElapsed;
-    const whiteDisplay = isWhitesTurn ? whiteTotalTime + currentMoveElapsed : whiteTotalTime;
-    const blackDisplay = isWhitesTurn ? blackTotalTime : blackTotalTime + currentMoveElapsed;
-    
-    const currentMoveEl = document.getElementById('current-move-time');
-    const whiteTotalEl = document.getElementById('white-total-time');
-    const blackTotalEl = document.getElementById('black-total-time');
-    const gameTotalEl = document.getElementById('game-total-time');
+    // Update compact timer display (to the right of status text)
+    const currentMoveEl = document.getElementById('current-move-display');
+    const gameTotalEl = document.getElementById('game-total-display');
     
     if (currentMoveEl) currentMoveEl.textContent = formatTime(currentMoveElapsed);
-    if (whiteTotalEl) whiteTotalEl.textContent = formatTime(whiteDisplay);
-    if (blackTotalEl) blackTotalEl.textContent = formatTime(blackDisplay);
     if (gameTotalEl) gameTotalEl.textContent = formatTime(gameTotal);
+    
+    // Also update score card for white/black timers
+    updateScoreCard();
 }
 
 function startMoveTimer() {
@@ -402,6 +409,7 @@ function isPlayerTurn(gameState) {
 
 function updateUI() {
     const gameState = get_game_state(currentFen);
+    const statusText = document.getElementById('status-text');
     const statusEl = document.getElementById('status');
     const fenEl = document.getElementById('fen');
     const playerSide = currentGame?.player_side || determinePlayerSide();
@@ -410,13 +418,13 @@ function updateUI() {
 
     if (gameState.is_checkmate) {
         const winner = gameState.side_to_move === 'w' ? 'Black' : 'White';
-        statusEl.innerText = `Checkmate! ${winner} wins.`;
+        if (statusText) statusText.textContent = `Checkmate! ${winner} wins.`;
         finishGame(gameState.side_to_move === 'w' ? 'win_black' : 'win_white', 'checkmate');
     } else if (gameState.is_draw) {
-        statusEl.innerText = "Draw!";
+        if (statusText) statusText.textContent = "Draw!";
         finishGame('draw', 'stalemate');
     } else {
-        statusEl.innerText = `${gameState.side_to_move === 'w' ? 'White' : 'Black'}'s turn${gameState.is_check ? ' (Check!)' : ''}`;
+        if (statusText) statusText.textContent = `${gameState.side_to_move === 'w' ? 'White' : 'Black'}'s turn${gameState.is_check ? ' (Check!)' : ''}`;
         
         // AI moves when it's NOT player's turn
         const playerIsWhite = playerSide === 'white';
@@ -539,17 +547,21 @@ function updateScoreCard() {
     const whiteScore = calculateScore(capturedPieces.white);
     const blackScore = calculateScore(capturedPieces.black);
     
+    const now = Date.now();
+    const whiteTime = (isWhitesTurn ? whiteTotalTime + (now - lastMoveTimestamp) : whiteTotalTime);
+    const blackTime = (!isWhitesTurn ? blackTotalTime + (now - lastMoveTimestamp) : blackTotalTime);
+    
     scoreCard.innerHTML = `
         <div class="score-section">
             <div class="score-title">White</div>
-            <div class="score-value">+${whiteScore}</div>
+            <div class="score-value">+${whiteScore}<span class="score-timer"> (${formatTime(whiteTime)})</span></div>
             <div class="captured-pieces">${capturedPieces.white.map(p => 
                 `<span class="${isWhitePiece(p) ? 'piece-white' : 'piece-black'}">${pieceUnicode[p]}</span>`
             ).join('')}</div>
         </div>
         <div class="score-section">
             <div class="score-title">Black</div>
-            <div class="score-value">+${blackScore}</div>
+            <div class="score-value">+${blackScore}<span class="score-timer"> (${formatTime(blackTime)})</span></div>
             <div class="captured-pieces">${capturedPieces.black.map(p => 
                 `<span class="${isWhitePiece(p) ? 'piece-white' : 'piece-black'}">${pieceUnicode[p]}</span>`
             ).join('')}</div>
