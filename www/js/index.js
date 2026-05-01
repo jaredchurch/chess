@@ -501,6 +501,9 @@ function updateMoveHistoryCard() {
             showMovePreview(idx);
         };
     });
+    
+    // Auto-scroll to show the latest move
+    historyCard.scrollTop = historyCard.scrollHeight;
 }
 
 // Global function for preview dialog close
