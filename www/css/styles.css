@@ -106,6 +106,12 @@ button:hover { background: #2980b9; }
     font-weight: bold;
     color: #2ecc71;
 }
+.score-timer {
+    font-size: 0.6em;
+    color: #95a5a6;
+    font-family: monospace;
+    font-variant-numeric: tabular-nums;
+}
 .captured-pieces {
     display: flex;
     flex-wrap: wrap;

@@ -36,15 +36,85 @@ import {
     deleteProfile
 } from './storage.js';
 
-let currentFen = INITIAL_FEN;
+window.currentFen = INITIAL_FEN;
 let selectedSquare = null;
 let legalMoves = [];
 let currentGame = null;
 let moveStartTime = Date.now();
 let activeProfile = null;
 let playerColor = window.playerColor || 'random';
+let aiDifficulty = window.aiDifficulty || 1; // Default to Level 1
 let capturedPieces = { white: [], black: [] };
 let boardOrientation = 'white';
+
+// Timer variables
+let gameStartTime = Date.now();
+let whiteTotalTime = 0;
+let blackTotalTime = 0;
+let currentMoveTimer = null;
+let isWhitesTurn = true;
+let lastMoveTimestamp = Date.now();
+let gameActive = true;
+
+function formatTime(ms) {
+    const totalSeconds = Math.floor(ms / 1000);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    const tenths = Math.floor((ms % 1000) / 100);
+    
+    let timeStr = '';
+    if (hours > 0) timeStr += hours + ':';
+    if (hours > 0 || minutes > 0) timeStr += String(minutes).padStart(hours > 0 ? 2 : 1, '0') + ':';
+    timeStr += String(seconds).padStart(minutes > 0 ? 2 : 1, '0') + '.' + tenths;
+    
+    return timeStr;
+}
+
+function updateTimerDisplay() {
+    const now = Date.now();
+    const gameTotal = now - gameStartTime;
+    const currentMoveElapsed = now - lastMoveTimestamp;
+    
+    // Update compact timer display (to the right of status text)
+    const currentMoveEl = document.getElementById('current-move-display');
+    const gameTotalEl = document.getElementById('game-total-display');
+    
+    if (currentMoveEl) currentMoveEl.textContent = formatTime(currentMoveElapsed);
+    if (gameTotalEl) gameTotalEl.textContent = formatTime(gameTotal);
+    
+    // Also update score card for white/black timers
+    updateScoreCard();
+}
+
+function startMoveTimer() {
+    if (!gameActive) return;
+    stopMoveTimer();
+    lastMoveTimestamp = Date.now();
+    currentMoveTimer = setInterval(updateTimerDisplay, 100);
+}
+
+function stopMoveTimer() {
+    if (currentMoveTimer) {
+        clearInterval(currentMoveTimer);
+        currentMoveTimer = null;
+    }
+}
+
+function recordMoveTime() {
+    const now = Date.now();
+    const elapsed = now - lastMoveTimestamp;
+    
+    if (isWhitesTurn) {
+        whiteTotalTime += elapsed;
+    } else {
+        blackTotalTime += elapsed;
+    }
+    
+    isWhitesTurn = !isWhitesTurn;
+    lastMoveTimestamp = now;
+    updateTimerDisplay();
+}
 
 window.updateBoardSize = function() {
     const board = document.getElementById('board');
@@ -172,10 +242,13 @@ function restoreInProgressGame() {
 }
 
 function startNewGame() {
-    const playerSide = determinePlayerSide();
+    const playerSide = playerColor === 'random' 
+        ? (Math.random() < 0.5 ? 'white' : 'black') 
+        : playerColor;
+    
     currentGame = {
         game_id: generateUUID(),
-        profile_id: activeProfile?.id || "default",
+        profile_id: activeProfile ? activeProfile.id : null,
         player_side: playerSide,
         timestamp: Date.now(),
         last_modified: Date.now(),
@@ -185,6 +258,15 @@ function startNewGame() {
         initial_fen: INITIAL_FEN
     };
     capturedPieces = { white: [], black: [] };
+    
+    // Reset timers
+    gameStartTime = Date.now();
+    whiteTotalTime = 0;
+    blackTotalTime = 0;
+    isWhitesTurn = true;
+    lastMoveTimestamp = Date.now();
+    gameActive = true;
+    stopMoveTimer();
     
     // Always start with white to move (standard chess rule)
     currentFen = INITIAL_FEN;
@@ -281,6 +363,14 @@ function saveCurrentGame(from, to) {
 function finishGame(result, method) {
     if (!currentGame) return;
     
+    // Mark game as inactive to prevent timer restarts
+    gameActive = false;
+    
+    // Stop timer and record final move time
+    stopMoveTimer();
+    recordMoveTime();
+    updateTimerDisplay();
+    
     try {
         currentGame.result = result;
         currentGame.method = method;
@@ -319,6 +409,7 @@ function isPlayerTurn(gameState) {
 
 function updateUI() {
     const gameState = get_game_state(currentFen);
+    const statusText = document.getElementById('status-text');
     const statusEl = document.getElementById('status');
     const fenEl = document.getElementById('fen');
     const playerSide = currentGame?.player_side || determinePlayerSide();
@@ -327,13 +418,13 @@ function updateUI() {
 
     if (gameState.is_checkmate) {
         const winner = gameState.side_to_move === 'w' ? 'Black' : 'White';
-        statusEl.innerText = `Checkmate! ${winner} wins.`;
+        if (statusText) statusText.textContent = `Checkmate! ${winner} wins.`;
         finishGame(gameState.side_to_move === 'w' ? 'win_black' : 'win_white', 'checkmate');
     } else if (gameState.is_draw) {
-        statusEl.innerText = "Draw!";
+        if (statusText) statusText.textContent = "Draw!";
         finishGame('draw', 'stalemate');
     } else {
-        statusEl.innerText = `${gameState.side_to_move === 'w' ? 'White' : 'Black'}'s turn${gameState.is_check ? ' (Check!)' : ''}`;
+        if (statusText) statusText.textContent = `${gameState.side_to_move === 'w' ? 'White' : 'Black'}'s turn${gameState.is_check ? ' (Check!)' : ''}`;
         
         // AI moves when it's NOT player's turn
         const playerIsWhite = playerSide === 'white';
@@ -342,12 +433,15 @@ function updateUI() {
         
         if (isAiTurn && !gameState.is_checkmate && !gameState.is_draw) {
             setTimeout(makeAiMove, 500);
+        } else {
+            startMoveTimer();
         }
     }
 
     renderBoard();
     updateScoreCard();
     updateMoveHistoryCard();
+    updateTimerDisplay();
 }
 
 function renderBoard() {
@@ -385,6 +479,9 @@ function handleSquareClick(square) {
     } else if (selectedSquare) {
         const move = legalMoves.find(m => m.from === selectedSquare && m.to === square);
         if (move) {
+            recordMoveTime();
+            stopMoveTimer();
+            
             const nextFen = apply_move(currentFen, move);
             if (nextFen) {
                 saveCurrentGame(selectedSquare, square);
@@ -392,6 +489,7 @@ function handleSquareClick(square) {
                 selectedSquare = null;
                 moveStartTime = Date.now();
                 updateUI();
+                startMoveTimer();
                 return;
             }
         }
@@ -403,8 +501,11 @@ function handleSquareClick(square) {
 }
 
 function makeAiMove() {
-    const move = get_best_move_wasm(currentFen);
+    const move = get_best_move_wasm(currentFen, aiDifficulty);
     if (move) {
+        recordMoveTime();
+        stopMoveTimer();
+        
         const nextFen = apply_move(currentFen, move);
         if (nextFen) {
             saveCurrentGame(move.from, move.to);
@@ -446,17 +547,21 @@ function updateScoreCard() {
     const whiteScore = calculateScore(capturedPieces.white);
     const blackScore = calculateScore(capturedPieces.black);
     
+    const now = Date.now();
+    const whiteTime = (isWhitesTurn ? whiteTotalTime + (now - lastMoveTimestamp) : whiteTotalTime);
+    const blackTime = (!isWhitesTurn ? blackTotalTime + (now - lastMoveTimestamp) : blackTotalTime);
+    
     scoreCard.innerHTML = `
         <div class="score-section">
             <div class="score-title">White</div>
-            <div class="score-value">+${whiteScore}</div>
+            <div class="score-value">+${whiteScore}<span class="score-timer"> (${formatTime(whiteTime)})</span></div>
             <div class="captured-pieces">${capturedPieces.white.map(p => 
                 `<span class="${isWhitePiece(p) ? 'piece-white' : 'piece-black'}">${pieceUnicode[p]}</span>`
             ).join('')}</div>
         </div>
         <div class="score-section">
             <div class="score-title">Black</div>
-            <div class="score-value">+${blackScore}</div>
+            <div class="score-value">+${blackScore}<span class="score-timer"> (${formatTime(blackTime)})</span></div>
             <div class="captured-pieces">${capturedPieces.black.map(p => 
                 `<span class="${isWhitePiece(p) ? 'piece-white' : 'piece-black'}">${pieceUnicode[p]}</span>`
             ).join('')}</div>
@@ -500,6 +605,9 @@ function updateMoveHistoryCard() {
             showMovePreview(idx);
         };
     });
+    
+    // Auto-scroll to show the latest move
+    historyCard.scrollTop = historyCard.scrollHeight;
 }
 
 // Global function for preview dialog close
@@ -591,6 +699,14 @@ window.changePlayerColor = () => {
     if (select) {
         window.playerColor = select.value;
         playerColor = select.value;
+    }
+};
+
+window.changeAiDifficulty = () => {
+    const select = document.getElementById('ai-difficulty');
+    if (select) {
+        window.aiDifficulty = parseInt(select.value, 10);
+        aiDifficulty = window.aiDifficulty;
     }
 };
 

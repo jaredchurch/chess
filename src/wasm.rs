@@ -1,7 +1,7 @@
 // Copyright (c) 2026 Chess Core Team
 // Licensed under the MIT License. See LICENSE file in the project root for details.
 
-use crate::ai::greedy::get_best_move;
+use crate::ai::get_best_move;
 use crate::board::move_struct::MoveFlag;
 use crate::board::piece::PieceType;
 use crate::board::types::Square;
@@ -88,19 +88,22 @@ pub fn apply_move(fen: &str, move_obj: JsValue) -> JsValue {
 }
 
 #[wasm_bindgen]
-pub fn get_best_move_wasm(fen: &str) -> JsValue {
+pub fn get_best_move_wasm(fen: &str, level: u8) -> JsValue {
     let board = match parse_fen(fen) {
         Ok(b) => b,
         Err(_) => return JsValue::NULL,
     };
 
-    if let Some(m) = get_best_move(&board) {
+    if let Some(m) = get_best_move(&board, level) {
         let wasm_move = WasmMove {
             from: square_to_string(m.from),
             to: square_to_string(m.to),
             promotion: match m.flag {
                 MoveFlag::Promotion(PieceType::Queen) => Some("q".to_string()),
-                _ => None, // Greedy AI simplifies promotion to Queen
+                MoveFlag::Promotion(PieceType::Rook) => Some("r".to_string()),
+                MoveFlag::Promotion(PieceType::Bishop) => Some("b".to_string()),
+                MoveFlag::Promotion(PieceType::Knight) => Some("n".to_string()),
+                _ => None,
             },
         };
         serde_wasm_bindgen::to_value(&wasm_move).unwrap()

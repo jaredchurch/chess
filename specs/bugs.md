@@ -1,0 +1,11 @@
+- [x] BUG1. On iOS white pawns appear black.
+- [x] BUG2. when a move is reviewed the dialog pops up but the board displayed has some squares are shorter than they should be. all the squares should be squares.
+- [x] BUG3. when user plays a black white player should still go first.
+- [x] BUG4. reloading seems to reset the board to some random point (not clear what) - it should always reload to the last state before the reload was done.
+- [x] bug5. dialog box to show previous move has broken and is not appearing as expected, instead it's displaying oddly below the board.
+- [x] bug6. when reset game is called with random colour (white/black) the the colour selector changes to match the result of the random selection. the colour selector should stay on random for the next reset.
+- [x] BUG7. points being awarded to white when black takes pieces.
+- [x] BUG8. On iPhone the board is flakey and keeps changing size of rows. The board size needs to be enforced as static on each screen. Board size and position is paramount and should be prioritised over other visual elements.
+- [x] BUG9. If lots of pieces get taken, then card displaying taken piece icons is not graceful - the icons and points move to overflow the card, suggest there should be a wrapping mechanism or some other more graceful method.
+- [x] BUG10. similar to bug8, but is affecting chrome browser on macOS & Windows.
+- [] BUG11. on small screen when score and move history is hidden by default the menu item to show/hide them is not correctly matching the state.

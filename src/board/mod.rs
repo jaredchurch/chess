@@ -5,6 +5,7 @@ pub mod bitboard;
 pub mod move_struct;
 pub mod piece;
 pub mod types;
+pub mod zobrist;
 
 use crate::board::bitboard::Bitboard;
 use crate::board::move_struct::{Move, MoveFlag};
@@ -24,11 +25,13 @@ pub struct Board {
     pub en_passant_square: Option<Square>,
     pub half_move_clock: u32,
     pub full_move_number: u32,
+    /// Zobrist hash for transposition table lookups.
+    pub zobrist_hash: u64,
 }
 
 impl Default for Board {
     fn default() -> Self {
-        Self {
+        let mut board = Self {
             pieces: [Bitboard::default(); 12],
             occupancy: [Bitboard::default(); 3],
             side_to_move: Color::White,
@@ -36,7 +39,10 @@ impl Default for Board {
             en_passant_square: None,
             half_move_clock: 0,
             full_move_number: 1,
-        }
+            zobrist_hash: 0,
+        };
+        board.zobrist_hash = crate::board::zobrist::compute_zobrist_hash(&board);
+        board
     }
 }
 
@@ -56,6 +62,9 @@ impl Board {
     /// Removes a piece from the board at the given square.
     pub fn remove_piece(&mut self, square: Square) {
         let bit_index = square.as_u32();
+        if !self.occupancy[2].get(bit_index) {
+            return;
+        }
         for i in 0..12 {
             self.pieces[i].clear(bit_index);
         }
@@ -65,6 +74,9 @@ impl Board {
     /// Gets the piece at the given square, if any.
     pub fn get_piece_at(&self, square: Square) -> Option<Piece> {
         let bit_index = square.as_u32();
+        if !self.occupancy[2].get(bit_index) {
+            return None;
+        }
         for i in 0..12 {
             if self.pieces[i].get(bit_index) {
                 let color = if i < 6 { Color::White } else { Color::Black };
@@ -207,6 +219,63 @@ impl Board {
         // 7. Update side to move and clocks
         self.side_to_move = self.side_to_move.opposite();
         // (Half-move clock and full-move number updates could be added here)
+
+        // 8. Update Zobrist hash
+        self.update_zobrist_hash(&m, &piece);
+    }
+
+    /// Updates the Zobrist hash incrementally after a move.
+    fn update_zobrist_hash(&mut self, m: &Move, piece: &Piece) {
+        let tables = crate::board::zobrist::zobrist_tables();
+
+        // Remove piece from source square
+        let piece_idx = self.get_piece_index(piece);
+        self.zobrist_hash ^= tables.piece_keys[piece_idx][m.from as usize];
+
+        // Add piece at destination (handle promotion)
+        let dest_piece = if let MoveFlag::Promotion(pt) = m.flag {
+            Piece::new(pt, piece.color)
+        } else {
+            *piece
+        };
+        let dest_piece_idx = self.get_piece_index(&dest_piece);
+        self.zobrist_hash ^= tables.piece_keys[dest_piece_idx][m.to as usize];
+
+        // Handle captures (remove captured piece)
+        if m.flag == MoveFlag::EnPassantCapture {
+            let capture_sq = if piece.color == Color::White {
+                m.to as u32 - 8
+            } else {
+                m.to as u32 + 8
+            };
+            let captured_piece_idx = if piece.color == Color::White { 6 } else { 0 };
+            self.zobrist_hash ^= tables.piece_keys[captured_piece_idx][capture_sq as usize];
+        } else if let Some(captured) = self.get_piece_at(m.to) {
+            if captured.piece_type != dest_piece.piece_type || captured.color != dest_piece.color {
+                let captured_idx = self.get_piece_index(&captured);
+                self.zobrist_hash ^= tables.piece_keys[captured_idx][m.to as usize];
+            }
+        }
+
+        // Side to move
+        self.zobrist_hash ^= tables.side_to_move_key;
+
+        // Castling rights (simplified - would need full update)
+        // This is a simplified version; full implementation would track changes
+    }
+
+    /// Gets the piece index for the piece array.
+    fn get_piece_index(&self, piece: &Piece) -> usize {
+        let color_offset = if piece.color == Color::White { 0 } else { 6 };
+        let type_idx = match piece.piece_type {
+            PieceType::Pawn => 0,
+            PieceType::Knight => 1,
+            PieceType::Bishop => 2,
+            PieceType::Rook => 3,
+            PieceType::Queen => 4,
+            PieceType::King => 5,
+        };
+        color_offset + type_idx
     }
 
     /// Generates all strictly legal moves for the current side to move.
@@ -223,5 +292,21 @@ impl Board {
         }
 
         legal_moves
+    }
+
+    /// Generates all strictly legal capture moves for the current side to move.
+    pub fn generate_legal_captures(&self) -> Vec<Move> {
+        let pseudo_captures = crate::move_gen::generate_pseudo_legal_captures(self);
+        let mut legal_captures = Vec::with_capacity(pseudo_captures.len());
+
+        for m in pseudo_captures {
+            let mut board_copy = self.clone();
+            board_copy.make_move(m);
+            if !crate::move_gen::is_in_check(&board_copy, self.side_to_move) {
+                legal_captures.push(m);
+            }
+        }
+
+        legal_captures
     }
 }

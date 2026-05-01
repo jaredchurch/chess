@@ -93,6 +93,11 @@ pub fn generate_king_moves(board: &Board, square: Square, moves: &mut Vec<Move>)
 }
 
 pub fn get_king_attacks(square: Square) -> Bitboard {
+    super::lookup::get_lookup_tables().king_attacks[square as usize]
+}
+
+#[allow(dead_code)]
+pub fn get_king_attacks_slow(square: Square) -> Bitboard {
     let bit_index = square.as_u32() as i32;
     let file = bit_index % 8;
     let rank = bit_index / 8;
