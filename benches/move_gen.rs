@@ -4,7 +4,7 @@
 // - Use generous 300s timeout to get stable baseline measurements
 // - Valid FEN strings are critical (invalid FEN will cause panics)
 
-use chrono::Local;
+
 use chess_core::serialization::fen::parse_fen;
 use chess_core::ai::search::get_best_move_with_depth;
 use criterion::{criterion_group, criterion_main, Criterion, BenchmarkId};
@@ -18,13 +18,6 @@ fn bench_move_generation(c: &mut Criterion) {
     let board = parse_fen(start_pos).unwrap();
 
     c.bench_function("generate_legal_moves_start_pos", |b| {
-        b.iter(|| board.generate_legal_moves())
-    });
-
-    let kiwipete = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1";
-    let board = parse_fen(kiwipete).unwrap();
-
-    c.bench_function("generate_legal_moves_kiwipete", |b| {
         b.iter(|| board.generate_legal_moves())
     });
     
@@ -72,7 +65,8 @@ fn bench_engine_depth(c: &mut Criterion) {
     
     let positions = vec![
         ("start_pos", "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"),
-        ("endgame", "8/8/8/8/8/8/PPPPPPPP/RNBQKBNR w - 0 1"),
+        ("kiwipete", "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1"),
+        ("endgame", "4k3/8/8/8/8/8/4P3/4K3 w - - 0 1"),
     ];
     
     let mut group = c.benchmark_group("engine_depth");
@@ -81,10 +75,10 @@ fn bench_engine_depth(c: &mut Criterion) {
     
     for (name, fen) in positions {
         let board = parse_fen(fen).unwrap();
-        // Use depth 4 for all positions (generous 300s timeout allows deeper search)
-        let depth = 4;
+        // Use depth 2 for start_pos, depth 1 for others (kiwipete/endgame take too long at depth 4)
+        let depth = if name == "start_pos" { 2 } else { 1 };
         group.bench_with_input(
-            BenchmarkId::new("depth_4", name),
+            BenchmarkId::new("depth", name),
             &(board, depth),
             |b, (board, depth)| {
                 b.iter(|| get_best_move_with_depth(board, *depth))
