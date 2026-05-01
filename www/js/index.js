@@ -36,7 +36,7 @@ import {
     deleteProfile
 } from './storage.js';
 
-let currentFen = INITIAL_FEN;
+window.currentFen = INITIAL_FEN;
 let selectedSquare = null;
 let legalMoves = [];
 let currentGame = null;

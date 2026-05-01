@@ -95,10 +95,15 @@ window.showFenDialog = function() {
         <div style="background:#34495e;border-radius:10px;padding:20px;min-width:300px;max-width:90%;">
             <div style="margin-bottom:15px;font-size:1.2em;font-weight:bold;">Current FEN</div>
             <div style="background:#2c3e50;padding:10px;border-radius:5px;font-family:monospace;word-break:break-all;margin-bottom:15px;">${fen}</div>
-            <button onclick="navigator.clipboard.writeText('${fen}'); closeGameMenu();" style="display:block;width:100%;margin:8px 0;padding:10px;">Copy to Clipboard</button>
-            <button onclick="closeGameMenu();" style="display:block;width:100%;margin:8px 0;padding:10px;">Close</button>
+            <button onclick="navigator.clipboard.writeText('${fen}');" style="display:block;width:100%;margin:8px 0;padding:10px;">Copy to Clipboard</button>
+            <button onclick="closeFenDialog();" style="display:block;width:100%;margin:8px 0;padding:10px;">Close</button>
         </div>
     `;
     document.body.appendChild(dialog);
-    dialog.onclick = (e) => { if (e.target === dialog) closeGameMenu(); };
+    dialog.onclick = (e) => { if (e.target === dialog) closeFenDialog(); };
+};
+
+window.closeFenDialog = function() {
+    const dialog = document.getElementById('fen-dialog');
+    if (dialog) dialog.remove();
 };
