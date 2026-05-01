@@ -43,7 +43,7 @@ let currentGame = null;
 let moveStartTime = Date.now();
 let activeProfile = null;
 let playerColor = window.playerColor || 'random';
-let aiDifficulty = window.aiDifficulty || 2; // Default to Beginner (Level 2)
+let aiDifficulty = window.aiDifficulty || 1; // Default to Level 1
 let capturedPieces = { white: [], black: [] };
 let boardOrientation = 'white';
 

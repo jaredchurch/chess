@@ -2,7 +2,7 @@
 // Licensed under the MIT License. See LICENSE file in the project root for details.
 //
 // Search Module - Implements Minimax with Alpha-Beta pruning for chess engine.
-// Supports configurable search depth and includes Novice-level random move selection.
+// Supports configurable search depth and includes Level 1 random move selection.
 use crate::board::Board;
 use crate::board::move_struct::Move;
 use crate::board::types::Color;
@@ -70,7 +70,7 @@ fn is_timeout(_start_time: f64) -> bool {
     is_node_limit_reached()
 }
 
-/// Returns a random legal move (Level 1 - Novice).
+/// Returns a random legal move (Level 1).
 /// Includes 50% randomness - may pick a sub-optimal move.
 pub fn get_best_move_novice(board: &Board) -> Option<Move> {
     let mut moves = board.generate_legal_moves();
@@ -82,13 +82,13 @@ pub fn get_best_move_novice(board: &Board) -> Option<Move> {
 
     // 50% chance of picking a random move (blunder)
     if rng.gen_bool(0.5) {
-        log_message("Level 1 (Novice): Choosing random move (50% blunder chance)");
+        log_message("Level 1: Choosing random move (50% blunder chance)");
         moves.shuffle(&mut rng);
         return Some(moves[0]);
     }
 
     // Otherwise pick the best move using greedy evaluation
-    log_message("Level 1 (Novice): Evaluating moves greedily...");
+    log_message("Level 1: Evaluating moves greedily...");
     let side = board.side_to_move;
     let mut best_move = None;
     let mut best_score = if side == Color::White {

@@ -1,7 +1,7 @@
 // Copyright (c) 2026 Chess Core Team
 // Licensed under the MIT License. See LICENSE file in the project root for details.
 
-use crate::ai::{get_best_move, DifficultyLevel};
+use crate::ai::get_best_move;
 use crate::board::move_struct::MoveFlag;
 use crate::board::piece::PieceType;
 use crate::board::types::Square;
@@ -94,8 +94,7 @@ pub fn get_best_move_wasm(fen: &str, level: u8) -> JsValue {
         Err(_) => return JsValue::NULL,
     };
 
-    let difficulty = DifficultyLevel::from(level);
-    if let Some(m) = get_best_move(&board, difficulty) {
+    if let Some(m) = get_best_move(&board, level) {
         let wasm_move = WasmMove {
             from: square_to_string(m.from),
             to: square_to_string(m.to),

@@ -53,7 +53,7 @@ cargo bench
 
 This will run benchmarks for:
 - **Move generation** - Start position and Kiwipete position
-- **Engine levels** - Novice, Casual, Intermediate
+- **Engine levels** - Levels 1-10
 - **Engine depth** - Different positions at fixed depth
 
 Benchmark results are saved to `target/criterion/` and can be compared across runs:

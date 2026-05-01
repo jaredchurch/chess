@@ -39,8 +39,9 @@ fn bench_engine_levels(c: &mut Criterion) {
     
     // Map difficulty levels to search depths
     let levels = vec![
-        ("Casual", 2),
-        ("Intermediate", 3),
+        ("Level 3", 2),
+        ("Level 4", 3),
+        ("Level 5", 4),
     ];
     
     for (name, depth) in levels {

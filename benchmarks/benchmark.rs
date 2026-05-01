@@ -5,7 +5,6 @@
 // Runs matches between different levels and reports results.
 
 use chess_core::board::Board;
-use chess_core::ai::DifficultyLevel;
 use chess_core::get_best_move_wasm;
 use std::collections::HashMap;
 use std::time::Duration;
@@ -13,17 +12,17 @@ use std::time::Duration;
 /// Result of a single game
 #[derive(Debug, Clone)]
 struct GameResult {
-    winner: Option<DifficultyLevel>,  // None = draw
+    winner: Option<u8>,  // None = draw, Some(level) = winner's level
     moves: usize,
     duration_ms: u64,
 }
 
 /// Runs a match between two difficulty levels
-fn run_match(level1: DifficultyLevel, level2: DifficultyLevel, num_games: usize) -> Vec<GameResult> {
+fn run_match(level1: u8, level2: u8, num_games: usize) -> Vec<GameResult> {
     let mut results = Vec::new();
     
     for game_num in 1..=num_games {
-        println!("Game {}/{}: {:?} vs {:?}", game_num, num_games, level1, level2);
+        println!("Game {}/{}: Level {} vs Level {}", game_num, num_games, level1, level2);
         
         let mut board = Board::new();
         let mut moves_played = 0;
@@ -38,7 +37,7 @@ fn run_match(level1: DifficultyLevel, level2: DifficultyLevel, num_games: usize)
             };
             
             // Get best move
-            let best_move = get_best_move_wasm(&board.to_fen(), current_level as u8);
+            let best_move = get_best_move_wasm(&board.to_fen(), current_level);
             
             if let Some(m) = best_move {
                 let from = m.from as usize;
@@ -121,7 +120,7 @@ fn run_match(level1: DifficultyLevel, level2: DifficultyLevel, num_games: usize)
 }
 
 /// Prints a summary of match results
-fn print_summary(level1: DifficultyLevel, level2: DifficultyLevel, results: &[GameResult]) {
+fn print_summary(level1: u8, level2: u8, results: &[GameResult]) {
     let total = results.len();
     let level1_wins = results.iter().filter(|r| r.winner == Some(level1)).count();
     let level2_wins = results.iter().filter(|r| r.winner == Some(level2)).count();
@@ -130,10 +129,10 @@ fn print_summary(level1: DifficultyLevel, level2: DifficultyLevel, results: &[Ga
     let avg_moves = results.iter().map(|r| r.moves).sum::<usize>() as f64 / total as f64;
     let avg_duration = results.iter().map(|r| r.duration_ms).sum::<u64>() as f64 / total as f64;
     
-    println!("\n=== Match Results: {:?} vs {:?} ===", level1, level2);
+    println!("\n=== Match Results: Level {} vs Level {} ===", level1, level2);
     println!("Total games: {}", total);
-    println!("{:?} wins: {} ({:.1}%)", level1, level1_wins, level1_wins as f64 * 100.0 / total as f64);
-    println!("{:?} wins: {} ({:.1}%)", level2, level2_wins, level2_wins as f64 * 100.0 / total as f64);
+    println!("Level {} wins: {} ({:.1}%)", level1, level1_wins, level1_wins as f64 * 100.0 / total as f64);
+    println!("Level {} wins: {} ({:.1}%)", level2, level2_wins, level2_wins as f64 * 100.0 / total as f64);
     println!("Draws: {} ({:.1}%)", draws, draws as f64 * 100.0 / total as f64);
     println!("Avg moves per game: {:.1}", avg_moves);
     println!("Avg duration: {:.0}ms", avg_duration);
@@ -146,19 +145,21 @@ fn main() {
     
     // Define matchups to test
     let matchups = vec![
-        (DifficultyLevel::Novice, DifficultyLevel::Casual, 10),
-        (DifficultyLevel::Casual, DifficultyLevel::Intermediate, 10),
-        (DifficultyLevel::Intermediate, DifficultyLevel::Advanced, 10),
-        (DifficultyLevel::Advanced, DifficultyLevel::Skilled, 10),
-        (DifficultyLevel::Skilled, DifficultyLevel::Expert, 5),
-        (DifficultyLevel::Expert, DifficultyLevel::Master, 5),
+        (1, 3, 10),
+        (3, 4, 10),
+        (4, 5, 10),
+        (5, 6, 10),
+        (6, 7, 5),
+        (7, 8, 5),
+        (8, 9, 5),
+        (9, 10, 5),
     ];
     
     let mut all_results: HashMap<String, Vec<GameResult>> = HashMap::new();
     
     for (level1, level2, num_games) in matchups {
         let results = run_match(level1, level2, num_games);
-        let key = format!("{:?}_vs_{:?}", level1, level2);
+        let key = format!("Level{}_vs_Level{}", level1, level2);
         all_results.insert(key.clone(), results.clone());
         print_summary(level1, level2, &results);
     }
