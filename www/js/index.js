@@ -142,10 +142,6 @@ window.updateBoardSize = function() {
     // Make board as large as possible while keeping it square
     const size = Math.floor(Math.max(maxSize, 200));
     
-    // Set exact pixel dimensions for the board
-    board.style.width = size + 'px';
-    board.style.height = size + 'px';
-    
     // Calculate square size (ensure it's an integer to prevent sub-pixel rendering)
     const squareSize = Math.floor(size / 8);
     const actualBoardSize = squareSize * 8;
@@ -160,6 +156,43 @@ window.updateBoardSize = function() {
     
     // Set font size based on square size for piece rendering
     board.style.fontSize = Math.floor(squareSize * 0.8) + 'px';
+    
+    // Update label sizes to match board
+    if (typeof updateBoardLabels === 'function') {
+        updateBoardLabels();
+    }
+};
+
+window.updateBoardLabels = function() {
+    const board = document.getElementById('board');
+    if (!board) return;
+    
+    const boardWidth = parseInt(board.style.width);
+    if (!boardWidth || isNaN(boardWidth)) return;
+    
+    const squareSize = Math.floor(boardWidth / 8);
+    const fontSize = Math.max(Math.floor(squareSize * 0.25), 10);
+    const labelsVisible = localStorage.getItem('chess_show_board_labels') !== 'false';
+    
+    // Files (a-h) top and bottom
+    const files = boardOrientation === 'white' ? ['a','b','c','d','e','f','g','h'] : ['h','g','f','e','d','c','b','a'];
+    ['board-labels-top', 'board-labels-bottom'].forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.style.display = labelsVisible ? 'flex' : 'none';
+        el.style.fontSize = fontSize + 'px';
+        el.innerHTML = files.map(f => `<div style="width:${squareSize}px;text-align:center;">${f}</div>`).join('');
+    });
+    
+    // Ranks (1-8) left and right
+    const ranks = boardOrientation === 'white' ? ['8','7','6','5','4','3','2','1'] : ['1','2','3','4','5','6','7','8'];
+    ['board-labels-left', 'board-labels-right'].forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.style.display = labelsVisible ? 'flex' : 'none';
+        el.style.fontSize = fontSize + 'px';
+        el.innerHTML = ranks.map(r => `<div style="height:${squareSize}px;display:flex;align-items:center;">${r}</div>`).join('');
+    });
 };
 
 let resizeTimeout;
@@ -173,6 +206,7 @@ async function start() {
     window.buildTimestamp = get_build_timestamp();
     window.buildProfile = get_build_profile();
     activeProfile = initProfile();
+    updateBoardLabels();
     
     // Load saved player color
     try {
@@ -848,6 +882,7 @@ function showMovePreview(moveIndex) {
 window.flipBoard = () => {
     boardOrientation = boardOrientation === 'white' ? 'black' : 'white';
     renderBoard();
+    updateBoardLabels();
 };
 
 window.showNewGameDialog = () => {

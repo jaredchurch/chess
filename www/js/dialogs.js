@@ -52,6 +52,9 @@ window.showSettingsMenu = function() {
             <label style="display:block;margin:10px 0;cursor:pointer;">
                 <input type="checkbox" id="show-history" ${historyChecked} onchange="togglePanelDisplay('history-card-wrapper', this.checked)"> Show Move History
             </label>
+            <label style="display:block;margin:10px 0;cursor:pointer;">
+                <input type="checkbox" id="show-board-labels" ${localStorage.getItem('chess_show_board_labels') !== 'false' ? 'checked' : ''} onchange="toggleBoardLabels(this.checked)"> Show Board Labels
+            </label>
             <hr style="border-color:#4a5f7f;margin:15px 0;">
             <div style="margin-bottom:10px;font-weight:bold;">Profile</div>
             <select id="profile-select" style="width:100%;padding:8px;margin-bottom:10px;" onchange="window.switchProfile(this.value)">
@@ -82,6 +85,12 @@ window.togglePanelDisplay = function(id, visible) {
     requestAnimationFrame(() => {
         if (typeof updateBoardSize === 'function') updateBoardSize();
     });
+};
+
+window.toggleBoardLabels = function(visible) {
+    localStorage.setItem('chess_show_board_labels', visible ? 'true' : 'false');
+    if (typeof updateBoardLabels === 'function') updateBoardLabels();
+    if (typeof updateBoardSize === 'function') updateBoardSize();
 };
 
 window.showFenDialog = function() {
