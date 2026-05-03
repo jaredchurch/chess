@@ -201,11 +201,18 @@ window.addEventListener('resize', () => {
     resizeTimeout = setTimeout(() => requestAnimationFrame(updateBoardSize), 100);
 });
 
+// Initialize panels to show by default
+window.initPanels = function() {
+    const historyWrapper = document.getElementById('history-card-wrapper');
+    if (historyWrapper) historyWrapper.classList.remove('panel-hidden');
+};
+
 async function start() {
     await init();
     window.buildTimestamp = get_build_timestamp();
     window.buildProfile = get_build_profile();
     activeProfile = initProfile();
+    window.initPanels();
     updateBoardLabels();
     
     // Load saved player color
@@ -538,6 +545,10 @@ function isPlayerTurn(gameState) {
 
 function updateUI() {
     const gameState = get_game_state(currentFen);
+    if (!gameState) {
+        console.warn('Failed to get game state for FEN:', currentFen);
+        return;
+    }
     const statusText = document.getElementById('status-text');
     const statusEl = document.getElementById('status');
     const fenEl = document.getElementById('fen');
@@ -553,7 +564,15 @@ function updateUI() {
         if (statusText) statusText.textContent = "Draw!";
         finishGame('draw', 'stalemate');
     } else {
-        if (statusText) statusText.textContent = `${gameState.side_to_move === 'w' ? 'White' : 'Black'}'s turn${gameState.is_check ? ' (Check!)' : ''}`;
+        if (statusText) {
+        const playerSide = currentGame?.player_side || 'white';
+        const isPlayerTurn = (gameState.side_to_move === 'w' && playerSide === 'white') || 
+                          (gameState.side_to_move === 'b' && playerSide === 'black');
+        const turnText = isPlayerTurn 
+            ? `${activeProfile?.name || 'Player'}'s turn` 
+            : "Computer's turn";
+        statusText.textContent = `${turnText}${gameState.is_check ? ' (Check!)' : ''}`;
+    }
         
         // AI moves when it's NOT player's turn
         const playerIsWhite = playerSide === 'white';

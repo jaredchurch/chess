@@ -18,4 +18,4 @@ Once we have worked through doing the spec for them, they should be marked as do
 - [x] 15. reset, colour selection, move engine level & indication of who's turn it is should all move into the right side column (please propose how the ordering should be done)
 - [x] 16. rather than "reset" the button should be "New Game" and should bring up a dialog for selecting, colour, opponent level (including stockfish settings). These setting should only be configurable at the beginning of the game & should be stored with the game history.
 - [x] 17. Add labels for board columns (a-g) & number for board rows (1-8) to all 4 sides of the board - this should be something that can be turned on and off in the gear menu.
-- [] 18. Rather than "White's turn" or "Black's turn", use the player's profile name & "Computer's turn".
+- [x] 18. Rather than "White's turn" or "Black's turn", use the player's profile name & "Computer's turn".

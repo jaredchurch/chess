@@ -33,8 +33,8 @@ window.showSettingsMenu = function() {
     if (existing) { existing.remove(); return; }
     const scoreWrapper = document.getElementById('score-card-wrapper');
     const historyWrapper = document.getElementById('history-card-wrapper');
-    const scoreChecked = scoreWrapper.style.display !== 'none' ? 'checked' : '';
-    const historyChecked = historyWrapper.style.display !== 'none' ? 'checked' : '';
+    const scoreChecked = scoreWrapper && window.isPanelVisible('score-card-wrapper') ? 'checked' : '';
+    const historyChecked = historyWrapper && window.isPanelVisible('history-card-wrapper') ? 'checked' : '';
     const profiles = window.getAllProfiles() || [];
     const activeId = window.activeProfile?.id || '';
     let profileOptions = profiles.map(p => 
@@ -81,10 +81,22 @@ window.closeSettingsMenu = function() {
 
 window.togglePanelDisplay = function(id, visible) {
     const el = document.getElementById(id);
-    if (el) el.style.display = visible ? 'block' : 'none';
+    if (!el) return;
+    if (visible) {
+        el.classList.remove('panel-hidden');
+    } else {
+        el.classList.add('panel-hidden');
+    }
     requestAnimationFrame(() => {
         if (typeof updateBoardSize === 'function') updateBoardSize();
     });
+};
+
+// Helper to check if panel is visible
+window.isPanelVisible = function(id) {
+    const el = document.getElementById(id);
+    if (!el) return false;
+    return !el.classList.contains('panel-hidden');
 };
 
 window.toggleBoardLabels = function(visible) {

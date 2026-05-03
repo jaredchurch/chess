@@ -10,6 +10,7 @@
 - [x] BUG10. similar to bug8, but is affecting chrome browser on macOS & Windows.
 - [ ] BUG11. on small screen when score and move history is hidden by default the menu item to show/hide them is not correctly matching the state.
 - [x] BUG12. On iPad screen, I'm still getting board row heights changing (compared to BUG8)
-- [ ] BUG13. The gear menu icon, hamburger menu icon and text for who's turn it is along with turn and game time should all be in a single row. the who's turn and turn/game time should be vertically bottom aligned with each other, and the two icons should be vertically centre aligned with the text.
-- [ ] BUG14. Remove the "Controls Card" it is unnecessary.
-- [ ] BUG15. Ensure that the depth slider and number match each other always - there are some conditions where they don't match.
+- [x] BUG13. The gear menu icon, hamburger menu icon and text for who's turn it is along with turn and game time should all be in a single row. the who's turn and turn/game time should be vertically bottom aligned with each other, and the two icons should be vertically centre aligned with the text.
+- [x] BUG14. Remove the "Controls Card" it is unnecessary.
+- [x] BUG15. Ensure that the depth slider and number match each other always - there are some conditions where they don't match.
+- [ ] BUG16. When player reloads page when game is at end it should reload with the new game dialog open.
