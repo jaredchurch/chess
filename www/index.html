@@ -8,45 +8,42 @@
     <link rel="icon" href="./favicon.ico" type="image/x-icon">
     <link rel="icon" href="./favicon-light.png" type="image/png" media="(prefers-color-scheme: light)">
     <link rel="icon" href="./favicon-dark.png" type="image/png" media="(prefers-color-scheme: dark)">
-    <button id="menu-btn" onclick="showGameMenu()" style="position:fixed;top:10px;right:10px;z-index:100;background:transparent;border:none;color:white;font-size:20px;padding:8px;">&#9776;</button>
-    <button id="settings-btn" onclick="showSettingsMenu()" style="position:fixed;top:10px;right:45px;z-index:100;background:transparent;border:none;color:white;font-size:18px;padding:8px;">&#9881;</button>
 </head>
 <body>
-    <div id="app">
+    <div id="header" style="position:fixed;top:0;left:0;right:0;height:50px;background:#2c3e50;display:flex;align-items:center;justify-content:space-between;padding:0 10px;z-index:99;box-shadow:0 2px 5px rgba(0,0,0,0.3);">
+        <div style="display:flex;gap:5px;align-items:center;">
+            <button id="menu-btn" onclick="showGameMenu()" style="background:transparent;border:none;color:white;font-size:20px;padding:8px;display:flex;align-items:center;">&#9776;</button>
+            
+        </div>
+        <div id="status-text" style="color:white;font-size:1.2em;">Initializing...</div>
+        <div id="compact-timer" style="display:flex;flex-direction:column;justify-content:center;font-size:0.85em;color:#95a5a6;font-family:monospace;font-variant-numeric:tabular-nums;text-align:right;margin:0 10px;">
+            <div><span id="current-move-display">0:00.0</span><span style="margin:0 5px;">/</span><span id="game-total-display">0:00.0</span></div>
+        </div>
+    </div>
+    <div id="app" style="margin-top:50px;">
         <div id="board-container">
-            <div id="status" style="display:flex;justify-content:space-between;">
-                <span id="status-text" style="align-self:center;">Initializing...</span>
-                <span id="compact-timer" style="font-size:0.85em;color:#95a5a6;font-family:monospace;font-variant-numeric:tabular-nums;align-self:flex-end;min-width:120px;text-align:right;">
-                    <span id="current-move-display">0:00.0</span>
-                    <span style="margin:0 5px;">/</span>
-                    <span id="game-total-display">0:00.0</span>
-                </span>
+            <div id="status" style="display:none;"></div>
+            <div id="board-wrapper" style="display:flex;align-items:center;justify-content:center;">
+                <div id="board-labels-left" style="display:flex;flex-direction:column;justify-content:center;margin-right:5px;font-size:0.8em;color:#95a5a6;font-family:monospace;"></div>
+                <div style="display:flex;flex-direction:column;">
+                    <div id="board-labels-top" style="display:flex;justify-content:center;font-size:0.8em;color:#95a5a6;font-family:monospace;margin-bottom:5px;"></div>
+                    <div style="display:flex;">
+                        <div id="board"></div>
+                    </div>
+                    <div id="board-labels-bottom" style="display:flex;justify-content:center;font-size:0.8em;color:#95a5a6;font-family:monospace;margin-top:5px;"></div>
+                </div>
+                <div id="board-labels-right" style="display:flex;flex-direction:column;justify-content:center;margin-left:5px;font-size:0.8em;color:#95a5a6;font-family:monospace;"></div>
             </div>
-            <div id="board"></div>
             <div id="fen" style="display:none"></div>
-            <div class="controls">
-                <button onclick="resetGame()">Reset</button>
-                <select id="player-color" onchange="changePlayerColor()">
-                    <option value="random">Random</option>
-                    <option value="white">White</option>
-                    <option value="black">Black</option>
-                </select>
-                <select id="ai-difficulty" onchange="changeAiDifficulty()">
-                    <option value="1" selected>Level 1</option>
-                    <option value="3">Level 3</option>
-                    <option value="4">Level 4</option>
-                    <option value="5">Level 5</option>
-                    <option value="6">Level 6</option>
-                    <option value="7">Level 7</option>
-                    <option value="8">Level 8</option>
-                    <option value="9">Level 9</option>
-                    <option value="10">Level 10</option>
-                </select>
-            </div>
         </div>
         <div id="info-panel">
             <div class="card" id="score-card-wrapper">
-                <div class="card-title">Score</div>
+                <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;">
+                    <span>Score</span>
+                    <div style="display:flex;gap:5px;">
+                        <button onclick="showNewGameDialog()" style="background:#3498db;border:none;color:white;border-radius:3px;cursor:pointer;white-space:nowrap;">New Game</button>
+                    </div>
+                </div>
                 <div id="score-card">
                     <div class="score-section">
                         <div class="score-title">White</div>
@@ -69,5 +66,50 @@
     
     <script type="module" src="./js/index.js"></script>
     <script src="./js/dialogs.js"></script>
+    
+    <div id="new-game-dialog" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.8);z-index:1000;align-items:center;justify-content:center;">
+        <div style="background:#34495e;border-radius:10px;padding:20px;min-width:300px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;">
+                <span style="font-size:1.2em;font-weight:bold;">New Game</span>
+                <button onclick="closeNewGameDialog()" style="background:transparent;border:none;color:white;font-size:1.5em;cursor:pointer;">&times;</button>
+            </div>
+            <div style="margin-bottom:15px;">
+                <label style="display:block;margin-bottom:5px;">Your Color:</label>
+                <select id="new-game-color" style="width:100%;padding:8px;border-radius:5px;border:1px solid #4a5f7f;background:#2c3e50;color:white;">
+                    <option value="random">Random</option>
+                    <option value="white">White</option>
+                    <option value="black">Black</option>
+                </select>
+            </div>
+            <div style="margin-bottom:15px;">
+                <label style="display:block;margin-bottom:5px;">Opponent Level:</label>
+                <select id="new-game-difficulty" style="width:100%;padding:8px;border-radius:5px;border:1px solid #4a5f7f;background:#2c3e50;color:white;" onchange="toggleNewGameCloudSettings()">
+                    <option value="1">Level 1</option>
+                    <option value="3">Level 3</option>
+                    <option value="4">Level 4</option>
+                    <option value="5">Level 5</option>
+                    <option value="6">Level 6</option>
+                    <option value="7">Level 7</option>
+                    <option value="8">Level 8</option>
+                    <option value="9">Level 9</option>
+                    <option value="10">Level 10</option>
+                    <option value="stockfish_18">Stockfish 18</option>
+                </select>
+            </div>
+            <div id="new-game-cloud-settings" style="display:none;margin-bottom:15px;">
+                <label style="display:block;margin-bottom:5px;">Stockfish Depth:</label>
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <input type="range" id="new-game-cloud-depth" min="12" max="18" value="12" style="flex:1;" oninput="document.getElementById('new-game-cloud-depth-value').textContent=this.value;">
+                    <span id="new-game-cloud-depth-value" style="min-width:20px;text-align:right;">12</span>
+                </div>
+                <label style="display:block;margin-bottom:5px;margin-top:10px;">Max Thinking Time (ms):</label>
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <input type="range" id="new-game-cloud-max-time" min="1" max="100" value="50" style="flex:1;" oninput="document.getElementById('new-game-cloud-max-time-value').textContent=this.value;">
+                    <span id="new-game-cloud-max-time-value" style="min-width:30px;text-align:right;">50</span>
+                </div>
+            </div>
+            <button onclick="startNewGameFromDialog()" style="width:100%;padding:10px;font-size:1em;cursor:pointer;background:#3498db;color:white;border:none;border-radius:5px;">Start Game</button>
+        </div>
+    </div>
 </body>
 </html>

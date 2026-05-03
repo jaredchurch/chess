@@ -27,8 +27,6 @@ body {
 }
 #board {
     display: grid;
-    grid-template-columns: repeat(8, 1fr);
-    grid-template-rows: repeat(8, 1fr);
     border: 2px solid #34495e;
     box-shadow: 0 4px 15px rgba(0,0,0,0.3);
 }
@@ -64,6 +62,10 @@ button:hover { background: #2980b9; }
     gap: 15px;
     margin-top: 50px;
 }
+
+#info-panel .panel-hidden {
+    display: none;
+}
 .card {
     background: #34495e;
     border-radius: 8px;
@@ -88,6 +90,12 @@ button:hover { background: #2980b9; }
     border-radius: 5px;
 }
 .card button:hover { background: #2980b9; }
+
+.card-title button {
+    width: auto;
+    padding: 3px 8px;
+    font-size: 0.75em;
+}
 
 /* Score Card */
 #score-card {
@@ -186,9 +194,28 @@ button:hover { background: #2980b9; }
     #preview-board .square { font-size: 30px; }
 }
 
+#cloud-depth {
+    padding: 8px;
+    font-size: 0.9em;
+    border: 1px solid #4a5f7f;
+    border-radius: 5px;
+    background: #34495e;
+    color: white;
+    text-align: center;
+}
+
+#cloud-max-time {
+    padding: 8px;
+    font-size: 0.9em;
+    border: 1px solid #4a5f7f;
+    border-radius: 5px;
+    background: #34495e;
+    color: white;
+    text-align: center;
+}
+
 @media (max-width: 700px) {
     #app { flex-direction: column; align-items: center; height: auto; min-height: 100vh; padding: 10px; }
     #board-container { height: auto; }
-    #info-panel { width: 100%; max-width: 100%; display: none; margin-top: 20px; }
-    #info-panel.open { display: flex; }
+    #info-panel { width: 100%; max-width: 100%; margin-top: 20px; }
 }
