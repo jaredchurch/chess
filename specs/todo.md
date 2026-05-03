@@ -16,3 +16,4 @@ Once we have worked through doing the spec for them, they should be marked as do
 - [x] 13. Most recent moves taken should be on-screen in the move history when the move is taken.
 - [x] 14. add a timer for moves on both sides, I want to see "time for current move selection", "total time per player" and "total time for this game". This should be included between the score card and the move history card.
 - [] 15. reset, colour selection, move engine level & indication of who's turn it is should all move into the right side column (please propose how the ordering should be done)
+- [x] 16. rather than "reset" the button should be "New Game" and should bring up a dialog for selecting, colour, opponent level (including stockfish settings). These setting should only be configurable at the beginning of the game & should be stored with the game history.

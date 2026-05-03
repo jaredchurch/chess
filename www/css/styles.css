@@ -89,6 +89,12 @@ button:hover { background: #2980b9; }
 }
 .card button:hover { background: #2980b9; }
 
+.card-title button {
+    width: auto;
+    padding: 3px 8px;
+    font-size: 0.75em;
+}
+
 /* Score Card */
 #score-card {
     display: flex;
@@ -184,6 +190,26 @@ button:hover { background: #2980b9; }
 }
 @media (min-width: 500px) {
     #preview-board .square { font-size: 30px; }
+}
+
+#cloud-depth {
+    padding: 8px;
+    font-size: 0.9em;
+    border: 1px solid #4a5f7f;
+    border-radius: 5px;
+    background: #34495e;
+    color: white;
+    text-align: center;
+}
+
+#cloud-max-time {
+    padding: 8px;
+    font-size: 0.9em;
+    border: 1px solid #4a5f7f;
+    border-radius: 5px;
+    background: #34495e;
+    color: white;
+    text-align: center;
 }
 
 @media (max-width: 700px) {

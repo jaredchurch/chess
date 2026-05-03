@@ -46,6 +46,8 @@ let playerColor = window.playerColor || 'random';
 let aiDifficulty = window.aiDifficulty || 1; // Default to Level 1
 let capturedPieces = { white: [], black: [] };
 let boardOrientation = 'white';
+let cloudDepth = 12;
+let cloudMaxThinkingTime = 5000;
 
 // Timer variables
 let gameStartTime = Date.now();
@@ -150,6 +152,63 @@ async function start() {
     window.buildTimestamp = get_build_timestamp();
     window.buildProfile = get_build_profile();
     activeProfile = initProfile();
+    
+    // Load saved player color
+    try {
+        const savedColor = localStorage.getItem('chess_player_color');
+        if (savedColor && ['random', 'white', 'black'].includes(savedColor)) {
+            playerColor = savedColor;
+            window.playerColor = savedColor;
+        }
+    } catch (e) {
+        console.warn('Failed to load player color:', e);
+    }
+    
+    // Load saved AI difficulty
+    try {
+        const savedDifficulty = localStorage.getItem('chess_ai_difficulty');
+        if (savedDifficulty) {
+            if (savedDifficulty === 'stockfish_18') {
+                aiDifficulty = 'stockfish_18';
+                window.aiDifficulty = 'stockfish_18';
+            } else {
+                const level = parseInt(savedDifficulty, 10);
+                if (level >= 1 && level <= 10) {
+                    aiDifficulty = level;
+                    window.aiDifficulty = level;
+                }
+            }
+        }
+    } catch (e) {
+        console.warn('Failed to load AI difficulty:', e);
+    }
+    
+    // Load saved cloud depth
+    try {
+        const savedDepth = localStorage.getItem('chess_cloud_depth');
+        if (savedDepth) {
+            const depth = parseInt(savedDepth, 10);
+            if (depth >= 12 && depth <= 18) {
+                cloudDepth = depth;
+            }
+        }
+    } catch (e) {
+        console.warn('Failed to load cloud depth:', e);
+    }
+    
+    // Load saved cloud max thinking time
+    try {
+        const savedMaxTime = localStorage.getItem('chess_cloud_max_time');
+        if (savedMaxTime) {
+            const maxTime = parseFloat(savedMaxTime);
+            if (maxTime >= 0) {
+                cloudMaxThinkingTime = maxTime;
+            }
+        }
+    } catch (e) {
+        console.warn('Failed to load cloud max thinking time:', e);
+    }
+    
     restoreInProgressGame();
     updateBoardSize();
     updateUI();
@@ -183,7 +242,7 @@ function restoreInProgressGame() {
         
         if (inProgress) {
             // Store reference to game in localStorage before restoring
-            const storedGameId = localStorage().getItem('chess_current_game');
+            const storedGameId = localStorage.getItem('chess_current_game');
             
             // If there's a current game reference and it matches, restore it
             if (storedGameId && storedGameId === inProgress.game_id) {
@@ -193,9 +252,26 @@ function restoreInProgressGame() {
             }
             
             // Store current game ID for next reload
-            localStorage().setItem('chess_current_game', inProgress.game_id);
+            localStorage.setItem('chess_current_game', inProgress.game_id);
             
             currentGame = inProgress;
+            
+            // Restore settings from saved game
+            if (inProgress.ai_difficulty !== undefined) {
+                if (inProgress.ai_difficulty === 'stockfish_18') {
+                    aiDifficulty = 'stockfish_18';
+                    window.aiDifficulty = 'stockfish_18';
+                } else {
+                    aiDifficulty = inProgress.ai_difficulty;
+                    window.aiDifficulty = aiDifficulty;
+                }
+            }
+            if (inProgress.cloud_depth !== undefined && inProgress.cloud_depth !== null) {
+                cloudDepth = inProgress.cloud_depth;
+            }
+            if (inProgress.cloud_max_time !== undefined && inProgress.cloud_max_time !== null) {
+                cloudMaxThinkingTime = inProgress.cloud_max_time;
+            }
             
             // Always start from standard position (white to move first)
             let fen = INITIAL_FEN;
@@ -225,11 +301,6 @@ function restoreInProgressGame() {
             // Orient board based on player, but white always moves first
             boardOrientation = playerSide;
             
-            const select = document.getElementById('player-color');
-            if (select && playerColor !== 'random') {
-                select.value = playerSide;
-            }
-            
             console.log("Restored to FEN:", currentFen);
         } else {
             console.log("No in-progress game found");
@@ -250,6 +321,9 @@ function startNewGame() {
         game_id: generateUUID(),
         profile_id: activeProfile ? activeProfile.id : null,
         player_side: playerSide,
+        ai_difficulty: aiDifficulty,
+        cloud_depth: aiDifficulty === 'stockfish_18' ? cloudDepth : null,
+        cloud_max_time: aiDifficulty === 'stockfish_18' ? cloudMaxThinkingTime : null,
         timestamp: Date.now(),
         last_modified: Date.now(),
         moves: [],
@@ -500,8 +574,74 @@ function handleSquareClick(square) {
     renderBoard();
 }
 
-function makeAiMove() {
-    const move = get_best_move_wasm(currentFen, aiDifficulty);
+async function getCloudBestMove(fen, isPlayerTurn = false) {
+    const requestBody = { fen: fen, depth: cloudDepth, maxThinkingTime: cloudMaxThinkingTime };
+    
+    // Log API request details
+    console.log("Cloud API Request:", {
+        url: "https://chess-api.com/v1",
+        method: "POST",
+        body: requestBody,
+        isPlayerTurn: isPlayerTurn
+    });
+
+    try {
+        const response = await fetch("https://chess-api.com/v1", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(requestBody),
+        });
+        
+        if (!response.ok) throw new Error(`API error: ${response.status}`);
+        
+        const data = await response.json();
+        
+        // Log API response (sanitized when player's turn)
+        if (isPlayerTurn) {
+            const sanitizedData = { ...data, move: '[HIDDEN]', from: '[HIDDEN]', to: '[HIDDEN]', san: '[HIDDEN]' };
+            console.log("Cloud API Response (player turn - move hidden):", sanitizedData);
+        } else {
+            console.log("Cloud API Response:", data);
+        }
+        
+        // If it's player's turn, don't return the move
+        if (isPlayerTurn) return null;
+        
+        if (!data.from || !data.to) return null;
+
+        // Handle promotion from LAN move (e.g., "e7e8q")
+        let promotion = null;
+        if (data.move && data.move.length === 5) {
+            promotion = data.move[4].toLowerCase();
+        }
+
+        return { from: data.from, to: data.to, promotion: promotion };
+    } catch (error) {
+        console.error("Cloud AI Error:", error);
+        return null;
+    }
+}
+
+async function makeAiMove() {
+    let move;
+    if (aiDifficulty === 'stockfish_18') {
+        const statusText = document.getElementById('status-text');
+        const originalText = statusText ? statusText.textContent : "";
+        if (statusText) statusText.textContent = originalText + " (API Thinking...)";
+        
+        move = await getCloudBestMove(currentFen, false);
+        
+        if (statusText) statusText.textContent = originalText; // Restore original text
+        
+        if (!move) {
+            // Fallback to local AI if API fails
+            console.log("Falling back to local AI level 3");
+            move = get_best_move_wasm(currentFen, 3);
+        }
+    } else {
+        move = get_best_move_wasm(currentFen, aiDifficulty);
+    }
+
     if (move) {
         recordMoveTime();
         stopMoveTimer();
@@ -685,30 +825,104 @@ window.flipBoard = () => {
     renderBoard();
 };
 
-window.resetGame = () => {
+window.showNewGameDialog = () => {
+    const dialog = document.getElementById('new-game-dialog');
+    if (dialog) {
+        // Pre-fill with current settings
+        const colorSelect = document.getElementById('new-game-color');
+        const difficultySelect = document.getElementById('new-game-difficulty');
+        const cloudDepthInput = document.getElementById('new-game-cloud-depth');
+        const cloudMaxTimeInput = document.getElementById('new-game-cloud-max-time');
+        
+        if (colorSelect) colorSelect.value = playerColor === 'random' ? 'random' : playerColor;
+        if (difficultySelect) difficultySelect.value = aiDifficulty;
+        if (cloudDepthInput) cloudDepthInput.value = cloudDepth;
+        if (cloudMaxTimeInput) cloudMaxTimeInput.value = cloudMaxThinkingTime;
+        
+        toggleNewGameCloudSettings();
+        dialog.style.display = 'flex';
+    }
+};
+
+window.closeNewGameDialog = () => {
+    const dialog = document.getElementById('new-game-dialog');
+    if (dialog) dialog.style.display = 'none';
+};
+
+window.toggleNewGameCloudSettings = () => {
+    const difficultySelect = document.getElementById('new-game-difficulty');
+    const cloudSettings = document.getElementById('new-game-cloud-settings');
+    if (difficultySelect && cloudSettings) {
+        cloudSettings.style.display = difficultySelect.value === 'stockfish_18' ? 'block' : 'none';
+    }
+};
+
+window.startNewGameFromDialog = () => {
+    const colorSelect = document.getElementById('new-game-color');
+    const difficultySelect = document.getElementById('new-game-difficulty');
+    const cloudDepthInput = document.getElementById('new-game-cloud-depth');
+    const cloudMaxTimeInput = document.getElementById('new-game-cloud-max-time');
+    
+    if (colorSelect) {
+        playerColor = colorSelect.value;
+        window.playerColor = playerColor;
+        try {
+            localStorage.setItem('chess_player_color', playerColor);
+        } catch (e) {}
+    }
+    
+    if (difficultySelect) {
+        const val = difficultySelect.value;
+        if (val === 'stockfish_18') {
+            aiDifficulty = 'stockfish_18';
+            window.aiDifficulty = 'stockfish_18';
+        } else {
+            aiDifficulty = parseInt(val, 10);
+            window.aiDifficulty = aiDifficulty;
+        }
+        try {
+            localStorage.setItem('chess_ai_difficulty', val);
+        } catch (e) {}
+    }
+    
+    if (cloudDepthInput && aiDifficulty === 'stockfish_18') {
+        const val = parseInt(cloudDepthInput.value, 10);
+        if (val >= 12 && val <= 18) {
+            cloudDepth = val;
+            try {
+                localStorage.setItem('chess_cloud_depth', val);
+            } catch (e) {}
+        }
+    }
+    
+    if (cloudMaxTimeInput && aiDifficulty === 'stockfish_18') {
+        const val = parseFloat(cloudMaxTimeInput.value);
+        if (val >= 0) {
+            cloudMaxThinkingTime = val;
+            try {
+                localStorage.setItem('chess_cloud_max_time', val);
+            } catch (e) {}
+        }
+    }
+    
+    closeNewGameDialog();
+    
     currentFen = INITIAL_FEN;
     selectedSquare = null;
     boardOrientation = 'white';
-    startNewGame();  // This saves automatically
+    startNewGame();
     moveStartTime = Date.now();
     updateUI();
 };
 
-window.changePlayerColor = () => {
-    const select = document.getElementById('player-color');
-    if (select) {
-        window.playerColor = select.value;
-        playerColor = select.value;
-    }
+// Keep resetGame for compatibility, but it now just shows the new game dialog
+window.resetGame = () => {
+    showNewGameDialog();
 };
 
-window.changeAiDifficulty = () => {
-    const select = document.getElementById('ai-difficulty');
-    if (select) {
-        window.aiDifficulty = parseInt(select.value, 10);
-        aiDifficulty = window.aiDifficulty;
-    }
-};
+// changeAiDifficulty removed - settings now only in New Game dialog
+
+
 
 window.exportHistory = () => {
     if (!activeProfile) return;
