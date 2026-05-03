@@ -936,7 +936,7 @@ window.toggleNewGameCloudSettings = () => {
     }
 };
 
-window.startNewGameFromDialog = () => {
+window.startNewGameFromDialog = function() {
     const colorSelect = document.getElementById('new-game-color');
     const difficultySelect = document.getElementById('new-game-difficulty');
     const cloudDepthInput = document.getElementById('new-game-cloud-depth');
