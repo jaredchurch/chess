@@ -47,7 +47,7 @@ let aiDifficulty = window.aiDifficulty || 1; // Default to Level 1
 let capturedPieces = { white: [], black: [] };
 let boardOrientation = 'white';
 let cloudDepth = 12;
-let cloudMaxThinkingTime = 5000;
+let cloudMaxThinkingTime = 50;
 
 // Timer variables
 let gameStartTime = Date.now();
@@ -332,7 +332,10 @@ function restoreInProgressGame() {
                 cloudDepth = inProgress.cloud_depth;
             }
             if (inProgress.cloud_max_time !== undefined && inProgress.cloud_max_time !== null) {
-                cloudMaxThinkingTime = inProgress.cloud_max_time;
+                const time = parseFloat(inProgress.cloud_max_time);
+                if (time >= 1 && time <= 100) {
+                    cloudMaxThinkingTime = time;
+                }
             }
             
             // Always start from standard position (white to move first)
@@ -976,7 +979,7 @@ window.startNewGameFromDialog = function() {
     
     if (cloudMaxTimeInput && aiDifficulty === 'stockfish_18') {
         const val = parseFloat(cloudMaxTimeInput.value);
-        if (val >= 0) {
+        if (val >= 1 && val <= 100) {
             cloudMaxThinkingTime = val;
             try {
                 localStorage.setItem('chess_cloud_max_time', val);
