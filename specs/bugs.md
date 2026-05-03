@@ -9,3 +9,4 @@
 - [x] BUG9. If lots of pieces get taken, then card displaying taken piece icons is not graceful - the icons and points move to overflow the card, suggest there should be a wrapping mechanism or some other more graceful method.
 - [x] BUG10. similar to bug8, but is affecting chrome browser on macOS & Windows.
 - [] BUG11. on small screen when score and move history is hidden by default the menu item to show/hide them is not correctly matching the state.
+- [x] BUG12. On iPad screen, I'm still getting board row heights changing (compared to BUG8)

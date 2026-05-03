@@ -29,7 +29,9 @@
             <div class="card" id="score-card-wrapper">
                 <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;">
                     <span>Score</span>
-                    <button onclick="showNewGameDialog()" style="background:#3498db;border:none;color:white;border-radius:3px;cursor:pointer;white-space:nowrap;">New Game</button>
+                    <div style="display:flex;gap:5px;">
+                        <button onclick="showNewGameDialog()" style="background:#3498db;border:none;color:white;border-radius:3px;cursor:pointer;white-space:nowrap;">New Game</button>
+                    </div>
                 </div>
                 <div id="score-card">
                     <div class="score-section">
@@ -47,6 +49,10 @@
             <div class="card" id="history-card-wrapper">
                 <div class="card-title">Move History</div>
                 <div id="move-history"></div>
+            </div>
+            <div class="card" id="controls-card">
+                <div class="card-title">Controls</div>
+                <div class="controls" style="display:flex;flex-wrap:wrap;gap:5px;"></div>
             </div>
         </div>
     </div>

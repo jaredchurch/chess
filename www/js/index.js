@@ -121,24 +121,45 @@ function recordMoveTime() {
 window.updateBoardSize = function() {
     const board = document.getElementById('board');
     if (!board) return;
+    
+    // Get actual container dimensions to maximize board size
+    const container = document.getElementById('board-container');
     const isMobile = window.innerWidth <= 700;
-    let size;
+    
+    let maxSize;
     if (isMobile) {
-        const availableWidth = window.innerWidth - 20;
-        const availableHeight = window.innerHeight - 120;
-        size = Math.min(availableWidth, availableHeight);
+        // On mobile, use full viewport minus status bar and padding
+        maxSize = Math.min(window.innerWidth - 20, window.innerHeight - 120);
     } else {
+        // On desktop, subtract info panel width from viewport
         const infoPanel = document.getElementById('info-panel');
         const panelWidth = infoPanel ? infoPanel.offsetWidth + 20 : 300;
         const availableWidth = window.innerWidth - panelWidth - 40;
         const availableHeight = window.innerHeight - 140;
-        size = Math.min(availableWidth, availableHeight);
+        maxSize = Math.min(availableWidth, availableHeight);
     }
-    size = Math.floor(Math.max(size, 200));
+    
+    // Make board as large as possible while keeping it square
+    const size = Math.floor(Math.max(maxSize, 200));
+    
+    // Set exact pixel dimensions for the board
     board.style.width = size + 'px';
     board.style.height = size + 'px';
-    const squareFontSize = Math.floor(size / 10);
-    board.style.fontSize = squareFontSize + 'px';
+    
+    // Calculate square size (ensure it's an integer to prevent sub-pixel rendering)
+    const squareSize = Math.floor(size / 8);
+    const actualBoardSize = squareSize * 8;
+    
+    // Reset to exact size that's divisible by 8
+    board.style.width = actualBoardSize + 'px';
+    board.style.height = actualBoardSize + 'px';
+    
+    // Use pixel-based grid to prevent iPad row height changes (BUG12 fix)
+    board.style.gridTemplateColumns = `repeat(8, ${squareSize}px)`;
+    board.style.gridTemplateRows = `repeat(8, ${squareSize}px)`;
+    
+    // Set font size based on square size for piece rendering
+    board.style.fontSize = Math.floor(squareSize * 0.8) + 'px';
 };
 
 let resizeTimeout;
@@ -520,6 +541,10 @@ function updateUI() {
 
 function renderBoard() {
     const boardEl = document.getElementById('board');
+    if (!boardEl) {
+        console.warn('Board element not found');
+        return;
+    }
     boardEl.innerHTML = '';
 
     const pieces = parseFenPieces(currentFen);
