@@ -14,3 +14,4 @@
 - [x] BUG14. Remove the "Controls Card" it is unnecessary.
 - [x] BUG15. Ensure that the depth slider and number match each other always - there are some conditions where they don't match.
 - [ ] BUG16. When player reloads page when game is at end it should reload with the new game dialog open.
+- [ ] BUG17. Max Thinking time must be an integer, change this to be a slider from 1 to 100, structure same as depth slider with number on the right.
