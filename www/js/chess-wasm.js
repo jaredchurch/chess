@@ -4,7 +4,7 @@ import init, {
     apply_move, 
     get_best_move_wasm, 
     get_game_state
-} from './pkg/chess_core.js';
+} from '../pkg/chess_core.js';
 
 let wasmReady = false;
 

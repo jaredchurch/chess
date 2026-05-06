@@ -1,5 +1,15 @@
+// Copyright (c) 2026 Chess Core Team
+// Licensed under the MIT License. See LICENSE file in the project root for details.
+//
+// Dialogs Module - Game menu, FEN display, and panel management dialogs.
+//
+
 window.moveHistoryCollapsed = window.moveHistoryCollapsed || false;
 
+/**
+ * Shows the game menu dialog with settings and game options
+ * Pre-fills form fields with current settings
+ */
 window.showGameMenu = function() {
     const existing = document.getElementById('game-menu-dialog');
     if (existing) { existing.remove(); return; }
@@ -60,11 +70,20 @@ window.showGameMenu = function() {
     dialog.onclick = (e) => { if (e.target === dialog) closeGameMenu(); };
 };
 
+/**
+ * Closes the game menu dialog
+ */
 window.closeGameMenu = function() {
     const dialog = document.getElementById('game-menu-dialog');
     if (dialog) dialog.remove();
 };
 
+/**
+ * Toggles visibility of a panel (score card or move history)
+ * Also triggers board resize to adjust layout
+ * @param {string} id - Panel element ID
+ * @param {boolean} visible - Whether to show or hide the panel
+ */
 window.togglePanelDisplay = function(id, visible) {
     const el = document.getElementById(id);
     if (!el) return;
@@ -74,23 +93,36 @@ window.togglePanelDisplay = function(id, visible) {
         el.classList.add('panel-hidden');
     }
     requestAnimationFrame(() => {
-        if (typeof updateBoardSize === 'function') updateBoardSize();
+        if (typeof window.updateBoardSize === 'function') window.updateBoardSize();
     });
 };
 
-// Helper to check if panel is visible
+/**
+ * Checks if a panel is currently visible
+ * @param {string} id - Panel element ID
+ * @returns {boolean} True if panel is visible
+ */
 window.isPanelVisible = function(id) {
     const el = document.getElementById(id);
     if (!el) return false;
     return !el.classList.contains('panel-hidden');
 };
 
+/**
+ * Toggles board label visibility and saves preference to localStorage
+ * Also updates board display and triggers resize
+ * @param {boolean} visible - Whether to show board labels
+ */
 window.toggleBoardLabels = function(visible) {
     localStorage.setItem('chess_show_board_labels', visible ? 'true' : 'false');
-    if (typeof updateBoardLabels === 'function') updateBoardLabels();
-    if (typeof updateBoardSize === 'function') updateBoardSize();
+    if (typeof window.updateBoardLabels === 'function') window.updateBoardLabels();
+    if (typeof window.updateBoardSize === 'function') window.updateBoardSize();
 };
 
+/**
+ * Shows a dialog with the current FEN string
+ * Provides option to copy FEN to clipboard
+ */
 window.showFenDialog = function() {
     const existing = document.getElementById('fen-dialog');
     if (existing) { existing.remove(); return; }
@@ -110,6 +142,9 @@ window.showFenDialog = function() {
     dialog.onclick = (e) => { if (e.target === dialog) closeFenDialog(); };
 };
 
+/**
+ * Closes the FEN dialog
+ */
 window.closeFenDialog = function() {
     const dialog = document.getElementById('fen-dialog');
     if (dialog) dialog.remove();

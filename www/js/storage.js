@@ -1,6 +1,16 @@
 // storage.js - localStorage persistence for game data
 
-import { generateUUID } from './game.js';
+/**
+ * Generates a unique UUID v4
+ * @returns {string} UUID string
+ */
+export function generateUUID() {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        const r = Math.random() * 16 | 0;
+        const v = c === 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+    });
+}
 
 export const STORAGE_KEY_PROFILES = "chess_profiles";
 export const STORAGE_KEY_ACTIVE_PROFILE = "chess_active_profile";

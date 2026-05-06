@@ -279,15 +279,52 @@ fn validate_castling_rights(board: &Board) -> Result<(), String> {
     Ok(())
 }
 
-fn validate_en_passant_square(_board: &Board, ep_square: Square) -> Result<(), String> {
-    // EP square validation: EP square must be on valid rank (3 or 4 in 0-indexed)
-    // The rank check alone is sufficient - we check the actual pawn below
+fn validate_en_passant_square(board: &Board, ep_square: Square) -> Result<(), String> {
+    // EP square validation:
+    // - EP square must be on rank 2 or 5 (0-indexed)
+    // - There must be an opposing pawn on an adjacent file on the same rank as EP
+    // - For White's turn: black just moved two squares, EP on rank 5, black pawn on rank 6
+    // - For Black's turn: white just moved two squares, EP on rank 2, white pawn on rank 1
+    
     let ep_idx = ep_square.as_u32();
-    let rank = ep_idx / 8;
-
-    if !(2..=5).contains(&rank) {
-        return Err("Invalid FEN: En passant square invalid".to_string());
+    let ep_rank = ep_idx / 8;
+    let ep_file = ep_idx % 8;
+    
+    // EP square must be on rank 2 or 5 (0-indexed)
+    if ep_rank != 2 && ep_rank != 5 {
+        return Err("Invalid FEN: En passant square must be on rank 3 or 6".to_string());
     }
-
-    Ok(())
+    
+    // Determine expected pawn color and rank
+    let (expected_color, pawn_rank) = if board.side_to_move == Color::White {
+        // White's turn -> black just moved two squares
+        // EP is on rank 5, black pawn should be on rank 6
+        (Color::Black, 6u32)
+    } else {
+        // Black's turn -> white just moved two squares
+        // EP is on rank 2, white pawn should be on rank 1
+        (Color::White, 1u32)
+    };
+    
+    // Check left file (if not on file a)
+    if ep_file > 0 {
+        let pawn_sq = Square::from_u8_unchecked((pawn_rank * 8 + ep_file - 1) as u8);
+        if let Some(piece) = board.get_piece_at(pawn_sq) {
+            if piece.piece_type == PieceType::Pawn && piece.color == expected_color {
+                return Ok(());
+            }
+        }
+    }
+    
+    // Check right file (if not on file h)
+    if ep_file < 7 {
+        let pawn_sq = Square::from_u8_unchecked((pawn_rank * 8 + ep_file + 1) as u8);
+        if let Some(piece) = board.get_piece_at(pawn_sq) {
+            if piece.piece_type == PieceType::Pawn && piece.color == expected_color {
+                return Ok(());
+            }
+        }
+    }
+    
+    Err("Invalid FEN: No valid pawn for en passant capture".to_string())
 }

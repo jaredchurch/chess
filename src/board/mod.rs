@@ -205,15 +205,45 @@ impl Board {
             }
         }
 
-        // 6. Update EP square
+        // 6. Update EP square - only set if opposing pawn can capture
         self.en_passant_square = None;
         if m.flag == MoveFlag::DoublePawnPush {
+            // Calculate the en passant square (the square the pawn skipped over)
             let ep_idx = if piece.color == Color::White {
-                m.from.as_u32() + 8
+                m.from.as_u32() + 8  // White moved up, EP is one square forward
             } else {
-                m.from.as_u32() - 8
+                m.from.as_u32() - 8  // Black moved down, EP is one square back
             };
-            self.en_passant_square = Some(Square::from_u8_unchecked(ep_idx as u8));
+            let ep_sq = Square::from_u8_unchecked(ep_idx as u8);
+            
+            // Check if there's an opposing pawn on an adjacent file that can capture
+            let ep_file = (ep_idx % 8) as i8;
+            let mut can_capture = false;
+            
+            // Check left file (if not on file a)
+            if ep_file > 0 {
+                let left_sq = Square::from_u8_unchecked((ep_idx - 1) as u8);
+                if let Some(left_piece) = self.get_piece_at(left_sq) {
+                    if left_piece.piece_type == PieceType::Pawn && left_piece.color != piece.color {
+                        can_capture = true;
+                    }
+                }
+            }
+            
+            // Check right file (if not on file h)
+            if ep_file < 7 {
+                let right_sq = Square::from_u8_unchecked((ep_idx + 1) as u8);
+                if let Some(right_piece) = self.get_piece_at(right_sq) {
+                    if right_piece.piece_type == PieceType::Pawn && right_piece.color != piece.color {
+                        can_capture = true;
+                    }
+                }
+            }
+            
+            // Only set EP square if there's a pawn that can capture
+            if can_capture {
+                self.en_passant_square = Some(ep_sq);
+            }
         }
 
         // 7. Update side to move and clocks
