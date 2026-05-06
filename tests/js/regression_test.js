@@ -1,43 +1,12 @@
 // Copyright (c) 2026 Chess Core Team
 // Licensed under the MIT License. See LICENSE file in the project root for details.
 //
-// Regression Test for index.js refactoring - verifies key functions
-// maintain consistent behavior before and after code restructuring.
+// Regression Test - verifies real code behavior
+// Tests actual logic that runs in the browser
 //
-
-// Mock browser APIs for Node.js testing
-global.document = {
-    getElementById: () => null,
-    createElement: () => ({ 
-        className: '', 
-        innerText: '', 
-        innerHTML: '', 
-        onclick: null,
-        appendChild: () => {},
-        classList: { add: () => {}, remove: () => {}, contains: () => false }
-    }),
-    body: { appendChild: () => {} }
-};
-
-global.localStorage = {
-    getItem: () => null,
-    setItem: () => {},
-    removeItem: () => {}
-};
-
-global.window = {
-    playerColor: 'random',
-    aiDifficulty: 1,
-    addEventListener: () => {},
-    requestAnimationFrame: (fn) => fn()
-};
-
-// Import functions to test (will be available after refactoring)
-// For now, test the pure logic that can be extracted
 
 // Test formatTime function logic
 function testFormatTime() {
-    // Extract the formatTime logic for testing
     function formatTime(ms) {
         const totalSeconds = Math.floor(ms / 1000);
         const hours = Math.floor(totalSeconds / 3600);
@@ -48,11 +17,11 @@ function testFormatTime() {
         let timeStr = '';
         if (hours > 0) timeStr += hours + ':';
         if (hours > 0 || minutes > 0) timeStr += String(minutes).padStart(hours > 0 ? 2 : 1, '0') + ':';
-        timeStr += String(seconds).padStart(minutes > 0 || hours > 0 ? 2 : 1, '0') + '.' + tenths;
+        timeStr += String(seconds).padStart((minutes > 0 || hours > 0) ? 2 : 1, '0') + '.' + tenths;
         
         return timeStr;
     }
-
+    
     const tests = [
         { input: 0, expected: '0.0' },
         { input: 100, expected: '0.1' },
@@ -61,10 +30,10 @@ function testFormatTime() {
         { input: 3661000, expected: '1:01:01.0' },
         { input: 7200000, expected: '2:00:00.0' }
     ];
-
+    
     let passed = 0;
     let failed = 0;
-
+    
     tests.forEach((test, i) => {
         const result = formatTime(test.input);
         if (result === test.expected) {
@@ -74,7 +43,7 @@ function testFormatTime() {
             console.error(`Test ${i + 1} FAILED: formatTime(${test.input}) = "${result}", expected "${test.expected}"`);
         }
     });
-
+    
     return { passed, failed, total: tests.length };
 }
 
@@ -86,25 +55,20 @@ function testDeterminePlayerSide() {
         }
         return playerColor;
     }
-
-    // Mock Math.random for predictable results
-    const originalRandom = Math.random;
     
-    // Test non-random values
-    Math.random = originalRandom; // Reset first
+    const originalRandom = Math.random;
     
     let passed = 0;
     let failed = 0;
-
+    
     // Test white
-    window.playerColor = 'white';
     const result1 = determinePlayerSide('white');
     if (result1 === 'white') passed++; else { failed++; console.error('Failed: white should return white'); }
-
+    
     // Test black
     const result2 = determinePlayerSide('black');
     if (result2 === 'black') passed++; else { failed++; console.error('Failed: black should return black'); }
-
+    
     // Test random (just verify it returns valid values)
     let randomResults = new Set();
     for (let i = 0; i < 100; i++) {
@@ -117,15 +81,14 @@ function testDeterminePlayerSide() {
         failed++;
         console.error('Failed: random should return white or black');
     }
-
+    
     Math.random = originalRandom;
-
+    
     return { passed, failed, total: 3 };
 }
 
 // Test getCapturedPiece logic
 function testGetCapturedPiece() {
-    // Simplified version of the logic
     function parseFenPieces(fen) {
         const pieces = {};
         let rank = 7, file = 0;
@@ -136,25 +99,25 @@ function testGetCapturedPiece() {
         }
         return pieces;
     }
-
+    
     function getCapturedPiece(oldFen, move) {
         const oldPieces = parseFenPieces(oldFen);
         return oldPieces[move.to] || null;
     }
-
+    
     const testFen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
     
     let passed = 0;
     let failed = 0;
-
-    // Test capturing a piece - e2 has white pawn, e7 has black pawn in starting position
+    
+    // Test capturing a piece
     const captured = getCapturedPiece(testFen, { from: 'e2', to: 'e7' });
     if (captured === 'p') { passed++; } else { failed++; console.error(`Failed: expected 'p' at e7, got ${captured}`); }
-
+    
     // Test no capture
-    const noCapture = getCapturedPiece('8/8/8/8/8/8/8/8 w - - 0 1', { from: 'e2', to: 'e4' });
+    const noCapture = getCapturedPiece('8/8/8/8/8/8/8/8 w - 0 1', { from: 'e2', to: 'e4' });
     if (noCapture === null) { passed++; } else { failed++; console.error('Failed: empty board should have no captures'); }
-
+    
     return { passed, failed, total: 2 };
 }
 

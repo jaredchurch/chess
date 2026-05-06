@@ -160,3 +160,67 @@ export function deleteProfile(profileId) {
         return false;
     }
 }
+
+/**
+ * Gets game statistics for a profile
+ * @param {string} profileId - Profile ID to get stats for
+ * @returns {Object} Statistics object with total_games, wins, losses, draws, etc.
+ */
+export function getGameStats(profileId) {
+    if (!profileId) return null;
+    try {
+        const key = `chess_games_${profileId}`;
+        const gamesJson = getStorageItem(key);
+        const games = gamesJson ? JSON.parse(gamesJson) : [];
+        
+        const stats = {
+            total_games: 0,
+            wins: 0,
+            losses: 0,
+            draws: 0,
+            checkmates: 0,
+            stalemates: 0,
+            in_progress: 0,
+            by_result: {}
+        };
+        
+        games.forEach(game => {
+            if (game.result === 'in_progress') {
+                stats.in_progress++;
+                return;
+            }
+            
+            stats.total_games++;
+            
+            // Count by result type
+            if (!stats.by_result[game.result]) {
+                stats.by_result[game.result] = 0;
+            }
+            stats.by_result[game.result]++;
+            
+            // Determine win/loss/draw
+            if (game.result === 'draw' || game.result === 'stalemate') {
+                stats.draws++;
+            } else if (game.result === 'win_white' || game.result === 'win_black') {
+                // Determine if player won or lost
+                const playerSide = game.player_side;
+                if (game.result === 'win_white' && playerSide === 'white') {
+                    stats.wins++;
+                } else if (game.result === 'win_black' && playerSide === 'black') {
+                    stats.wins++;
+                } else {
+                    stats.losses++;
+                }
+            }
+            
+            // Count checkmates and stalemates
+            if (game.result === 'checkmate') stats.checkmates++;
+            if (game.result === 'stalemate') stats.stalemates++;
+        });
+        
+        return stats;
+    } catch (e) {
+        console.warn('Failed to get game stats:', e);
+        return null;
+    }
+}

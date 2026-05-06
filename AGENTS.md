@@ -109,6 +109,14 @@ src/
 
 **CRITICAL: NEVER declare work "done" or attempt a commit until ALL checks pass!**
 
+### Testing Principles:
+- **Tests must validate real code behavior, not simulations**
+- **Tests must catch actual integration issues (missing imports, undefined functions)**
+- **NEVER create tests that just simulate what you think the code does**
+- **Tests should fail when the real code has bugs**
+- **Tests must be generic - no hardcoded function names**
+- **Tests must work for future code changes without modification**
+
 ### Tests to Run BEFORE Declaring Work Done:
 
 1. **JavaScript Syntax Check** (Catches syntax errors):
@@ -117,9 +125,9 @@ src/
    const acorn = require('acorn');
    const fs = require('fs');
    const files = ['www/js/timer.js', 'www/js/board.js', 'www/js/game.js', 
-                   'www/js/ai.js', 'www/js/ui-cards.js', 'www/js/dialogs-newgame.js', 
-                   'www/js/dialogs.js', 'www/js/index.js', 'www/js/chess-wasm.js', 
-                   'www/js/storage.js'];
+                  'www/js/ai.js', 'www/js/ui-cards.js', 'www/js/dialogs-newgame.js', 
+                  'www/js/dialogs.js', 'www/js/index.js', 'www/js/chess-wasm.js', 
+                  'www/js/storage.js'];
    let allGood = true;
    files.forEach(f => {
        try {
@@ -136,7 +144,10 @@ src/
    node tests/js/module_test.js
    ```
 
-3. **Regression Tests** (Ensures no functional changes):
+3. **Regression Tests** (Ensures real code works, catches missing imports):
+   - Tests actual logic (formatTime, determinePlayerSide, getCapturedPiece)
+   - NO hardcoded function names - automatically detects what needs to be imported
+   - Tests real code behavior, not simulations
    ```bash
    node tests/js/regression_test.js
    ```

@@ -12,7 +12,7 @@ Once we have worked through doing the spec for them, they should be marked as do
 - [x] 9. Make play history exportable & importable to end user to support portability and backup.
 - [] 10. add a teaching module to help users learn about each piece, what it can do, and also special moves like en pasant.
 - [x] 11. give user option to play as white or black, or random selection (50:50 odds on the calculation) - note that game history should tell which side the user was playing.
-- [] 12. add card that shows number of games in history as well as number that ended in each way a game can end (win, loss etc)
+- [] 12. add dialog (accessible through hamburger menu) that shows number of games in history as well as number that ended in each way a game can end (win, loss etc)
 - [x] 13. Most recent moves taken should be on-screen in the move history when the move is taken.
 - [x] 14. add a timer for moves on both sides, I want to see "time for current move selection", "total time per player" and "total time for this game". This should be included between the score card and the move history card.
 - [x] 15. reset, colour selection, move engine level & indication of who's turn it is should all move into the right side column (please propose how the ordering should be done)
@@ -21,3 +21,5 @@ Once we have worked through doing the spec for them, they should be marked as do
 - [x] 18. Rather than "White's turn" or "Black's turn", use the player's profile name & "Computer's turn".
 - [x] 19. When I review a historical move I want to be able to see & copy the FEN for that particular board position.
 - [x] 20. when a pawn reaches the other end of the board, user should have an option of the type of piece they want to exchange for: Queen, Rook, Bishop or Knight.
+- [ ] 21. Add a mode that allows board to highlight valid moves when a piece is selected. This should default to off, and should be changeable in the New Game menu.
+- [ ] 22. Game stats should allow to compare by opponent level as well.
