@@ -915,11 +915,19 @@ window.showNewGameDialog = () => {
         const difficultySelect = document.getElementById('new-game-difficulty');
         const cloudDepthInput = document.getElementById('new-game-cloud-depth');
         const cloudMaxTimeInput = document.getElementById('new-game-cloud-max-time');
+        const cloudDepthValue = document.getElementById('new-game-cloud-depth-value');
+        const cloudMaxTimeValue = document.getElementById('new-game-cloud-max-time-value');
         
         if (colorSelect) colorSelect.value = playerColor === 'random' ? 'random' : playerColor;
         if (difficultySelect) difficultySelect.value = aiDifficulty;
-        if (cloudDepthInput) cloudDepthInput.value = cloudDepth;
-        if (cloudMaxTimeInput) cloudMaxTimeInput.value = cloudMaxThinkingTime;
+        if (cloudDepthInput) {
+            cloudDepthInput.value = cloudDepth;
+            if (cloudDepthValue) cloudDepthValue.textContent = cloudDepth;
+        }
+        if (cloudMaxTimeInput) {
+            cloudMaxTimeInput.value = cloudMaxThinkingTime;
+            if (cloudMaxTimeValue) cloudMaxTimeValue.textContent = cloudMaxThinkingTime;
+        }
         
         toggleNewGameCloudSettings();
         dialog.style.display = 'flex';

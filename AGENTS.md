@@ -86,3 +86,10 @@ src/
 - Wait for the user to explicitly say "commit", "push", or similar
 - Stage and prepare commits when asked, but do not commit until told
 - When user says "commit", include a clear message explaining what and why
+
+## Task and Bug Tracking
+
+- When you complete a task or fix a bug, update the corresponding tracking file
+- For bugs: Update `specs/bugs.md` by changing `- [ ]` to `- [x]` for the completed bug
+- For todo items: Update `specs/todo.md` by changing `- [ ]` to `- [x]` for completed items
+- Always mark items as complete immediately after verifying the fix works, before committing

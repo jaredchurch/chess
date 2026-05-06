@@ -18,3 +18,4 @@
 - [x] BUG18. On New Game Dailog, the "start game" button is only available for stockfish - it should be available for any settings.
 - [x] BUG19. When the New Game dialog is open and set to stockfish, there is a hamburger menu showing in the dialog that should be there. Please remove is.
 - [x] BUG20. The Thinking time setting for stockfish is missing from the new game dialog, please reinstate this.
+- [x] BUG21. There is an issue where the Stockfish depth & thinking time sliders. The setting on the slider can be out of sync with the number displayed beside the slider.
