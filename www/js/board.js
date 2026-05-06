@@ -222,6 +222,12 @@ export function handleSquareClick(square) {
  */
 export function renderPreviewBoard(boardEl, fen, highlightFrom, highlightTo) {
     boardEl.innerHTML = '';
+    
+    // Set up grid layout for the preview board
+    const squareSize = Math.floor(parseInt(getComputedStyle(boardEl).width) / 8);
+    boardEl.style.gridTemplateColumns = `repeat(8, ${squareSize}px)`;
+    boardEl.style.gridTemplateRows = `repeat(8, ${squareSize}px)`;
+    
     const pieces = parseFenPieces(fen);
     
     const ranks = window.boardOrientation === 'white' ? [7, 6, 5, 4, 3, 2, 1, 0] : [0, 1, 2, 3, 4, 5, 6, 7];

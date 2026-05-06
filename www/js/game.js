@@ -340,6 +340,11 @@ export function restoreInProgressGame() {
             // Orient board based on player, but white always moves first
             window.boardOrientation = playerSide;
             
+            // Update board labels to match orientation (fix BUG22)
+            if (typeof window.updateBoardLabels === 'function') {
+                window.updateBoardLabels();
+            }
+            
             console.log("Restored to FEN:", window.currentFen);
         } else {
             console.log("No in-progress game found");
