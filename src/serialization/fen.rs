@@ -104,7 +104,7 @@ pub fn parse_fen(fen: &str) -> Result<Board, String> {
     }
 
     // Validate castling rights match actual piece positions
-    validate_castling_rights(&board)?;
+    validate_castling_rights(&mut board);
 
     // Validate EP square if present
     if let Some(ep_sq) = board.en_passant_square {
@@ -241,7 +241,7 @@ fn square_to_string(sq: Square) -> String {
     format!("{}{}", file as char, rank as char)
 }
 
-fn validate_castling_rights(board: &Board) -> Result<(), String> {
+fn validate_castling_rights(board: &mut Board) {
     let white_king = board.pieces[5];
     let white_rook_k = board.pieces[3];
     let white_rook_q = board.pieces[2];
@@ -263,20 +263,19 @@ fn validate_castling_rights(board: &Board) -> Result<(), String> {
     let actual_kq = (board.castling_rights & 0x4) != 0;
     let actual_qq = (board.castling_rights & 0x8) != 0;
 
+    // Clear invalid castling rights instead of failing
     if actual_k && !can_white_k {
-        return Err("Invalid FEN: White kingside castling but pieces not in position".to_string());
+        board.castling_rights &= !0x1;
     }
     if actual_q && !can_white_q {
-        return Err("Invalid FEN: White queenside castling but pieces not in position".to_string());
+        board.castling_rights &= !0x2;
     }
     if actual_kq && !can_black_k {
-        return Err("Invalid FEN: Black kingside castling but pieces not in position".to_string());
+        board.castling_rights &= !0x4;
     }
     if actual_qq && !can_black_q {
-        return Err("Invalid FEN: Black queenside castling but pieces not in position".to_string());
+        board.castling_rights &= !0x8;
     }
-
-    Ok(())
 }
 
 fn validate_en_passant_square(board: &Board, ep_square: Square) -> Result<(), String> {
