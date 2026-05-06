@@ -93,3 +93,61 @@ src/
 - For bugs: Update `specs/bugs.md` by changing `- [ ]` to `- [x]` for the completed bug
 - For todo items: Update `specs/todo.md` by changing `- [ ]` to `- [x]` for completed items
 - Always mark items as complete immediately after verifying the fix works, before committing
+
+## Testing Before Completing Work
+
+**CRITICAL: NEVER declare work "done" or attempt a commit until ALL checks pass!**
+
+### Tests to Run BEFORE Declaring Work Done:
+
+1. **JavaScript Syntax Check** (Catches syntax errors):
+   ```bash
+   node -e "
+   const acorn = require('acorn');
+   const fs = require('fs');
+   const files = ['www/js/timer.js', 'www/js/board.js', 'www/js/game.js', 
+                   'www/js/ai.js', 'www/js/ui-cards.js', 'www/js/dialogs-newgame.js', 
+                   'www/js/dialogs.js', 'www/js/index.js', 'www/js/chess-wasm.js', 
+                   'www/js/storage.js'];
+   let allGood = true;
+   files.forEach(f => {
+       try {
+           const code = fs.readFileSync(f, 'utf8');
+           acorn.parse(code, {sourceType: 'module', ecmaVersion: 2022});
+       } catch(e) { allGood = false; console.error('Syntax error:', f, e.message); }
+   });
+   if (!allGood) process.exit(1);
+   "
+   ```
+
+2. **JavaScript Module Export Check** (Catches missing imports like `generateUUID`):
+   ```bash
+   node tests/js/module_test.js
+   ```
+
+3. **Regression Tests** (Ensures no functional changes):
+   ```bash
+   node tests/js/regression_test.js
+   ```
+
+4. **Rust Compilation Check** (Catches type errors):
+   ```bash
+   cargo check
+   ```
+
+5. **WASM Build** (Ensures web deployment works):
+   ```bash
+   wasm-pack build --target web --out-dir www/pkg
+   ```
+
+### Example Workflow:
+1. Make code changes
+2. Run JavaScript syntax check → Fix if fails
+3. Run module export check → Fix if fails (e.g., missing imports)
+4. Run regression tests → Fix if fails
+5. Run Rust compilation check → Fix if fails
+6. Run WASM build → Fix if fails
+7. Update `specs/bugs.md` or `specs/todo.md` to mark task complete
+8. NOW you can commit
+
+**Key Rule: If ANY test fails, DO NOT commit! Fix the errors first.**
