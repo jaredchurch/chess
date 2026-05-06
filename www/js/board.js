@@ -7,7 +7,7 @@
 
 import { pieceUnicode, isWhitePiece } from './ui.js';
 import { getLegalMoves, applyMove, getGameState } from './chess-wasm.js';
-import { getCapturedPiece } from './game.js';
+import { getCapturedPiece, getBoardStateAtMove } from './game.js';
 
 window.boardOrientation = 'white';
 window.selectedSquare = null;
