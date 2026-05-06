@@ -7,6 +7,7 @@
 
 import { calculateScore, isWhitePiece } from './ui.js';
 import { getBoardStateAtMove } from './game.js';
+import { showMovePreview } from './board.js';
 
 window.moveHistoryCollapsed = window.moveHistoryCollapsed || false;
 
