@@ -82,10 +82,21 @@ src/
 
 ## Commit Discipline
 
-- **Never commit without explicit instruction**
-- Wait for the user to explicitly say "commit", "push", or similar
-- Stage and prepare commits when asked, but do not commit until told
+**CRITICAL RULE: NEVER COMMIT WITHOUT EXPLICIT USER PERMISSION FOR THAT SPECIFIC COMMIT**
+
+- **NEVER commit code unless the user explicitly says "commit" or "please commit" for that specific set of changes**
+- **NEVER assume that finishing a task means you can commit**
+- **NEVER commit because "all tests pass" or "work is done"**
+- **ALWAYS wait for explicit "commit" command from the user before running `git commit`**
+- **If you make changes, present them to the user and wait for "commit" permission**
 - When user says "commit", include a clear message explaining what and why
+- Stage and prepare commits when asked, but do NOT commit until explicitly told with "commit"
+
+**Examples:**
+- ✅ User says: "fix this bug" → You fix it → You say "Fixed! Ready to commit?" → User says "commit" → You commit
+- ❌ User says: "fix this bug" → You fix it → You commit immediately (WRONG!)
+- ❌ Tests pass → You commit (WRONG - no explicit permission!)
+- ❌ "work is done" → You commit (WRONG - no explicit permission!)
 
 ## Task and Bug Tracking
 
