@@ -347,6 +347,17 @@ export function restoreInProgressGame() {
             }
             
             console.log("Restored to FEN:", window.currentFen);
+            
+            // BUG16: If game is at end (checkmate/draw), show new game dialog
+            const gameState = getGameState(window.currentFen);
+            if (gameState && (gameState.is_checkmate || gameState.is_draw)) {
+                console.log("Game ended, showing new game dialog");
+                setTimeout(() => {
+                    if (typeof window.showNewGameDialog === 'function') {
+                        window.showNewGameDialog();
+                    }
+                }, 500);
+            }
         } else {
             console.log("No in-progress game found");
             startNewGame();

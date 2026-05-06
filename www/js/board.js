@@ -189,27 +189,80 @@ export function handleSquareClick(square) {
     } else if (window.selectedSquare) {
         const move = window.legalMoves.find(m => m.from === window.selectedSquare && m.to === square);
         if (move) {
-            if (typeof window.recordMoveTime === 'function') window.recordMoveTime();
-            if (typeof window.stopMoveTimer === 'function') window.stopMoveTimer();
-            
-            const nextFen = applyMove(window.currentFen, move);
-            if (nextFen) {
-                if (typeof window.saveCurrentGame === 'function') {
-                    window.saveCurrentGame(window.selectedSquare, square, move.promotion);
-                }
-                window.currentFen = nextFen;
-                window.selectedSquare = null;
-                window.moveStartTime = Date.now();
-                if (typeof window.updateUI === 'function') window.updateUI();
-                if (typeof window.startMoveTimer === 'function') window.startMoveTimer();
+            // TODO 20: Handle promotion - let user choose piece
+            if (move.promotion) {
+                showPromotionDialog(move);
                 return;
             }
+            makeMove(move);
+        } else {
+            window.selectedSquare = square;
         }
-        window.selectedSquare = square;
     } else {
         window.selectedSquare = square;
     }
     renderBoard();
+}
+
+// TODO 20: Show promotion piece selection dialog
+function showPromotionDialog(move) {
+    let dialog = document.getElementById('promotion-dialog');
+    if (!dialog) {
+        dialog = document.createElement('div');
+        dialog.id = 'promotion-dialog';
+        dialog.innerHTML = `
+            <div class="promotion-content">
+                <div class="promotion-header">Choose promotion piece:</div>
+                <div class="promotion-options">
+                    <button class="promotion-btn" data-piece="q">♕ Queen</button>
+                    <button class="promotion-btn" data-piece="r">♖ Rook</button>
+                    <button class="promotion-btn" data-piece="b">♗ Bishop</button>
+                    <button class="promotion-btn" data-piece="n">♘ Knight</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(dialog);
+        dialog.onclick = (e) => {
+            if (e.target === dialog) closePromotionDialog();
+        };
+    }
+    
+    // Store the move and handle selection
+    window.pendingPromotionMove = move;
+    dialog.querySelectorAll('.promotion-btn').forEach(btn => {
+        btn.onclick = () => {
+            const piece = btn.dataset.piece;
+            window.pendingPromotionMove.promotion = piece;
+            closePromotionDialog();
+            makeMove(window.pendingPromotionMove);
+            window.pendingPromotionMove = null;
+        };
+    });
+    
+    dialog.style.display = 'flex';
+}
+
+window.closePromotionDialog = function() {
+    const dialog = document.getElementById('promotion-dialog');
+    if (dialog) dialog.style.display = 'none';
+}
+
+// Helper function to execute a move
+function makeMove(move) {
+    if (typeof window.recordMoveTime === 'function') window.recordMoveTime();
+    if (typeof window.stopMoveTimer === 'function') window.stopMoveTimer();
+    
+    const nextFen = applyMove(window.currentFen, move);
+    if (nextFen) {
+        if (typeof window.saveCurrentGame === 'function') {
+            window.saveCurrentGame(window.selectedSquare, move.to, move.promotion);
+        }
+        window.currentFen = nextFen;
+        window.selectedSquare = null;
+        window.moveStartTime = Date.now();
+        if (typeof window.updateUI === 'function') window.updateUI();
+        if (typeof window.startMoveTimer === 'function') window.startMoveTimer();
+    }
 }
 
 /**
@@ -274,6 +327,10 @@ export function showMovePreview(moveIndex) {
                     <button class="preview-close" onclick="closePreviewDialog()">&times;</button>
                 </div>
                 <div id="preview-board"></div>
+                <div class="preview-fen">
+                    <span id="preview-fen-text"></span>
+                    <button id="preview-copy-fen" onclick="copyPreviewFen()">Copy FEN</button>
+                </div>
             </div>
         `;
         document.body.appendChild(dialog);
@@ -292,8 +349,30 @@ export function showMovePreview(moveIndex) {
         renderPreviewBoard(previewBoard, state.fen, from, to);
     }
     
+    // TODO 19: Show FEN for the position
+    const fenText = document.getElementById('preview-fen-text');
+    if (fenText) {
+        fenText.textContent = state.fen;
+        fenText.title = 'Click "Copy FEN" to copy this position';
+    }
+    
+    window.currentPreviewFen = state.fen;
     dialog.style.display = 'flex';
 }
+
+// TODO 19: Copy FEN to clipboard
+window.copyPreviewFen = function() {
+    if (window.currentPreviewFen) {
+        navigator.clipboard.writeText(window.currentPreviewFen).then(() => {
+            const btn = document.getElementById('preview-copy-fen');
+            if (btn) {
+                const originalText = btn.textContent;
+                btn.textContent = 'Copied!';
+                setTimeout(() => { btn.textContent = originalText; }, 1500);
+            }
+        }).catch(err => console.warn('Failed to copy FEN:', err));
+    }
+};
 
 /**
  * Closes the move preview dialog
