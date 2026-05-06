@@ -32,5 +32,14 @@ export function getBestMove(fen, level = 2) {
 }
 
 export function getGameState(fen) {
-    return get_game_state(fen);
+    try {
+        const result = get_game_state(fen);
+        if (!result || result === null || result === undefined) {
+            console.warn('get_game_state returned null/undefined for FEN:', fen);
+        }
+        return result;
+    } catch(e) {
+        console.error('Error calling get_game_state:', e, 'for FEN:', fen);
+        return null;
+    }
 }

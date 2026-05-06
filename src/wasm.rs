@@ -116,7 +116,10 @@ pub fn get_best_move_wasm(fen: &str, level: u8) -> JsValue {
 pub fn get_game_state(fen: &str) -> JsValue {
     let board = match parse_fen(fen) {
         Ok(b) => b,
-        Err(_) => return JsValue::NULL,
+        Err(e) => {
+            web_sys::console::error_1(&format!("parse_fen failed: {}", e).into());
+            return JsValue::NULL;
+        }
     };
 
     let state = crate::move_gen::termination::detect_termination(&board);
@@ -132,7 +135,13 @@ pub fn get_game_state(fen: &str) -> JsValue {
             || state == crate::move_gen::termination::GameState::InsufficientMaterial,
     };
 
-    serde_wasm_bindgen::to_value(&wasm_state).unwrap()
+    match serde_wasm_bindgen::to_value(&wasm_state) {
+        Ok(val) => val,
+        Err(e) => {
+            web_sys::console::error_1(&format!("serde_wasm_bindgen failed: {:?}", e).into());
+            JsValue::NULL
+        }
+    }
 }
 
 fn square_to_string(sq: Square) -> String {

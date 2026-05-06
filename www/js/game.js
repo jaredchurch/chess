@@ -391,9 +391,15 @@ export function getBoardStateAtMove(moveIndex) {
  * Handles turn display, check/checkmate/draw detection, and triggers AI moves
  */
 export function updateUI() {
+    if (!isWasmReady()) {
+        console.warn('WASM not ready yet, skipping updateUI');
+        return;
+    }
+    
     const gameState = getGameState(window.currentFen);
     if (!gameState) {
         console.warn('Failed to get game state for FEN:', window.currentFen);
+        console.warn('This usually means the FEN is invalid or WASM parsing failed');
         return;
     }
     const statusText = document.getElementById('status-text');
