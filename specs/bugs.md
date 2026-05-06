@@ -20,4 +20,5 @@
 - [x] BUG20. The Thinking time setting for stockfish is missing from the new game dialog, please reinstate this.
 - [x] BUG21. There is an issue where the Stockfish depth & thinking time sliders. The setting on the slider can be out of sync with the number displayed beside the slider.
 - [x] BUG22. sometimes when I start a new game the ranks are numbered reverse to what they should be. rank 1 should always be the rank that contains white king as the start of the game.
-- [ ] BUG23. The option to display board at a point in move history isn't working.
+- [x] BUG23. The option to display board at a point in move history isn't working.
+- [ ] BUG24. after 50 or 60 moves the previous board display is not working as expected - the boards appear incorrectly.

@@ -5,7 +5,7 @@
 // game saving/loading, and move history tracking.
 //
 
-import { applyMove, getGameState } from './chess-wasm.js';
+import { applyMove, getGameState, isWasmReady } from './chess-wasm.js';
 import { isWhitePiece, INITIAL_FEN } from './ui.js';
 import { get_build_timestamp, get_build_profile } from '../pkg/chess_core.js';
 import { 
@@ -83,8 +83,9 @@ export function parseFenPieces(fen) {
  * Also tracks captured pieces for score display
  * @param {string} from - Origin square (e.g., 'e2')
  * @param {string} to - Destination square (e.g., 'e4')
+ * @param {string} [promotion] - Promotion piece (q, r, b, n) if applicable
  */
-export function saveCurrentGame(from, to) {
+export function saveCurrentGame(from, to, promotion = null) {
     if (!window.currentGame) return;
     
     try {
@@ -101,7 +102,7 @@ export function saveCurrentGame(from, to) {
             else window.capturedPieces.white.push(captured);
         }
         
-        const coords = from + to;
+        const coords = from + to + (promotion || '');
         window.currentGame.moves.push({
             coords: coords,
             durationMs: durationMs
@@ -368,9 +369,12 @@ export function getBoardStateAtMove(moveIndex) {
     
     for (let i = 0; i <= moveIndex && i < window.currentGame.moves.length; i++) {
         const moveRecord = window.currentGame.moves[i];
+        const coords = moveRecord.coords;
+        // Coords format: from(2) + to(2) + promotion(1 if present)
         const moveObj = {
-            from: moveRecord.coords.substring(0, 2),
-            to: moveRecord.coords.substring(2, 4)
+            from: coords.substring(0, 2),
+            to: coords.substring(2, 4),
+            promotion: coords.length > 4 ? coords.substring(4) : null
         };
         const nextFen = applyMove(fen, moveObj);
         if (nextFen) {

@@ -195,7 +195,7 @@ export function handleSquareClick(square) {
             const nextFen = applyMove(window.currentFen, move);
             if (nextFen) {
                 if (typeof window.saveCurrentGame === 'function') {
-                    window.saveCurrentGame(window.selectedSquare, square);
+                    window.saveCurrentGame(window.selectedSquare, square, move.promotion);
                 }
                 window.currentFen = nextFen;
                 window.selectedSquare = null;
