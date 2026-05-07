@@ -6,8 +6,9 @@
 use crate::ai::evaluation::evaluate;
 #[cfg(feature = "profiling")]
 use crate::ai::profiler;
-use crate::board::move_struct::Move;
-use crate::board::types::Color;
+use crate::board::move_struct::{Move, MoveFlag};
+use crate::board::piece::PieceType;
+use crate::board::types::{Color, Square};
 use crate::board::Board;
 use crate::lookup_position;
 use rand::seq::SliceRandom;
@@ -535,10 +536,176 @@ fn move_flag_to_u8(flag: &crate::board::move_struct::MoveFlag) -> u8 {
     }
 }
 
+/// Piece value for MVV-LVA scoring (centipawns).
+#[inline]
+fn piece_value(pt: PieceType) -> i32 {
+    match pt {
+        PieceType::Pawn => 100,
+        PieceType::Knight => 320,
+        PieceType::Bishop => 330,
+        PieceType::Rook => 500,
+        PieceType::Queen => 900,
+        PieceType::King => 20000,
+    }
+}
+
+/// Generate capture moves directly from attack bitboards.
+///
+/// Instead of generating ALL pseudo-legal moves and filtering to captures
+/// (which allocates intermediate Vecs for every piece), this function
+/// computes attack bitboards for each friendly piece and intersects with
+/// enemy occupancy to get only capture targets.
+///
+/// This is significantly faster for quiescence where we only need captures.
+fn generate_captures_fast(board: &Board, out: &mut Vec<Move>) {
+    let side = board.side_to_move;
+    let enemy = side.opposite();
+    let friendly_offset = if side == Color::White { 0 } else { 6 };
+    let enemy_occ = board.occupancy[if enemy == Color::White { 0 } else { 1 }].0;
+    let all_occ = board.occupancy[2];
+
+    // Helper: for each attack target on `attack_bb` from `from_sq`, push a capture move.
+    // Handles pawn promotion on the back rank.
+    macro_rules! push_captures {
+        ($from:expr, $attack_bb:expr, $is_pawn:expr) => {
+            let mut atk = ($attack_bb).0 & enemy_occ;
+            while atk != 0 {
+                let t = atk.trailing_zeros() as u8;
+                let to_sq = Square::from_u8_unchecked(t);
+                if $is_pawn && ((side == Color::White && t >= 56) || (side == Color::Black && t <= 7))
+                {
+                    // Pawn promotion capture: generate all 4 promotions
+                    out.push(Move::new($from, to_sq, MoveFlag::Promotion(PieceType::Queen)));
+                    out.push(Move::new($from, to_sq, MoveFlag::Promotion(PieceType::Rook)));
+                    out.push(Move::new($from, to_sq, MoveFlag::Promotion(PieceType::Bishop)));
+                    out.push(Move::new($from, to_sq, MoveFlag::Promotion(PieceType::Knight)));
+                } else {
+                    out.push(Move::new($from, to_sq, MoveFlag::Capture));
+                }
+                atk &= atk - 1;
+            }
+        };
+    }
+
+    // --- Pawn captures ---
+    {
+        let pawns = board.pieces[friendly_offset].0;
+        let mut bits = pawns;
+        while bits != 0 {
+            let sq = bits.trailing_zeros() as u8;
+            let from = Square::from_u8_unchecked(sq);
+            let attacks = crate::move_gen::pawn::get_pawn_attacks(from, side);
+            push_captures!(from, attacks, true);
+            bits &= bits - 1;
+        }
+    }
+
+    // --- En passant ---
+    if let Some(ep_sq) = board.en_passant_square {
+        let ep_attacks = crate::move_gen::pawn::get_pawn_attacks(ep_sq, enemy);
+        let ep_attackers = ep_attacks.0 & board.pieces[friendly_offset].0;
+        let mut bits = ep_attackers;
+        while bits != 0 {
+            let sq = bits.trailing_zeros() as u8;
+            let from = Square::from_u8_unchecked(sq);
+            out.push(Move::new(from, ep_sq, MoveFlag::EnPassantCapture));
+            bits &= bits - 1;
+        }
+    }
+
+    // --- Knight captures ---
+    {
+        let knights = board.pieces[friendly_offset + 1].0;
+        let mut bits = knights;
+        while bits != 0 {
+            let sq = bits.trailing_zeros() as u8;
+            let from = Square::from_u8_unchecked(sq);
+            let attacks = crate::move_gen::knight::get_knight_attacks(from);
+            push_captures!(from, attacks, false);
+            bits &= bits - 1;
+        }
+    }
+
+    // --- Bishop captures (diagonal slides) ---
+    {
+        let bishops = board.pieces[friendly_offset + 2].0;
+        let mut bits = bishops;
+        while bits != 0 {
+            let sq = bits.trailing_zeros() as u8;
+            let from = Square::from_u8_unchecked(sq);
+            let attacks = crate::move_gen::sliding::get_bishop_attacks(from, all_occ);
+            push_captures!(from, attacks, false);
+            bits &= bits - 1;
+        }
+    }
+
+    // --- Rook captures (orthogonal slides) ---
+    {
+        let rooks = board.pieces[friendly_offset + 3].0;
+        let mut bits = rooks;
+        while bits != 0 {
+            let sq = bits.trailing_zeros() as u8;
+            let from = Square::from_u8_unchecked(sq);
+            let attacks = crate::move_gen::sliding::get_rook_attacks(from, all_occ);
+            push_captures!(from, attacks, false);
+            bits &= bits - 1;
+        }
+    }
+
+    // --- Queen captures (bishop + rook slides) ---
+    {
+        let queens = board.pieces[friendly_offset + 4].0;
+        let mut bits = queens;
+        while bits != 0 {
+            let sq = bits.trailing_zeros() as u8;
+            let from = Square::from_u8_unchecked(sq);
+            let diag = crate::move_gen::sliding::get_bishop_attacks(from, all_occ);
+            let orth = crate::move_gen::sliding::get_rook_attacks(from, all_occ);
+            let attacks = crate::Bitboard(diag.0 | orth.0);
+            push_captures!(from, attacks, false);
+            bits &= bits - 1;
+        }
+    }
+
+    // --- King captures ---
+    {
+        let kings = board.pieces[friendly_offset + 5].0;
+        if kings != 0 {
+            let sq = kings.trailing_zeros() as u8;
+            let from = Square::from_u8_unchecked(sq);
+            let attacks = crate::move_gen::king::get_king_attacks(from);
+            push_captures!(from, attacks, false);
+        }
+    }
+}
+
+/// Score a capture for MVV-LVA ordering (higher is better).
+/// Victim value dominates, attacker value breaks ties (cheapest attacker first).
+#[inline]
+fn score_capture(m: &Move, board: &Board) -> i32 {
+    let victim_value = match board.get_piece_at(m.to) {
+        Some(p) => piece_value(p.piece_type),
+        None => 100, // En passant captures a pawn
+    };
+    let attacker_value = match board.get_piece_at(m.from) {
+        Some(p) => piece_value(p.piece_type),
+        None => 0,
+    };
+    victim_value * 100 - attacker_value
+}
+
 /// Quiescence search to evaluate "quiet" positions at depth 0.
 /// Only explores capture moves to avoid the horizon effect.
 /// Uses Negamax formulation - returns score from perspective of side to move.
 /// Includes timeout checking to prevent excessive capture sequence searches.
+///
+/// Optimizations:
+///   1. Direct capture generation from attack bitboards (avoids generating
+///      non-capture moves and intermediate per-piece Vec allocations)
+///   2. Deferred legality check: only check legality for top-N captures we
+///      actually try (avoids cloning every pseudo-legal capture)
+///   3. Delta pruning: skip all captures when stand_pat + max gain < alpha
+///   4. Inline selection sort for top-N MVV-LVA ordering (no allocation)
 fn quiescence(board: &Board, mut alpha: i32, beta: i32, start_time: f64, q_depth: u8) -> i32 {
     // Check timeout
     if check_timeout_full(start_time).is_some() || q_depth > 4 {
@@ -555,33 +722,59 @@ fn quiescence(board: &Board, mut alpha: i32, beta: i32, start_time: f64, q_depth
         return alpha;
     }
 
-    // Only generate capture moves
-    let mut capture_moves = board.generate_legal_captures();
+    // Delta pruning: if best possible capture (queen=900cp + margin) can't reach
+    // alpha, skip all capture search. This prunes large subtrees in losing positions.
+    if stand_pat + 1100 < alpha {
+        return alpha;
+    }
 
-    if capture_moves.is_empty() {
+    // Generate captures directly from attack bitboards (skips non-capture generation)
+    let mut captures = Vec::with_capacity(64);
+    generate_captures_fast(board, &mut captures);
+    if captures.is_empty() {
         return stand_pat;
     }
 
-    // Order captures for better pruning (MVV-LVA)
-    crate::ai::move_ordering::sort_moves(&mut capture_moves, board, 0);
-
-    // Limit number of capture moves to explore
-    let max_captures = if q_depth > 2 { 4 } else { 8 };
-    let capture_moves: Vec<_> = capture_moves.into_iter().take(max_captures).collect();
+    // Selection sort: bring top-N captures to front by MVV-LVA
+    let max = if q_depth > 2 { 4 } else { 8 };
+    let limit = captures.len().min(max);
+    for i in 0..limit {
+        let mut best = i;
+        let mut best_score = score_capture(&captures[i], board);
+        for j in (i + 1)..captures.len() {
+            let s = score_capture(&captures[j], board);
+            if s > best_score {
+                best_score = s;
+                best = j;
+            }
+        }
+        if best != i {
+            captures.swap(i, best);
+        }
+    }
 
     let mut best_value = stand_pat;
-    for m in &capture_moves {
+    for i in 0..limit {
         // Check timeout during quiescence search
         if check_timeout_full(start_time).is_some() {
             return best_value;
         }
 
+        let m = captures[i];
+
+        // Legality check: clone, make move, ensure king not in check.
+        // We defer this from move generation to avoid cloning every
+        // pseudo-legal capture - only the top-N we actually try.
         #[cfg(feature = "profiling")]
         profiler::count_incr(profiler::CLONE);
         let mut board_copy = board.clone();
         #[cfg(feature = "profiling")]
         profiler::count_incr(profiler::MAKE_MOVE);
-        board_copy.make_move(*m);
+        board_copy.make_move(m);
+        if crate::move_gen::is_in_check(&board_copy, board.side_to_move) {
+            continue; // Illegal capture (e.g. pinned piece or en passant that exposes king)
+        }
+
         // Negamax: negate the score and swap alpha/beta
         let eval = -quiescence(&board_copy, -beta, -alpha, start_time, q_depth + 1);
         best_value = best_value.max(eval);
