@@ -4,6 +4,8 @@
 // Search Module - Implements Minimax with Alpha-Beta pruning for chess engine.
 // Supports configurable search depth and includes Level 1 random move selection.
 use crate::ai::evaluation::evaluate;
+#[cfg(feature = "profiling")]
+use crate::ai::profiler;
 use crate::board::move_struct::Move;
 use crate::board::types::Color;
 use crate::board::Board;
@@ -32,17 +34,55 @@ fn log_message(_msg: &str) {
 use js_sys;
 
 /// Maximum time allowed for engine search (in milliseconds)
-const MAX_SEARCH_TIME_MS: f64 = 30000.0; // 30 seconds
+/// Time-based cutoff at 5 minutes to prevent indefinite searches
+const MAX_SEARCH_TIME_MS: f64 = 300_000.0; // 5 minutes
 
 /// Maximum nodes to evaluate before stopping (safety check)
-const MAX_NODES: u32 = 5_000_000; // 5 million nodes
+const MAX_NODES: u32 = 1_000_000_000; // 1 billion nodes
+
+/// Check elapsed time every N nodes (avoids JS boundary call per node)
+#[allow(dead_code)]
+const TIME_CHECK_INTERVAL: u32 = 1024;
 
 /// Global node counter (reset at start of each search)
 static NODE_COUNT: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
 
-/// Checks if we've exceeded the maximum node count
+/// Tracks last logged node milestone for progress reporting
+static LAST_PROGRESS_MILESTONE: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
+
+/// Logs search progress every 100 million nodes
+#[cfg(target_arch = "wasm32")]
+fn log_node_progress(start_time: f64) {
+    let count = NODE_COUNT.load(std::sync::atomic::Ordering::Relaxed);
+    let milestone = count / 100_000_000;
+    let last = LAST_PROGRESS_MILESTONE.load(std::sync::atomic::Ordering::Relaxed);
+    if milestone > last {
+        if LAST_PROGRESS_MILESTONE
+            .compare_exchange(
+                last,
+                milestone,
+                std::sync::atomic::Ordering::Relaxed,
+                std::sync::atomic::Ordering::Relaxed,
+            )
+            .is_ok()
+        {
+            let elapsed = get_time_ms() - start_time;
+            log_message(&format!(
+                "Engine: searched {}M nodes in {:.0}ms ({:.0} nodes/ms)",
+                milestone * 100,
+                elapsed,
+                (count as f64) / elapsed.max(1.0)
+            ));
+        }
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+fn log_node_progress(_start_time: f64) {}
+
+/// Checks if node limit has been exceeded (fast relaxed load)
 fn is_node_limit_reached() -> bool {
-    NODE_COUNT.fetch_add(1, std::sync::atomic::Ordering::SeqCst) > MAX_NODES
+    NODE_COUNT.load(std::sync::atomic::Ordering::Relaxed) > MAX_NODES
 }
 
 /// Gets current time in milliseconds (platform-specific)
@@ -53,21 +93,72 @@ fn get_time_ms() -> f64 {
 
 #[cfg(not(target_arch = "wasm32"))]
 fn get_time_ms() -> f64 {
-    // For benchmarks, we don't need real timing
     0.0
 }
 
-/// Checks if the search has exceeded the maximum allowed time or node limit.
-/// Returns true if timeout occurred, false otherwise.
+/// Periodically checks time limit (every 1024 nodes to avoid JS boundary cost).
+/// Always checks node limit (fast relaxed atomic load).
 #[cfg(target_arch = "wasm32")]
-fn is_timeout(start_time: f64) -> bool {
-    let elapsed = get_time_ms() - start_time;
-    elapsed > MAX_SEARCH_TIME_MS || is_node_limit_reached()
+fn check_timeout(node_count: u32, start_time: f64) -> Option<TimeoutReason> {
+    if node_count & (TIME_CHECK_INTERVAL - 1) == 0 {
+        let elapsed = get_time_ms() - start_time;
+        if elapsed > MAX_SEARCH_TIME_MS {
+            return Some(TimeoutReason::TimeLimit);
+        }
+    }
+    if is_node_limit_reached() {
+        Some(TimeoutReason::NodeLimit(MAX_NODES))
+    } else {
+        None
+    }
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-fn is_timeout(_start_time: f64) -> bool {
-    is_node_limit_reached()
+fn check_timeout(_node_count: u32, _start_time: f64) -> Option<TimeoutReason> {
+    if is_node_limit_reached() {
+        Some(TimeoutReason::NodeLimit(MAX_NODES))
+    } else {
+        None
+    }
+}
+
+/// Full timeout check (always checks time, not just periodic).
+/// Used in non-hot paths (between depths, quiescence entry).
+#[cfg(target_arch = "wasm32")]
+fn check_timeout_full(start_time: f64) -> Option<TimeoutReason> {
+    let elapsed = get_time_ms() - start_time;
+    if elapsed > MAX_SEARCH_TIME_MS {
+        Some(TimeoutReason::TimeLimit)
+    } else if is_node_limit_reached() {
+        Some(TimeoutReason::NodeLimit(MAX_NODES))
+    } else {
+        None
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+fn check_timeout_full(_start_time: f64) -> Option<TimeoutReason> {
+    if is_node_limit_reached() {
+        Some(TimeoutReason::NodeLimit(MAX_NODES))
+    } else {
+        None
+    }
+}
+
+/// Reason for search timeout
+enum TimeoutReason {
+    #[allow(dead_code)]
+    TimeLimit,
+    NodeLimit(u32),
+}
+
+impl std::fmt::Display for TimeoutReason {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            TimeoutReason::TimeLimit => write!(f, "time limit ({}ms) reached", MAX_SEARCH_TIME_MS),
+            TimeoutReason::NodeLimit(limit) => write!(f, "node limit ({}) reached", limit),
+        }
+    }
 }
 
 /// Returns a random legal move (Level 1).
@@ -118,9 +209,10 @@ pub fn get_best_move_novice(board: &Board) -> Option<Move> {
 
     let elapsed = get_time_ms() - start;
     log_message(&format!(
-        "Level 1 (Novice): Selected best move from {} options in {:.0}ms",
+        "Level 1 (Novice): Selected best move from {} options in {:.0}ms ({:.0} nodes/ms)",
         moves.len(),
-        elapsed
+        elapsed,
+        (moves.len() as f64) / elapsed.max(1.0)
     ));
     best_move
 }
@@ -129,6 +221,11 @@ pub fn get_best_move_novice(board: &Board) -> Option<Move> {
 /// Used for Levels 3+ (Casual and above).
 /// Gradually increases search depth, keeping the best move from each iteration.
 pub fn get_best_move_with_depth(board: &Board, max_depth: u8) -> Option<Move> {
+    #[cfg(feature = "profiling")]
+    profiler::begin();
+    #[cfg(feature = "profiling")]
+    let moves = profiler::time(profiler::MOVE_GEN, || board.generate_legal_moves());
+    #[cfg(not(feature = "profiling"))]
     let moves = board.generate_legal_moves();
     if moves.is_empty() {
         return None;
@@ -151,12 +248,13 @@ pub fn get_best_move_with_depth(board: &Board, max_depth: u8) -> Option<Move> {
             crate::clear_tt();
             crate::ai::move_ordering::clear_ordering_tables();
             NODE_COUNT.store(0, std::sync::atomic::Ordering::SeqCst);
+            LAST_PROGRESS_MILESTONE.store(0, std::sync::atomic::Ordering::Relaxed);
         }
 
-        if is_timeout(total_start) {
+        if let Some(reason) = check_timeout_full(total_start) {
             log_message(&format!(
-                "Engine: Timeout reached after {}ms, returning best move found",
-                MAX_SEARCH_TIME_MS
+                "Engine: Stopping search ({}), returning best move found",
+                reason
             ));
             break;
         }
@@ -185,12 +283,16 @@ pub fn get_best_move_with_depth(board: &Board, max_depth: u8) -> Option<Move> {
 
         for m in &depth_moves {
             // Check timeout during move evaluation
-            if is_timeout(total_start) {
-                log_message("Engine: Timeout reached during move evaluation");
+            if let Some(reason) = check_timeout_full(total_start) {
+                log_message(&format!("Engine: Stopping move evaluation ({})", reason));
                 break;
             }
 
+            #[cfg(feature = "profiling")]
+            profiler::count_incr(profiler::CLONE);
             let mut board_copy = board.clone();
+            #[cfg(feature = "profiling")]
+            profiler::count_incr(profiler::MAKE_MOVE);
             board_copy.make_move(*m);
             // Negamax: score is from perspective of side to move after the move
             // So we negate the result, and the opponent's alpha/beta become our -beta/-alpha
@@ -227,65 +329,172 @@ pub fn get_best_move_with_depth(board: &Board, max_depth: u8) -> Option<Move> {
     }
 
     let total_elapsed = get_time_ms() - total_start;
+    let total_nodes = NODE_COUNT.load(std::sync::atomic::Ordering::Relaxed);
     log_message(&format!(
-        "Engine: Search complete in {:.0}ms",
-        total_elapsed
+        "Engine: Search complete in {:.0}ms ({} nodes, {:.0} nodes/ms)",
+        total_elapsed,
+        total_nodes,
+        (total_nodes as f64) / total_elapsed.max(1.0)
     ));
+
+    #[cfg(feature = "profiling")]
+    profiler::end(total_nodes as u64, total_elapsed);
 
     best_move
 }
 
 /// Alpha-Beta pruning implementation using Negamax formulation.
 /// Returns the evaluated score for the position from the perspective of the side to move.
-/// Checks for timeout at each node to prevent excessively long searches.
+/// Optimizations: single node counter, periodic time checks, null-move pruning,
+/// check extensions, and futility pruning at shallow depths.
 fn alpha_beta(board: &Board, depth: u8, mut alpha: i32, beta: i32, start_time: f64) -> i32 {
-    // Check timeout and node limit at each node
-    if is_timeout(start_time) {
+    // Single node count increment per node
+    let node_count = NODE_COUNT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    if check_timeout(node_count, start_time).is_some() {
+        #[cfg(feature = "profiling")]
+        if profiler::is_active() {
+            return profiler::time(profiler::EVAL, || evaluate(board));
+        }
         return evaluate(board);
     }
-    NODE_COUNT.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+    log_node_progress(start_time);
 
     let board_hash = board.zobrist_hash;
 
     // Check transposition table
+    #[cfg(feature = "profiling")]
+    if profiler::is_active() {
+        if let Some(cached_score) =
+            profiler::time(profiler::TT_LOOKUP, || lookup_position(board_hash, depth, alpha, beta))
+        {
+            return cached_score;
+        }
+    } else if let Some(cached_score) = lookup_position(board_hash, depth, alpha, beta) {
+        return cached_score;
+    }
+    #[cfg(not(feature = "profiling"))]
     if let Some(cached_score) = lookup_position(board_hash, depth, alpha, beta) {
         return cached_score;
     }
 
-    if depth == 0 {
+    #[cfg(feature = "profiling")]
+    let in_check = {
+        profiler::count_incr(profiler::IS_IN_CHECK);
+        crate::move_gen::is_in_check(board, board.side_to_move)
+    };
+    #[cfg(not(feature = "profiling"))]
+    let in_check = crate::move_gen::is_in_check(board, board.side_to_move);
+
+    if depth == 0 && !in_check {
+        #[cfg(feature = "profiling")]
+        if profiler::is_active() {
+            return profiler::time(profiler::QUIESCENCE, || {
+                quiescence(board, alpha, beta, start_time, 0)
+            });
+        }
         return quiescence(board, alpha, beta, start_time, 0);
     }
 
+    // Generate legal moves for checkmate/stalemate detection
+    #[cfg(feature = "profiling")]
+    let mut moves = if profiler::is_active() {
+        profiler::time(profiler::MOVE_GEN, || board.generate_legal_moves())
+    } else {
+        board.generate_legal_moves()
+    };
+    #[cfg(not(feature = "profiling"))]
     let mut moves = board.generate_legal_moves();
     if moves.is_empty() {
-        // Check if it's checkmate or stalemate
-        if crate::move_gen::is_in_check(board, board.side_to_move) {
-            // Checkmate: return a large negative score (bad for side to move)
+        if in_check {
             let score = -20000 - depth as i32;
             crate::store_position(board_hash, depth, score, true, None);
             return score;
         }
-        // Stalemate: return 0
         crate::store_position(board_hash, depth, 0, true, None);
         return 0;
+    }
+
+    // Null-move pruning: if side to move is clearly ahead, skip a turn
+    // Only at depth >= 3 and when not in check
+    if depth >= 3 && !in_check {
+        #[cfg(feature = "profiling")]
+        profiler::count_incr(profiler::NULL_MOVE);
+        #[cfg(feature = "profiling")]
+        profiler::count_incr(profiler::CLONE);
+        let mut null_board = board.clone();
+        null_board.side_to_move = board.side_to_move.opposite();
+        null_board.zobrist_hash ^= crate::board::zobrist::zobrist_tables().side_to_move_key;
+        if let Some(ep) = null_board.en_passant_square {
+            let file = ep as usize % 8;
+            null_board.zobrist_hash ^= crate::board::zobrist::zobrist_tables().en_passant_keys[file];
+            null_board.en_passant_square = None;
+        }
+        null_board.half_move_clock = 0;
+        // Search with reduced depth (R=2) at a minimal window
+        let null_score = -alpha_beta(&null_board, depth - 3, -beta, -beta + 1, start_time);
+        if null_score >= beta {
+            return beta;
+        }
     }
 
     let mut best_move = None;
     let mut best_value = i32::MIN + 1;
 
     // Sort moves using improved ordering (MVV-LVA + Killer + History)
+    #[cfg(feature = "profiling")]
+    if profiler::is_active() {
+        profiler::time(profiler::SORT, || {
+            crate::ai::move_ordering::sort_moves(&mut moves, board, depth)
+        });
+    } else {
+        crate::ai::move_ordering::sort_moves(&mut moves, board, depth);
+    }
+    #[cfg(not(feature = "profiling"))]
     crate::ai::move_ordering::sort_moves(&mut moves, board, depth);
 
-    for m in &moves {
+    // Static evaluation for futility pruning at shallow depths
+    #[cfg(feature = "profiling")]
+    let static_eval = if depth <= 2 {
+        if profiler::is_active() {
+            profiler::time(profiler::EVAL, || evaluate(board))
+        } else {
+            evaluate(board)
+        }
+    } else {
+        0
+    };
+    #[cfg(not(feature = "profiling"))]
+    let static_eval = if depth <= 2 { evaluate(board) } else { 0 };
+
+    for (i, m) in moves.iter().enumerate() {
+        // Futility pruning at depth 1: skip quiet moves that can't raise alpha
+        if depth <= 2 && i > 0 {
+            let is_capture = board.get_piece_at(m.to).is_some()
+                || matches!(m.flag, crate::board::move_struct::MoveFlag::EnPassantCapture);
+            let is_promotion = matches!(m.flag, crate::board::move_struct::MoveFlag::Promotion(_));
+            if !is_capture && !is_promotion {
+                let margin = if depth == 1 { 250 } else { 450 };
+                if static_eval + margin < alpha {
+                    continue;
+                }
+            }
+        }
+
+        #[cfg(feature = "profiling")]
+        profiler::count_incr(profiler::CLONE);
         let mut board_copy = board.clone();
+        #[cfg(feature = "profiling")]
+        profiler::count_incr(profiler::MAKE_MOVE);
         board_copy.make_move(*m);
-        // Negamax: negate the returned score and swap alpha/beta
-        let eval = -alpha_beta(&board_copy, depth - 1, -beta, -alpha, start_time);
+
+        // Check extension: when in check, search one ply deeper
+        let new_depth = if in_check { depth } else { depth - 1 };
+
+        let eval = -alpha_beta(&board_copy, new_depth, -beta, -alpha, start_time);
 
         if eval > best_value {
             best_value = eval;
             best_move = Some((m.from as u8, m.to as u8, move_flag_to_u8(&m.flag)));
-            // Record successful quiet moves in history table
             if board.get_piece_at(m.to).is_none()
                 && !matches!(m.flag, crate::board::move_struct::MoveFlag::Promotion(_))
             {
@@ -295,12 +504,20 @@ fn alpha_beta(board: &Board, depth: u8, mut alpha: i32, beta: i32, start_time: f
 
         alpha = alpha.max(eval);
         if alpha >= beta {
-            // Beta cutoff - record killer move
             crate::ai::move_ordering::record_killer(depth, m);
             break;
         }
     }
 
+    #[cfg(feature = "profiling")]
+    if profiler::is_active() {
+        profiler::time(profiler::TT_STORE, || {
+            crate::store_position(board_hash, depth, best_value, true, best_move)
+        });
+    } else {
+        crate::store_position(board_hash, depth, best_value, true, best_move);
+    }
+    #[cfg(not(feature = "profiling"))]
     crate::store_position(board_hash, depth, best_value, true, best_move);
     best_value
 }
@@ -324,7 +541,7 @@ fn move_flag_to_u8(flag: &crate::board::move_struct::MoveFlag) -> u8 {
 /// Includes timeout checking to prevent excessive capture sequence searches.
 fn quiescence(board: &Board, mut alpha: i32, beta: i32, start_time: f64, q_depth: u8) -> i32 {
     // Check timeout
-    if is_timeout(start_time) || q_depth > 4 {
+    if check_timeout_full(start_time).is_some() || q_depth > 4 {
         return evaluate(board);
     }
 
@@ -355,11 +572,15 @@ fn quiescence(board: &Board, mut alpha: i32, beta: i32, start_time: f64, q_depth
     let mut best_value = stand_pat;
     for m in &capture_moves {
         // Check timeout during quiescence search
-        if is_timeout(start_time) {
+        if check_timeout_full(start_time).is_some() {
             return best_value;
         }
 
+        #[cfg(feature = "profiling")]
+        profiler::count_incr(profiler::CLONE);
         let mut board_copy = board.clone();
+        #[cfg(feature = "profiling")]
+        profiler::count_incr(profiler::MAKE_MOVE);
         board_copy.make_move(*m);
         // Negamax: negate the score and swap alpha/beta
         let eval = -quiescence(&board_copy, -beta, -alpha, start_time, q_depth + 1);
