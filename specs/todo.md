@@ -23,4 +23,6 @@ Once we have worked through doing the spec for them, they should be marked as do
 - [x] 20. when a pawn reaches the other end of the board, user should have an option of the type of piece they want to exchange for: Queen, Rook, Bishop or Knight.
 - [ ] 21. Add a mode that allows board to highlight valid moves when a piece is selected. This should default to off, and should be changeable in the New Game menu.
 - [ ] 22. Game stats should allow to compare by opponent level as well.
-- [ ] 23. User should be able to interact with screen while search is happening (it should not lock up).
+- [x] 23. User should be able to interact with screen while search is happening (it should not lock up).
+- [ ] 24. further search optimisation.
+- [ ] 25. adjust that model to set goal of best move as maximising the score differential (i.e. engine's score minus oppoent's score.

@@ -213,9 +213,10 @@ export function getGameStats(profileId) {
                 }
             }
             
-            // Count checkmates and stalemates
-            if (game.result === 'checkmate') stats.checkmates++;
-            if (game.result === 'stalemate') stats.stalemates++;
+            // Count checkmates and stalemates from the method field
+            // (games store result=win_white/draw with method=checkmate/stalemate)
+            if (game.method === 'checkmate') stats.checkmates++;
+            if (game.method === 'stalemate') stats.stalemates++;
         });
         
         return stats;

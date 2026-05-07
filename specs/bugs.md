@@ -21,4 +21,4 @@
 - [x] BUG21. There is an issue where the Stockfish depth & thinking time sliders. The setting on the slider can be out of sync with the number displayed beside the slider.
 - [x] BUG22. sometimes when I start a new game the ranks are numbered reverse to what they should be. rank 1 should always be the rank that contains white king as the start of the game.
 - [x] BUG23. The option to display board at a point in move history isn't working.
-- [ ] BUG24. Game stats have both "wins" and "checkmates" plus some other similar. this should get fixed.
+- [x] BUG24. Game stats have both "wins" and "checkmates" plus some other similar. this should get fixed.

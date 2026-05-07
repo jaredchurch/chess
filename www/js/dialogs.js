@@ -172,8 +172,6 @@ window.showGameStats = function() {
     let resultRows = '';
     if (stats.by_result) {
         const resultLabels = {
-            'checkmate': 'Checkmate',
-            'stalemate': 'Stalemate',
             'draw': 'Draw',
             'win_white': 'White Win',
             'win_black': 'Black Win',
