@@ -30,7 +30,11 @@ pub fn evaluate(board: &Board) -> i32 {
         score -= board.pieces[i + 6].0.count_ones() as i32 * value;
     }
 
-    score
+    if board.side_to_move == Color::White {
+        score
+    } else {
+        -score
+    }
 }
 
 fn get_piece_value(piece_type: PieceType) -> i32 {
@@ -58,29 +62,19 @@ pub fn get_best_move(board: &Board) -> Option<Move> {
         moves.truncate(200);
     }
 
-    let side = board.side_to_move;
     let mut best_move = None;
-    let mut best_score = if side == Color::White {
-        i32::MIN
-    } else {
-        i32::MAX
-    };
+    let mut best_score = i32::MIN + 1;
 
     for m in moves {
         let mut board_copy = board.clone();
         board_copy.make_move(m);
-        let score = evaluate(&board_copy);
+        // evaluate() is relative to side to move. After make_move, it's opponent's turn.
+        // So we negate it to get our score.
+        let score = -evaluate(&board_copy);
 
-        if side == Color::White {
-            if score > best_score {
-                best_score = score;
-                best_move = Some(m);
-            }
-        } else {
-            if score < best_score {
-                best_score = score;
-                best_move = Some(m);
-            }
+        if score > best_score {
+            best_score = score;
+            best_move = Some(m);
         }
     }
 

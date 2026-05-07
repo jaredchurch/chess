@@ -124,7 +124,11 @@ pub fn evaluate(board: &Board) -> i32 {
     score += evaluate_king_safety(board);
     score += evaluate_pawn_structure(board);
 
-    score
+    if board.side_to_move == Color::White {
+        score
+    } else {
+        -score
+    }
 }
 
 /// Evaluates mobility (Temporarily disabled due to performance overhead)

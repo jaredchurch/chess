@@ -10,7 +10,6 @@ use crate::board::move_struct::{Move, MoveFlag};
 use crate::board::piece::PieceType;
 use crate::board::types::{Color, Square};
 use crate::board::Board;
-use crate::lookup_position;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
 use rand::Rng;
@@ -181,30 +180,20 @@ pub fn get_best_move_novice(board: &Board) -> Option<Move> {
 
     // Otherwise pick the best move using greedy evaluation
     log_message("Level 1: Evaluating moves greedily...");
-    let side = board.side_to_move;
     let mut best_move = None;
-    let mut best_score = if side == Color::White {
-        i32::MIN
-    } else {
-        i32::MAX
-    };
+    let mut best_score = i32::MIN + 1;
     let start = get_time_ms();
 
     for m in moves.iter() {
         let mut board_copy = board.clone();
         board_copy.make_move(*m);
-        let score = evaluate(&board_copy);
+        // evaluate() is now relative to side to move. After make_move, it's opponent's turn.
+        // So we negate it to get our score.
+        let score = -evaluate(&board_copy);
 
-        if side == Color::White {
-            if score > best_score {
-                best_score = score;
-                best_move = Some(*m);
-            }
-        } else {
-            if score < best_score {
-                best_score = score;
-                best_move = Some(*m);
-            }
+        if score > best_score {
+            best_score = score;
+            best_move = Some(*m);
         }
     }
 
@@ -349,6 +338,7 @@ pub fn get_best_move_with_depth(board: &Board, max_depth: u8) -> Option<Move> {
 /// Optimizations: single node counter, periodic time checks, null-move pruning,
 /// check extensions, and futility pruning at shallow depths.
 fn alpha_beta(board: &Board, depth: u8, mut alpha: i32, beta: i32, start_time: f64) -> i32 {
+    let old_alpha = alpha;
     // Single node count increment per node
     let node_count = NODE_COUNT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
     if check_timeout(node_count, start_time).is_some() {
@@ -363,19 +353,32 @@ fn alpha_beta(board: &Board, depth: u8, mut alpha: i32, beta: i32, start_time: f
     let board_hash = board.zobrist_hash;
 
     // Check transposition table
+    let tt_move;
     #[cfg(feature = "profiling")]
     if profiler::is_active() {
-        if let Some(cached_score) =
-            profiler::time(profiler::TT_LOOKUP, || lookup_position(board_hash, depth, alpha, beta))
-        {
-            return cached_score;
+        let (cached_score, m) = profiler::time(profiler::TT_LOOKUP, || {
+            crate::ai::transposition::lookup_position(board_hash, depth, alpha, beta)
+        });
+        tt_move = m;
+        if let Some(score) = cached_score {
+            return score;
         }
-    } else if let Some(cached_score) = lookup_position(board_hash, depth, alpha, beta) {
-        return cached_score;
+    } else {
+        let (cached_score, m) =
+            crate::ai::transposition::lookup_position(board_hash, depth, alpha, beta);
+        tt_move = m;
+        if let Some(score) = cached_score {
+            return score;
+        }
     }
     #[cfg(not(feature = "profiling"))]
-    if let Some(cached_score) = lookup_position(board_hash, depth, alpha, beta) {
-        return cached_score;
+    {
+        let (cached_score, m) =
+            crate::ai::transposition::lookup_position(board_hash, depth, alpha, beta);
+        tt_move = m;
+        if let Some(score) = cached_score {
+            return score;
+        }
     }
 
     #[cfg(feature = "profiling")]
@@ -396,24 +399,17 @@ fn alpha_beta(board: &Board, depth: u8, mut alpha: i32, beta: i32, start_time: f
         return quiescence(board, alpha, beta, start_time, 0);
     }
 
-    // Generate legal moves for checkmate/stalemate detection
+    // Generate pseudo-legal moves
     #[cfg(feature = "profiling")]
     let mut moves = if profiler::is_active() {
-        profiler::time(profiler::MOVE_GEN, || board.generate_legal_moves())
+        profiler::time(profiler::MOVE_GEN, || {
+            crate::move_gen::generate_pseudo_legal_moves(board)
+        })
     } else {
-        board.generate_legal_moves()
+        crate::move_gen::generate_pseudo_legal_moves(board)
     };
     #[cfg(not(feature = "profiling"))]
-    let mut moves = board.generate_legal_moves();
-    if moves.is_empty() {
-        if in_check {
-            let score = -20000 - depth as i32;
-            crate::store_position(board_hash, depth, score, true, None);
-            return score;
-        }
-        crate::store_position(board_hash, depth, 0, true, None);
-        return 0;
-    }
+    let mut moves = crate::move_gen::generate_pseudo_legal_moves(board);
 
     // Null-move pruning: if side to move is clearly ahead, skip a turn
     // Only at depth >= 3 and when not in check
@@ -440,18 +436,19 @@ fn alpha_beta(board: &Board, depth: u8, mut alpha: i32, beta: i32, start_time: f
 
     let mut best_move = None;
     let mut best_value = i32::MIN + 1;
+    let mut legal_move_count = 0;
 
-    // Sort moves using improved ordering (MVV-LVA + Killer + History)
+    // Sort moves using improved ordering (MVV-LVA + Killer + History + Hash move)
     #[cfg(feature = "profiling")]
     if profiler::is_active() {
         profiler::time(profiler::SORT, || {
-            crate::ai::move_ordering::sort_moves(&mut moves, board, depth)
+            crate::ai::move_ordering::sort_moves(&mut moves, board, depth, tt_move)
         });
     } else {
-        crate::ai::move_ordering::sort_moves(&mut moves, board, depth);
+        crate::ai::move_ordering::sort_moves(&mut moves, board, depth, tt_move);
     }
     #[cfg(not(feature = "profiling"))]
-    crate::ai::move_ordering::sort_moves(&mut moves, board, depth);
+    crate::ai::move_ordering::sort_moves(&mut moves, board, depth, tt_move);
 
     // Static evaluation for futility pruning at shallow depths
     #[cfg(feature = "profiling")]
@@ -488,6 +485,12 @@ fn alpha_beta(board: &Board, depth: u8, mut alpha: i32, beta: i32, start_time: f
         profiler::count_incr(profiler::MAKE_MOVE);
         board_copy.make_move(*m);
 
+        // Check legality: if move leaves king in check, it's illegal
+        if crate::move_gen::is_in_check(&board_copy, board.side_to_move) {
+            continue;
+        }
+        legal_move_count += 1;
+
         // Check extension: when in check, search one ply deeper
         let new_depth = if in_check { depth } else { depth - 1 };
 
@@ -510,16 +513,46 @@ fn alpha_beta(board: &Board, depth: u8, mut alpha: i32, beta: i32, start_time: f
         }
     }
 
+    if legal_move_count == 0 {
+        if in_check {
+            let score = -20000 - depth as i32;
+            crate::store_position(board_hash, depth, score, crate::ai::transposition::TT_EXACT, None);
+            return score;
+        }
+        crate::store_position(board_hash, depth, 0, crate::ai::transposition::TT_EXACT, None);
+        return 0;
+    }
+
+    let entry_type = if best_value >= beta {
+        crate::ai::transposition::TT_LOWER_BOUND
+    } else if best_value > old_alpha {
+        crate::ai::transposition::TT_EXACT
+    } else {
+        crate::ai::transposition::TT_UPPER_BOUND
+    };
+
     #[cfg(feature = "profiling")]
     if profiler::is_active() {
         profiler::time(profiler::TT_STORE, || {
-            crate::store_position(board_hash, depth, best_value, true, best_move)
+            crate::ai::transposition::store_position(
+                board_hash,
+                depth,
+                best_value,
+                entry_type,
+                best_move,
+            )
         });
     } else {
-        crate::store_position(board_hash, depth, best_value, true, best_move);
+        crate::ai::transposition::store_position(
+            board_hash,
+            depth,
+            best_value,
+            entry_type,
+            best_move,
+        );
     }
     #[cfg(not(feature = "profiling"))]
-    crate::store_position(board_hash, depth, best_value, true, best_move);
+    crate::ai::transposition::store_position(board_hash, depth, best_value, entry_type, best_move);
     best_value
 }
 

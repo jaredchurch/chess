@@ -12,7 +12,7 @@ const KILLER_SLOTS: usize = 2;
 const MAX_DEPTH: usize = 64;
 
 /// Killer move table: stores moves that caused beta cutoffs
-struct KillerTable {
+pub(crate) struct KillerTable {
     killers: [[Option<(u8, u8)>; KILLER_SLOTS]; MAX_DEPTH],
 }
 
@@ -62,7 +62,7 @@ impl KillerTable {
 }
 
 /// History heuristic table: tracks success of quiet moves
-struct HistoryTable {
+pub(crate) struct HistoryTable {
     // [piece_type][to_square] -> score
     scores: [[i32; 64]; 6],
 }
@@ -144,7 +144,22 @@ pub fn record_history(m: &Move, depth: u8) {
 /// Scores moves for ordering in Alpha-Beta search.
 /// Higher scores are searched first.
 /// Priority: Hash move > Captures (MVV-LVA) > Killer moves > History > Promotions
-pub fn score_move(m: &Move, board: &crate::board::Board, depth: u8) -> i32 {
+pub(crate) fn score_move(
+    m: &Move,
+    board: &crate::board::Board,
+    depth: u8,
+    kt: &KillerTable,
+    ht: &HistoryTable,
+    hash_move: Option<u16>,
+) -> i32 {
+    // 0. Hash move (best move from previous search)
+    if let Some(hm) = hash_move {
+        let from = (hm & 0x3F) as u8;
+        let to = ((hm >> 6) & 0x3F) as u8;
+        if m.from as u8 == from && m.to as u8 == to {
+            return 1000000; // Extremely high priority
+        }
+    }
     let mut score = 0;
 
     // 1. Captures (MVV-LVA)
@@ -167,23 +182,29 @@ pub fn score_move(m: &Move, board: &crate::board::Board, depth: u8) -> i32 {
     }
 
     // 3. Killer moves
-    let kt = get_killer_table();
-    if kt.lock().unwrap().is_killer(depth, m) {
+    if kt.is_killer(depth, m) {
         score += 80000;
     }
 
     // 4. History heuristic
-    let ht = get_history_table();
-    score += ht.lock().unwrap().get_score(m);
+    score += ht.get_score(m);
 
     score
 }
 
 /// Sorts moves in place for Alpha-Beta search order (best first).
-pub fn sort_moves(moves: &mut [Move], board: &crate::board::Board, depth: u8) {
+pub fn sort_moves(
+    moves: &mut [Move],
+    board: &crate::board::Board,
+    depth: u8,
+    hash_move: Option<u16>,
+) {
+    let kt_guard = get_killer_table().lock().unwrap();
+    let ht_guard = get_history_table().lock().unwrap();
+
     let mut scored_moves: Vec<(Move, i32)> = moves
         .iter()
-        .map(|&m| (m, score_move(&m, board, depth)))
+        .map(|&m| (m, score_move(&m, board, depth, &kt_guard, &ht_guard, hash_move)))
         .collect();
 
     scored_moves.sort_by_key(|b| std::cmp::Reverse(b.1)); // Descending order
