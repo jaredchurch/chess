@@ -8,7 +8,7 @@
 - [x] BUG8. On iPhone the board is flakey and keeps changing size of rows. The board size needs to be enforced as static on each screen. Board size and position is paramount and should be prioritised over other visual elements.
 - [x] BUG9. If lots of pieces get taken, then card displaying taken piece icons is not graceful - the icons and points move to overflow the card, suggest there should be a wrapping mechanism or some other more graceful method.
 - [x] BUG10. similar to bug8, but is affecting chrome browser on macOS & Windows.
-- [ ] BUG11. on small screen when score and move history is hidden by default the menu item to show/hide them is not correctly matching the state.
+- [?] BUG11. on small screen when score and move history is hidden by default the menu item to show/hide them is not correctly matching the state.
 - [x] BUG12. On iPad screen, I'm still getting board row heights changing (compared to BUG8)
 - [x] BUG13. The gear menu icon, hamburger menu icon and text for who's turn it is along with turn and game time should all be in a single row. the who's turn and turn/game time should be vertically bottom aligned with each other, and the two icons should be vertically centre aligned with the text.
 - [x] BUG14. Remove the "Controls Card" it is unnecessary.
