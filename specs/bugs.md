@@ -29,7 +29,7 @@
 - [x] BUG29. I have to reload the page to see a move after it's made, it doesn't refresh properly on move.
 - [x] BUG30. The top of the 3d container view port and the top of the score-card should be aligned. they are not, the container is above the top of the score card.
 - [x] BUG31 - relates to BUG48 - now the 3D board appears to be fixed with black at front and does not rotate for white at front when user plays white.
-- [x] BUG32 - there are labels on the 3D board for files and ranks, the labels for files only appear on the white side of the board, I want the file labels (a-g) to appear on the side of the board closest to the camera.
+- [?] BUG32 - there are labels on the 3D board for files and ranks, the labels for files only appear on the white side of the board, I want the file labels (a-g) to appear on the side of the board closest to the camera.
 - [ ] BUG33 - 
 - [ ] BUG34 - 
 - [ ] BUG35 - 
