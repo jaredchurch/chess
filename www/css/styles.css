@@ -16,15 +16,19 @@ body {
     min-height: 100vh;
     display: flex;
     flex-direction: column;
+    overflow: hidden; /* Prevent body scroll shifting */
 }
 #app {
+    position: absolute;
+    top: 50px;
+    left: 0;
+    right: 0;
+    bottom: 0;
     display: flex;
     gap: 20px;
     padding: 20px;
-    margin: 0 auto;
-    width: 100%;
-    height: 100vh;
-    align-items: flex-start;
+    align-items: stretch;
+    overflow: hidden;
 }
 #board-container {
     flex: 1;
@@ -32,15 +36,46 @@ body {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 10px;
-    height: 100%;
-    margin-top: 50px;
-    padding-top: 15px;
 }
-#board {
+
+#board-layout {
     display: grid;
+    grid-template-columns: auto auto auto;
+    grid-template-rows: auto auto auto;
+    align-items: center;
+    justify-items: center;
+}
+
+.board-labels-row {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #95a5a6;
+    font-family: monospace;
+}
+
+.board-labels-col {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: #95a5a6;
+    font-family: monospace;
+}
+
+.label-corner {
+    width: 20px;
+    height: 20px;
+}
+
+#board-wrapper {
+    position: relative;
     border: 2px solid var(--board-border);
     box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+}
+
+#board {
+    display: grid;
 }
 .square {
     display: flex;
@@ -72,7 +107,9 @@ button:hover { background: #2980b9; }
     display: flex;
     flex-direction: column;
     gap: 15px;
-    margin-top: 50px;
+    overflow-y: auto;
+    padding-right: 5px;
+    scrollbar-gutter: stable;
 }
 
 #info-panel .panel-hidden {
@@ -359,9 +396,27 @@ button:hover { background: #2980b9; }
     padding: 0;
     margin: 0;
     position: relative;
-    display: block !important;
+    display: flex !important; /* Use flex to fill container */
+    flex: 1;
     width: 100%;
+    height: 100%;
     min-height: 500px;
+}
+
+/* Ensure the anonymous wrappers in index.html expand */
+#board-wrapper.mode-3d > div:not([id]) {
+    display: flex !important;
+    flex-direction: column;
+    flex: 1;
+    width: 100%;
+    height: 100%;
+}
+
+#board-wrapper.mode-3d > div:not([id]) > div:not([id]) {
+    display: flex !important;
+    flex: 1;
+    width: 100%;
+    height: 100%;
 }
 
 #board-wrapper.mode-3d #board {
@@ -370,6 +425,7 @@ button:hover { background: #2980b9; }
     width: 100%;
     height: 100%;
     display: block;
+    flex: 1;
 }
 
 #renderer-3d-container {

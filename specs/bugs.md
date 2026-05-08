@@ -30,7 +30,7 @@
 - [x] BUG30. The top of the 3d container view port and the top of the score-card should be aligned. they are not, the container is above the top of the score card.
 - [x] BUG31 - relates to BUG48 - now the 3D board appears to be fixed with black at front and does not rotate for white at front when user plays white.
 - [x] BUG32 - there are labels on the 3D board for files and ranks, the labels for files only appear on the white side of the board, I want the file labels (a-g) to appear on the side of the board closest to the camera.
-- [ ] BUG33 - 
+- [?] BUG33 - when I first select 3D mode in the setting dialog the viewport is very narrow and I have to subsequently refresh the board to get the full size viewport, modify so that the full size viewport is there immediately.
 - [ ] BUG34 - 
 - [ ] BUG35 - 
 - [ ] BUG36 - 
@@ -38,7 +38,7 @@
 - [ ] BUG38 - 
 - [ ] BUG39 - 
 - [x] BUG40. many squares on the 3D board are showing yellow for some reason. This was highlighting all of the valid moves
-- [ ] BUG41 - when I select 3D mode on the setting dialog, the viewport starts very narrow and I have to reload the page to get it's correct width. please ensure that the width is correct as soon as 3D mode is selected.
+- [?] BUG41 - when I select 3D mode on the setting dialog, the viewport starts very narrow and I have to reload the page to get it's correct width. please ensure that the width is correct as soon as 3D mode is selected.
 - [x] BUG42 - in 3d mode the board labels for ranks and columns are not showing, please add these.
 - [x] BUG43 - if answering no to the castle question, when it returns the rook should be the selected piece.
 - [x] BUG44 - In 2D mode, before a pieces is selected the board is positioned incorrect on the screen. Please fix this.

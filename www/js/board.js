@@ -22,27 +22,32 @@ window.legalMoves = [];
  */
 window.updateBoardSize = function() {
     const board = document.getElementById('board');
-    if (!board) return;
+    const container = document.getElementById('board-container');
+    if (!board || !container) return;
 
     // In 3D mode, Three.js ResizeObserver handles sizing
     if (window._chessRenderer) return;
 
-    // Get actual container dimensions to maximize board size
-    const container = document.getElementById('board-container');
+    // Use actual dimensions to maximize board size
+    const rect = container.getBoundingClientRect();
+    const width = rect.width;
+    const height = rect.height;
     const isMobile = window.innerWidth <= 700;
     
-    let maxSize;
-    if (isMobile) {
-        // On mobile, use full viewport minus status bar and padding
-        maxSize = Math.min(window.innerWidth - 20, window.innerHeight - 120);
-    } else {
-        // On desktop, subtract info panel width from viewport
-        const infoPanel = document.getElementById('info-panel');
-        const panelWidth = infoPanel ? infoPanel.offsetWidth + 20 : 300;
-        const availableWidth = window.innerWidth - panelWidth - 40;
-        const availableHeight = window.innerHeight - 140;
-        maxSize = Math.min(availableWidth, availableHeight);
-    }
+    // Account for padding and labels
+    // We use a ratio-based approach for label space to ensure consistency
+    const padding = isMobile ? 10 : 20;
+    
+    // Estimate maxSize first to get an approximate squareSize for label calculation
+    let estSize = Math.min(width - padding * 2, height - padding * 2);
+    let estSquareSize = Math.floor(estSize / 8);
+    let estLabelHeight = Math.max(Math.floor(estSquareSize * 0.3), 12);
+    let labelSpace = estLabelHeight * 4; // Top + Bottom + Spacing
+    
+    const availableWidth = width - padding * 2;
+    const availableHeight = height - labelSpace;
+    
+    const maxSize = Math.min(availableWidth, availableHeight);
     
     // Make board as large as possible while keeping it square
     const size = Math.floor(Math.max(maxSize, 200));
@@ -68,6 +73,21 @@ window.updateBoardSize = function() {
     }
 };
 
+// Add ResizeObserver to board-container to ensure 2D board always updates
+// when the container size changes (e.g. info-panel scrollbar appearing)
+if (typeof ResizeObserver !== 'undefined') {
+    const container = document.getElementById('board-container');
+    if (container) {
+        const ro = new ResizeObserver(() => {
+            if (!window._chessRenderer) {
+                // Immediate update to prevent flicker, but use requestAnimationFrame for smoothness
+                window.updateBoardSize();
+            }
+        });
+        ro.observe(container);
+    }
+}
+
 /**
  * Updates the algebraic notation labels (a-h, 1-8) around the board
  * Adjusts font size to match board square size
@@ -83,6 +103,17 @@ window.updateBoardLabels = function() {
     const fontSize = Math.max(Math.floor(squareSize * 0.25), 10);
     const labelsVisible = localStorage.getItem('chess_show_board_labels') !== 'false';
     
+    // Calculate label heights/widths for stability
+    const labelRowHeight = Math.ceil(fontSize * 1.5);
+    const labelColWidth = Math.ceil(fontSize * 1.5);
+
+    // Update corner spaces to match
+    document.querySelectorAll('.label-corner').forEach(el => {
+        el.style.width = labelColWidth + 'px';
+        el.style.height = labelRowHeight + 'px';
+        el.style.display = labelsVisible ? 'block' : 'none';
+    });
+
     // Files (a-h) top and bottom
     const files = window.boardOrientation === 'white' ? ['a','b','c','d','e','f','g','h'] : ['h','g','f','e','d','c','b','a'];
     ['board-labels-top', 'board-labels-bottom'].forEach(id => {
@@ -90,6 +121,8 @@ window.updateBoardLabels = function() {
         if (!el) return;
         el.style.display = labelsVisible ? 'flex' : 'none';
         el.style.fontSize = fontSize + 'px';
+        el.style.height = labelRowHeight + 'px';
+        el.style.width = boardWidth + 'px';
         el.innerHTML = files.map(f => `<div style="width:${squareSize}px;text-align:center;">${f}</div>`).join('');
     });
     
@@ -100,7 +133,9 @@ window.updateBoardLabels = function() {
         if (!el) return;
         el.style.display = labelsVisible ? 'flex' : 'none';
         el.style.fontSize = fontSize + 'px';
-        el.innerHTML = ranks.map(r => `<div style="height:${squareSize}px;display:flex;align-items:center;">${r}</div>`).join('');
+        el.style.width = labelColWidth + 'px';
+        el.style.height = (squareSize * 8) + 'px';
+        el.innerHTML = ranks.map(r => `<div style="height:${squareSize}px;display:flex;align-items:center;justify-content:center;">${r}</div>`).join('');
     });
 };
 
@@ -266,6 +301,9 @@ function renderBoard3d(boardEl) {
     }
 
     renderer.resize();
+    
+    // Fallback for BUG33/41: Force resize after a short delay to catch any layout shifts
+    setTimeout(() => renderer.resize(), 50);
 }
 
 /**

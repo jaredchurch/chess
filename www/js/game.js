@@ -456,10 +456,10 @@ export function updateUI() {
         }
     }
 
-    if (typeof renderBoard === 'function') renderBoard();
     if (typeof window.updateScoreCard === 'function') window.updateScoreCard();
     if (typeof window.updateMoveHistoryCard === 'function') window.updateMoveHistoryCard();
     if (typeof window.updateTimerDisplay === 'function') window.updateTimerDisplay();
+    if (typeof renderBoard === 'function') renderBoard();
 }
 
 /**
