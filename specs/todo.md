@@ -32,3 +32,4 @@ Once we have worked through doing the spec for them, they should be marked as do
 - [ ] 29. Configurable one user must checkmate to win (i.e if user doesn't reach checkmate they lose, stalemate means that user loses).
 - [ ] 30. indication of probability of win direction given where at in the game.
 - [ ] 31. enable castling by selecting the king and then the rook for the castle side (this should pop-up and confirmation after click on rook seeing as it's a unique behaviour when clicking on a piece)
+- [ ] 32. 3d mode should be selectable through URL parameters.

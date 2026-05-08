@@ -9,6 +9,7 @@ import { pieceUnicode, isWhitePiece, PIECE_TYPES } from './ui.js';
 import { skinRegistry } from './skins.js';
 import { getLegalMoves, applyMove, getGameState } from './chess-wasm.js';
 import { getCapturedPiece, getBoardStateAtMove } from './game.js';
+import { create3dPieceSVG } from './pieces-3d.js';
 
 window.boardOrientation = 'white';
 window.selectedSquare = null;
@@ -140,7 +141,7 @@ export function renderBoard() {
     skinRegistry.applyActive();
 
     const activeSkin = skinRegistry.getActive();
-    const is3d = activeSkin && activeSkin.type === '3d';
+    const is3d = skinRegistry.get3dMode();
 
     // Toggle 3D mode class on board wrapper
     const boardWrapper = document.getElementById('board-wrapper');
@@ -148,13 +149,19 @@ export function renderBoard() {
         boardWrapper.classList.toggle('mode-3d', is3d);
     }
 
+    // Hide board labels in 3D mode (they don't work with perspective)
+    ['board-labels-top', 'board-labels-bottom', 'board-labels-left', 'board-labels-right'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = is3d ? 'none' : '';
+    });
+
     if (is3d) {
         renderBoard3d(boardEl);
         return;
     }
 
     // When switching FROM 3D mode, restore board element to wrapper
-    const scene = boardWrapper ? boardWrapper.querySelector('.board-3d-scene') : null;
+    const scene = boardWrapper ? boardWrapper.querySelector('.board-3d-group') : null;
     if (scene && scene.contains(boardEl)) {
         boardWrapper.appendChild(boardEl);
         scene.remove();
@@ -211,46 +218,64 @@ export function renderBoard() {
 }
 
 /**
- * Renders a 3D perspective view of the board using CSS 3D transforms.
- * Creates a tilted isometric view with a visible board edge and 3D-extruded pieces.
+ * Renders a 3D perspective view of the board.
+ * Board is tilted at ~40 degrees for a realistic isometric view.
+ * Currently shows the board with a single queen piece.
  */
 function renderBoard3d(boardEl) {
     boardEl.innerHTML = '';
 
-    // Create 3D scene container that wraps board + edge together
-    let scene = boardEl.parentNode.querySelector('.board-3d-scene');
-    if (!scene) {
-        scene = document.createElement('div');
-        scene.className = 'board-3d-scene';
-        boardEl.parentNode.insertBefore(scene, boardEl);
+    const boardWrapper = document.getElementById('board-wrapper');
+
+    // Build the 3D scene: group -> frame(board) + edge
+    let group = boardWrapper.querySelector('.board-3d-group');
+    if (!group) {
+        group = document.createElement('div');
+        group.className = 'board-3d-group';
+        boardWrapper.appendChild(group);
     }
-    scene.appendChild(boardEl);
+
+    let frame = group.querySelector('.board-frame');
+    if (!frame) {
+        frame = document.createElement('div');
+        frame.className = 'board-frame';
+        frame.appendChild(boardEl);
+        group.insertBefore(frame, group.firstChild);
+    } else {
+        if (boardEl.parentNode !== frame) {
+            frame.appendChild(boardEl);
+        }
+    }
 
     // Create and append the board edge (visible 3D thickness)
-    let edge = scene.querySelector('.board-edge');
+    let edge = group.querySelector('.board-edge');
     if (!edge) {
         edge = document.createElement('div');
         edge.className = 'board-edge';
     }
-    scene.appendChild(edge);
+    group.appendChild(edge);
+
+    const orientation = window.boardOrientation;
+    const ranks = orientation === 'white' ? [7, 6, 5, 4, 3, 2, 1, 0] : [0, 1, 2, 3, 4, 5, 6, 7];
+    const files = orientation === 'white' ? [0, 1, 2, 3, 4, 5, 6, 7] : [7, 6, 5, 4, 3, 2, 1, 0];
 
     const pieces = parseFenPieces(window.currentFen);
-
-    const ranks = window.boardOrientation === 'white' ? [7, 6, 5, 4, 3, 2, 1, 0] : [0, 1, 2, 3, 4, 5, 6, 7];
-    const files = window.boardOrientation === 'white' ? [0, 1, 2, 3, 4, 5, 6, 7] : [7, 6, 5, 4, 3, 2, 1, 0];
+    window.legalMoves = getLegalMoves(window.currentFen) || [];
 
     ranks.forEach((rank, ri) => {
         files.forEach((file, fi) => {
             const squareName = String.fromCharCode(97 + file) + (rank + 1);
             const squareEl = document.createElement('div');
-            squareEl.className = `square square-3d ${(ri + fi) % 2 === 0 ? 'black-square' : 'white-square'}`;
+            squareEl.className = `square ${(ri + fi) % 2 === 0 ? 'black-square' : 'white-square'}`;
             if (window.selectedSquare === squareName) squareEl.classList.add('highlight');
 
             const piece = pieces[squareName];
             if (piece) {
+                const color = piece === piece.toUpperCase() ? 'white' : 'black';
+                squareEl.classList.add('piece-' + color);
                 const pieceEl = document.createElement('span');
-                pieceEl.className = `piece-3d ${piece === piece.toUpperCase() ? 'piece-white' : 'piece-black'}`;
-                pieceEl.textContent = pieceUnicode[piece];
+                pieceEl.className = 'piece-3d';
+                pieceEl.innerHTML = create3dPieceSVG(piece.toUpperCase(), color);
                 squareEl.appendChild(pieceEl);
             }
 

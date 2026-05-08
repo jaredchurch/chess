@@ -304,92 +304,110 @@ button:hover { background: #2980b9; }
     transform: scale(1.1);
 }
 
-/* 3D Mode Styles */
+/* 3D Mode Styles - Perspective chess board viewed from above */
 #board-wrapper.mode-3d {
-    perspective: 900px;
-    perspective-origin: 50% 20%;
-    background: linear-gradient(180deg, #1a1a2e 0%, #2c3e50 40%, #16213e 100%);
-    border-radius: 12px;
-    padding: 30px 20px 10px;
-    margin: -10px;
+    /* Stage: the table surface viewed in perspective */
+    perspective: 1200px;
+    perspective-origin: 50% 25%;
+    background: #2c3e50;
+    padding: 40px 20px 30px;
+    margin: 0;
     position: relative;
     overflow: visible;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 400px;
+    border-radius: 12px;
 }
 
-/* Ground shadow beneath the board */
+/* Ground shadow - cast by the board onto the table */
 #board-wrapper.mode-3d::after {
     content: '';
     position: absolute;
-    bottom: 0;
-    left: 5%;
-    width: 90%;
-    height: 50px;
-    background: radial-gradient(ellipse, rgba(0,0,0,0.35) 0%, transparent 70%);
-    transform: translateY(25px);
+    bottom: 15%;
+    left: 10%;
+    width: 80%;
+    height: 40px;
+    background: radial-gradient(ellipse, rgba(0,0,0,0.5) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* 3D group - the entire board assembly tilted in perspective */
+#board-wrapper.mode-3d .board-3d-group {
+    transform: rotateX(55deg);
+    transform-style: preserve-3d;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    z-index: 1;
+}
+
+/* Wooden frame wrapping the board surface */
+#board-wrapper.mode-3d .board-frame {
+    background: linear-gradient(135deg, #a67c52 0%, #8B6914 30%, #c49a6c 50%, #8B6914 70%, #6b4c2a 100%);
+    padding: 14px;
+    border-radius: 6px 6px 0 0;
+    box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.15),
+        inset 0 -1px 0 rgba(0,0,0,0.2),
+        0 4px 12px rgba(0,0,0,0.3);
+}
+
+/* Board surface with inner shadow for depth */
+#board-wrapper.mode-3d #board {
+    border: none;
+    box-shadow:
+        inset 0 0 30px rgba(0,0,0,0.08);
+    border-radius: 2px;
+}
+
+/* Board edge - visible 3D thickness below the frame */
+#board-wrapper.mode-3d .board-edge {
+    width: 100%;
+    height: 18px;
+    background: linear-gradient(180deg, #5c3a1e 0%, #3d2b1f 40%, #2a1a0f 100%);
+    border-radius: 0 0 6px 6px;
+    box-shadow:
+        inset 0 2px 4px rgba(0,0,0,0.3),
+        0 8px 24px rgba(0,0,0,0.4);
+}
+
+/* Squares in 3D mode need relative positioning for piece anchoring */
+#board-wrapper.mode-3d .square {
+    position: relative;
+}
+
+/* 3D piece - base anchored at center of square, extends upward */
+#board-wrapper.mode-3d .piece-3d {
+    position: absolute;
+    bottom: 50%;
+    left: 50%;
+    transform: translateX(-50%) translateZ(10px);
+    width: 85%;
+    height: 100%;
+    filter: drop-shadow(1px 3px 4px rgba(0,0,0,0.35));
     pointer-events: none;
 }
 
-/* 3D board tilt container */
-#board-wrapper.mode-3d .board-3d-scene {
-    transform: rotateX(35deg);
-    transform-style: preserve-3d;
-    display: inline-block;
-    box-shadow: 0 30px 60px rgba(0,0,0,0.35);
-    border-radius: 4px;
-}
-
-#board-wrapper.mode-3d #board {
-    transform-style: preserve-3d;
-    box-shadow: inset 0 0 0 4px #6b4c2a;
-    border: none;
-    border-radius: 2px 2px 0 0;
-}
-
-/* Wooden edge below the board for 3D depth */
-#board-wrapper.mode-3d .board-edge {
-    height: 14px;
-    background: linear-gradient(180deg, #6b4c2a 0%, #3d2b1f 100%);
-    border-radius: 0 0 3px 3px;
-    box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
-}
-
-.square-3d {
-    transform: translateZ(2px);
-    transform-style: preserve-3d;
-}
-
-.square-3d.highlight {
-    transform: translateZ(4px);
-    box-shadow: 0 0 15px rgba(241, 196, 15, 0.6);
-}
-
-.piece-3d {
-    display: inline-block;
-    transform: translateZ(6px) scale(0.95);
-    transition: transform 0.15s ease;
-    filter: drop-shadow(1px 2px 3px rgba(0,0,0,0.4));
-    font-size: 0.9em;
-}
-
-.piece-3d.piece-white {
+#board-wrapper.mode-3d .piece-3d.piece-white {
+    color: var(--piece-white);
     text-shadow:
         0 1px 0 rgba(0,0,0,0.08),
         0 2px 0 rgba(0,0,0,0.07),
         0 3px 1px rgba(0,0,0,0.06),
         0 4px 2px rgba(0,0,0,0.05),
         0 5px 3px rgba(0,0,0,0.04),
-        0 6px 4px rgba(0,0,0,0.03),
-        0 7px 5px rgba(0,0,0,0.02);
-    color: var(--piece-white);
+        0 6px 4px rgba(0,0,0,0.03);
 }
 
-.piece-3d.piece-black {
+#board-wrapper.mode-3d .piece-3d.piece-black {
+    color: var(--piece-black);
     text-shadow:
         0 1px 0 rgba(0,0,0,0.15),
         0 2px 0 rgba(0,0,0,0.13),
         0 3px 1px rgba(0,0,0,0.11),
         0 4px 2px rgba(0,0,0,0.09),
-        0 5px 3px rgba(0,0,0,0.07),
-        0 6px 4px rgba(0,0,0,0.05);
-    color: var(--piece-black);
+        0 5px 3px rgba(0,0,0,0.07);
 }

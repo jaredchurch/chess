@@ -6,7 +6,7 @@
 // and asset preloading for image-based skins.
 //
 
-import { getActiveSkinId, setActiveSkinId } from './storage.js';
+import { getActiveSkinId, setActiveSkinId, get3dMode, set3dMode as persist3dMode } from './storage.js';
 
 export const STORAGE_KEY_ACTIVE_SKIN = 'chess_active_skin';
 export const DEFAULT_SKIN_ID = 'classic';
@@ -16,6 +16,7 @@ const SKIN_DEFINITIONS = [
         id: 'classic',
         name: 'Classic',
         type: '2d',
+        supports3d: true,
         theme: {
             whiteSquare: '#f0d9b5',
             blackSquare: '#b58863',
@@ -140,6 +141,25 @@ export class SkinRegistry {
             img.src = src;
         });
     }
+
+    /**
+     * Returns whether 3D mode is currently enabled.
+     * 3D mode is only available when the active skin supports it.
+     */
+    get3dMode() {
+        const skin = this.getActive();
+        return this._3dMode && skin && skin.supports3d;
+    }
+
+    /**
+     * Sets the 3D mode state.
+     * @param {boolean} enabled
+     */
+    set3dMode(enabled) {
+        const skin = this.getActive();
+        if (enabled && (!skin || !skin.supports3d)) return;
+        this._3dMode = !!enabled;
+    }
 }
 
 export const skinRegistry = new SkinRegistry();
@@ -152,6 +172,12 @@ export function initializeSkin() {
         skinRegistry.setActive(DEFAULT_SKIN_ID);
     }
     skinRegistry.applyActive();
+
+    // Restore 3D mode state
+    if (get3dMode()) {
+        skinRegistry.set3dMode(true);
+    }
+
     // Preload next likely skins (image-based ones) on startup
     skinRegistry.getAll().forEach(skin => {
         if (skin.pieceSet && skin.pieceSet.type === 'image') {
@@ -170,26 +196,18 @@ export function switchSkin(skinId) {
 
     if (!skinRegistry.setActive(skinId)) return false;
     setActiveSkinId(skinId);
+
+    // Auto-disable 3D mode if new skin doesn't support it
+    const newSkin = skinRegistry.getActive();
+    if (skinRegistry.get3dMode() && (!newSkin || !newSkin.supports3d)) {
+        skinRegistry.set3dMode(false);
+        persist3dMode(false);
+    }
+
     skinRegistry.applyActive();
 
     // Preload image assets for this skin
     skinRegistry.preloadAssets(skinId);
-
-    const skin = skinRegistry.getActive();
-    const is3d = skin && skin.type === '3d';
-
-    // Toggle UI components for 3D mode
-    const statusEl = document.getElementById('status');
-    if (statusEl) statusEl.style.display = is3d ? 'none' : '';
-
-    const infoPanel = document.getElementById('info-panel');
-    if (infoPanel) infoPanel.style.display = is3d ? 'none' : '';
-
-    // Hide board labels in 3D mode (they don't work with perspective)
-    ['board-labels-top', 'board-labels-bottom', 'board-labels-left', 'board-labels-right'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.style.display = is3d ? 'none' : '';
-    });
 
     // Force layout reflow so visibility changes take effect before sizing
     document.body.offsetWidth;
@@ -198,6 +216,21 @@ export function switchSkin(skinId) {
     if (typeof window.updateBoardSize === 'function') {
         window.updateBoardSize();
     }
+
+    if (typeof renderBoard === 'function') renderBoard();
+    return true;
+}
+
+/**
+ * Toggles 3D mode for the current skin (if supported).
+ * Persists the preference and re-renders the board.
+ */
+export function toggle3dMode(enabled) {
+    const skin = skinRegistry.getActive();
+    if (!skin || !skin.supports3d) return false;
+
+    skinRegistry.set3dMode(enabled);
+    persist3dMode(enabled);
 
     if (typeof renderBoard === 'function') renderBoard();
     return true;

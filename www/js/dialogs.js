@@ -50,6 +50,9 @@ window.showGameMenu = function() {
                         ${skinRegistry.getAll().map(s => `<option value="${s.id}" ${s.id === skinRegistry.activeSkinId ? 'selected' : ''}>${s.name}</option>`).join('')}
                     </select>
                 </div>
+                <label style="display:block;margin:10px 0;cursor:pointer;" id="mode-3d-label">
+                    <input type="checkbox" id="mode-3d" ${skinRegistry.get3dMode() ? 'checked' : ''} onchange="window.toggle3dMode(this.checked)"> 3D Mode
+                </label>
                 <hr style="border-color:#4a5f7f;margin:15px 0;">
                 <div style="margin-bottom:10px;font-weight:bold;">Profile</div>
                 <select id="profile-select" style="width:100%;padding:8px;margin-bottom:10px;" onchange="window.switchProfile(this.value)">
@@ -78,6 +81,14 @@ window.showGameMenu = function() {
     }
     const buildInfo = document.getElementById('build-info');
     if (buildInfo) buildInfo.textContent = buildLabel;
+
+    // Show/hide 3D mode checkbox based on active skin support
+    const mode3dLabel = document.getElementById('mode-3d-label');
+    const skin = skinRegistry.getActive();
+    if (mode3dLabel) {
+        mode3dLabel.style.display = (skin && skin.supports3d) ? '' : 'none';
+    }
+
     dialog.onclick = (e) => { if (e.target === dialog) closeGameMenu(); };
 };
 
