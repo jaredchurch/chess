@@ -5,6 +5,7 @@
 //
 
 import { getGameStats } from './storage.js';
+import { skinRegistry, switchSkin } from './skins.js';
 
 window.moveHistoryCollapsed = window.moveHistoryCollapsed || false;
 window.getGameStats = getGameStats;
@@ -43,6 +44,12 @@ window.showGameMenu = function() {
                 <label style="display:block;margin:10px 0;cursor:pointer;">
                     <input type="checkbox" id="show-board-labels" ${localStorage.getItem('chess_show_board_labels') !== 'false' ? 'checked' : ''} onchange="toggleBoardLabels(this.checked)"> Show Board Labels
                 </label>
+                <div style="margin:15px 0;">
+                    <label style="display:block;margin-bottom:5px;font-weight:bold;">Skin</label>
+                    <select id="skin-select" style="width:100%;padding:8px;border-radius:5px;border:1px solid #4a5f7f;background:#2c3e50;color:white;" onchange="window.onSkinChange(this.value)">
+                        ${skinRegistry.getAll().map(s => `<option value="${s.id}" ${s.id === skinRegistry.activeSkinId ? 'selected' : ''}>${s.name}</option>`).join('')}
+                    </select>
+                </div>
                 <hr style="border-color:#4a5f7f;margin:15px 0;">
                 <div style="margin-bottom:10px;font-weight:bold;">Profile</div>
                 <select id="profile-select" style="width:100%;padding:8px;margin-bottom:10px;" onchange="window.switchProfile(this.value)">
@@ -72,6 +79,16 @@ window.showGameMenu = function() {
     const buildInfo = document.getElementById('build-info');
     if (buildInfo) buildInfo.textContent = buildLabel;
     dialog.onclick = (e) => { if (e.target === dialog) closeGameMenu(); };
+};
+
+/**
+ * Handles skin selection change from the settings dialog
+ * Updates the active skin, persists it, closes the menu, and re-renders the board
+ */
+window.onSkinChange = function(skinId) {
+    if (switchSkin(skinId)) {
+        closeGameMenu();
+    }
 };
 
 /**

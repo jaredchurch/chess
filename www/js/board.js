@@ -5,7 +5,8 @@
 // and preview board for move history.
 //
 
-import { pieceUnicode, isWhitePiece } from './ui.js';
+import { pieceUnicode, isWhitePiece, PIECE_TYPES } from './ui.js';
+import { skinRegistry } from './skins.js';
 import { getLegalMoves, applyMove, getGameState } from './chess-wasm.js';
 import { getCapturedPiece, getBoardStateAtMove } from './game.js';
 
@@ -134,7 +135,31 @@ export function renderBoard() {
         console.warn('Board element not found');
         return;
     }
-    boardEl.innerHTML = '';
+
+    // Apply active skin
+    skinRegistry.applyActive();
+
+    const activeSkin = skinRegistry.getActive();
+
+    // 3D mode bridge - show placeholder when 3D skin is active
+    if (activeSkin && activeSkin.type === '3d') {
+        boardEl.innerHTML = '';
+        boardEl.style.display = 'grid';
+        boardEl.style.placeItems = 'center';
+        boardEl.style.background = '#2c3e50';
+        const placeholder = document.createElement('div');
+        placeholder.style.textAlign = 'center';
+        placeholder.style.color = '#95a5a6';
+        placeholder.style.padding = '40px';
+        placeholder.innerHTML = '<div style="font-size:2em;margin-bottom:10px;">🎮</div><div style="font-size:1.2em;">3D Mode</div><div style="font-size:0.9em;margin-top:5px;">Select a 2D skin to play</div>';
+        boardEl.appendChild(placeholder);
+        return;
+    }
+
+    boardEl.style.display = 'grid';
+
+    const useImagePieces = activeSkin && activeSkin.pieceSet && activeSkin.pieceSet.type === PIECE_TYPES.IMAGE;
+    const pieceMapping = useImagePieces ? (activeSkin.pieceSet.mapping || {}) : {};
 
     const pieces = parseFenPieces(window.currentFen);
     window.legalMoves = getLegalMoves(window.currentFen) || [];
@@ -151,8 +176,22 @@ export function renderBoard() {
             
             const piece = pieces[squareName];
             if (piece) {
-                squareEl.innerText = pieceUnicode[piece];
-                squareEl.classList.add(piece === piece.toUpperCase() ? 'piece-white' : 'piece-black');
+                const imgSrc = pieceMapping[piece];
+                if (useImagePieces && imgSrc) {
+                    const img = document.createElement('img');
+                    img.src = imgSrc;
+                    img.alt = piece;
+                    img.style.width = '80%';
+                    img.style.height = '80%';
+                    img.style.objectFit = 'contain';
+                    img.onerror = function() {
+                        this.outerHTML = pieceUnicode[piece];
+                    };
+                    squareEl.appendChild(img);
+                } else {
+                    squareEl.innerText = pieceUnicode[piece];
+                    squareEl.classList.add(piece === piece.toUpperCase() ? 'piece-white' : 'piece-black');
+                }
             }
 
             squareEl.onclick = () => handleSquareClick(squareName);
@@ -189,7 +228,6 @@ export function handleSquareClick(square) {
     } else if (window.selectedSquare) {
         const move = window.legalMoves.find(m => m.from === window.selectedSquare && m.to === square);
         if (move) {
-            // TODO 20: Handle promotion - let user choose piece
             if (move.promotion) {
                 showPromotionDialog(move);
                 return;
@@ -204,7 +242,6 @@ export function handleSquareClick(square) {
     renderBoard();
 }
 
-// TODO 20: Show promotion piece selection dialog
 function showPromotionDialog(move) {
     let dialog = document.getElementById('promotion-dialog');
     if (!dialog) {
@@ -214,10 +251,10 @@ function showPromotionDialog(move) {
             <div class="promotion-content">
                 <div class="promotion-header">Choose promotion piece:</div>
                 <div class="promotion-options">
-                    <button class="promotion-btn" data-piece="q">♕ Queen</button>
-                    <button class="promotion-btn" data-piece="r">♖ Rook</button>
-                    <button class="promotion-btn" data-piece="b">♗ Bishop</button>
-                    <button class="promotion-btn" data-piece="n">♘ Knight</button>
+                    <button class="promotion-btn" data-piece="q">&#9813; Queen</button>
+                    <button class="promotion-btn" data-piece="r">&#9814; Rook</button>
+                    <button class="promotion-btn" data-piece="b">&#9815; Bishop</button>
+                    <button class="promotion-btn" data-piece="n">&#9816; Knight</button>
                 </div>
             </div>
         `;
@@ -227,7 +264,6 @@ function showPromotionDialog(move) {
         };
     }
     
-    // Store the move and handle selection
     window.pendingPromotionMove = move;
     dialog.querySelectorAll('.promotion-btn').forEach(btn => {
         btn.onclick = () => {
@@ -247,7 +283,6 @@ window.closePromotionDialog = function() {
     if (dialog) dialog.style.display = 'none';
 }
 
-// Helper function to execute a move
 function makeMove(move) {
     if (typeof window.recordMoveTime === 'function') window.recordMoveTime();
     if (typeof window.stopMoveTimer === 'function') window.stopMoveTimer();
@@ -286,6 +321,10 @@ export function renderPreviewBoard(boardEl, fen, highlightFrom, highlightTo) {
     const ranks = window.boardOrientation === 'white' ? [7, 6, 5, 4, 3, 2, 1, 0] : [0, 1, 2, 3, 4, 5, 6, 7];
     const files = window.boardOrientation === 'white' ? [0, 1, 2, 3, 4, 5, 6, 7] : [7, 6, 5, 4, 3, 2, 1, 0];
 
+    const activeSkin = skinRegistry.getActive();
+    const useImagePieces = activeSkin && activeSkin.pieceSet && activeSkin.pieceSet.type === PIECE_TYPES.IMAGE;
+    const pieceMapping = useImagePieces ? (activeSkin.pieceSet.mapping || {}) : {};
+
     ranks.forEach((rank, ri) => {
         files.forEach((file, fi) => {
             const squareName = String.fromCharCode(97 + file) + (rank + 1);
@@ -295,8 +334,22 @@ export function renderPreviewBoard(boardEl, fen, highlightFrom, highlightTo) {
             
             const piece = pieces[squareName];
             if (piece) {
-                squareEl.innerText = pieceUnicode[piece];
-                squareEl.classList.add(piece === piece.toUpperCase() ? 'piece-white' : 'piece-black');
+                const imgSrc = pieceMapping[piece];
+                if (useImagePieces && imgSrc) {
+                    const img = document.createElement('img');
+                    img.src = imgSrc;
+                    img.alt = piece;
+                    img.style.width = '80%';
+                    img.style.height = '80%';
+                    img.style.objectFit = 'contain';
+                    img.onerror = function() {
+                        this.outerHTML = pieceUnicode[piece];
+                    };
+                    squareEl.appendChild(img);
+                } else {
+                    squareEl.innerText = pieceUnicode[piece];
+                    squareEl.classList.add(piece === piece.toUpperCase() ? 'piece-white' : 'piece-black');
+                }
             }
 
             boardEl.appendChild(squareEl);

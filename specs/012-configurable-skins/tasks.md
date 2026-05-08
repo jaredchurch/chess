@@ -17,9 +17,9 @@
 
 **Purpose**: Project initialization and basic structure
 
-- [ ] T001 Create `www/assets/skins/` directory for themed assets
-- [ ] T002 [P] Update `www/css/styles.css` to use CSS variables for board squares, highlights, and piece colors
-- [ ] T003 [P] Initialize `www/js/skins.js` with the `SkinRegistry` class shell and export constants
+- [X] T001 Create `www/assets/skins/` directory for themed assets
+- [X] T002 [P] Update `www/css/styles.css` to use CSS variables for board squares, highlights, and piece colors
+- [X] T003 [P] Initialize `www/js/skins.js` with the `SkinRegistry` class shell and export constants
 
 ---
 
@@ -29,9 +29,9 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T004 Implement `SkinRegistry` logic in `www/js/skins.js` for registering and retrieving skins
-- [ ] T005 [P] Add `chess_active_skin` persistence logic in `www/js/storage.js`
-- [ ] T006 [P] Update `www/js/ui.js` constants to support extensible piece definitions (Unicode vs Image)
+- [X] T004 Implement `SkinRegistry` logic in `www/js/skins.js` for registering and retrieving skins
+- [X] T005 [P] Add `chess_active_skin` persistence logic in `www/js/storage.js`
+- [X] T006 [P] Update `www/js/ui.js` constants to support extensible piece definitions (Unicode vs Image)
 
 **Checkpoint**: Foundation ready - skin selection and application logic can now be implemented.
 
@@ -45,10 +45,10 @@
 
 ### Implementation for User Story 1
 
-- [ ] T007 [P] [US1] Define "Classic" (default) and "Wood" skin configurations in `www/js/skins.js`
-- [ ] T008 [US1] Update `renderBoard` in `www/js/board.js` to apply skin-specific CSS variables to the `:root` element
-- [ ] T009 [US1] Add "Skin" dropdown selector to the settings dialog in `www/index.html`
-- [ ] T010 [US1] Implement skin change event handler in `www/js/dialogs.js` to update the active skin and re-render the board
+- [X] T007 [P] [US1] Define "Classic" (default) and "Wood" skin configurations in `www/js/skins.js`
+- [X] T008 [US1] Update `renderBoard` in `www/js/board.js` to apply skin-specific CSS variables to the `:root` element
+- [X] T009 [US1] Add "Skin" dropdown selector to the settings dialog in `www/index.html`
+- [X] T010 [US1] Implement skin change event handler in `www/js/dialogs.js` to update the active skin and re-render the board
 
 **Checkpoint**: User Story 1 is functional. The game now supports switchable 2D color themes.
 
@@ -62,9 +62,9 @@
 
 ### Implementation for User Story 2
 
-- [ ] T011 [US2] Define "3D Classic" skin in `www/js/skins.js` with `type: '3d'`
-- [ ] T012 [US2] Implement rendering mode bridge in `www/js/board.js` to detect `type: '3d'` and trigger mode switching
-- [ ] T013 [US2] Ensure UI components (labels, coordinates) are correctly toggled when switching between 2D and 3D skins
+- [X] T011 [US2] Define "3D Classic" skin in `www/js/skins.js` with `type: '3d'`
+- [X] T012 [US2] Implement rendering mode bridge in `www/js/board.js` to detect `type: '3d'` and trigger mode switching
+- [X] T013 [US2] Ensure UI components (labels, coordinates) are correctly toggled when switching between 2D and 3D skins
 
 **Checkpoint**: User Story 2 is functional. 3D mode is now accessible via the skins menu.
 
@@ -78,9 +78,9 @@
 
 ### Implementation for User Story 3
 
-- [ ] T014 [P] [US3] Place Pokemon piece assets (PNG/SVG) in `www/assets/skins/pokemon/`
-- [ ] T015 [P] [US3] Define "Pokemon" skin in `www/js/skins.js` with `type: '2d'` and `pieceSet` mapping to image paths
-- [ ] T016 [US3] Update `renderBoard` in `www/js/board.js` to support image-based piece rendering (using `<img>` tags) when specified by the skin
+- [X] T014 [P] [US3] Place Pokemon piece assets (PNG/SVG) in `www/assets/skins/pokemon/`
+- [X] T015 [P] [US3] Define "Pokemon" skin in `www/js/skins.js` with `type: '2d'` and `pieceSet` mapping to image paths
+- [X] T016 [US3] Update `renderBoard` in `www/js/board.js` to support image-based piece rendering (using `<img>` tags) when specified by the skin
 
 **Checkpoint**: All user stories are functional. The system supports color themes, 3D mode, and image-based custom skins.
 
@@ -90,10 +90,10 @@
 
 **Purpose**: Improvements that affect multiple user stories
 
-- [ ] T017 [P] Implement asset preloading in `www/js/skins.js` to prevent flickering when switching image skins
-- [ ] T018 [P] Add error handling/fallback to "Classic" skin if assets fail to load or skin ID is invalid
-- [ ] T019 [P] Update `README.md` and `specs/012-configurable-skins/quickstart.md` with instructions for adding 3rd party skins
-- [ ] T020 Run full validation of `specs/012-configurable-skins/quickstart.md` testing scenarios
+- [X] T017 [P] Implement asset preloading in `www/js/skins.js` to prevent flickering when switching image skins
+- [X] T018 [P] Add error handling/fallback to "Classic" skin if assets fail to load or skin ID is invalid
+- [X] T019 [P] Update `README.md` and `specs/012-configurable-skins/quickstart.md` with instructions for adding 3rd party skins
+- [X] T020 Run full validation of `specs/012-configurable-skins/quickstart.md` testing scenarios
 
 ---
 

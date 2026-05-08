@@ -112,6 +112,14 @@ export function exportHistory(profileId) {
     URL.revokeObjectURL(url);
 }
 
+export function getActiveSkinId() {
+    return getStorageItem('chess_active_skin') || 'classic';
+}
+
+export function setActiveSkinId(skinId) {
+    return setStorageItem('chess_active_skin', skinId);
+}
+
 export function getAllProfiles() {
     try {
         const profilesJson = getStorageItem(STORAGE_KEY_PROFILES);

@@ -95,6 +95,9 @@ import {
 // Import new game dialog module
 import './dialogs-newgame.js';
 
+// Import skin module
+import { initializeSkin, switchSkin } from './skins.js';
+
 // Export key functions to window object for HTML event handlers and backward compatibility
 window.currentFen = INITIAL_FEN;
 window.pieceUnicode = pieceUnicode;
@@ -136,5 +139,10 @@ window.recordMoveTime = recordMoveTime;
 window.makeAiMove = makeAiMove;
 window.getCloudBestMove = getCloudBestMove;
 
+// Export skin functions
+window.switchSkin = switchSkin;
+window.initializeSkin = initializeSkin;
+
 // Initialize the application
+initializeSkin();
 startGame();
