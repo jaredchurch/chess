@@ -175,3 +175,8 @@ src/
 8. NOW you can commit
 
 **Key Rule: If ANY test fails, DO NOT commit! Fix the errors first.**
+
+<!-- SPECKIT START -->
+For additional context about technologies to be used, project structure,
+shell commands, and other important information, read the current plan
+<!-- SPECKIT END -->
