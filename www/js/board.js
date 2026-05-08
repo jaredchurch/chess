@@ -274,8 +274,9 @@ function renderBoard3d(boardEl) {
                 const color = piece === piece.toUpperCase() ? 'white' : 'black';
                 squareEl.classList.add('piece-' + color);
                 const pieceEl = document.createElement('span');
-                pieceEl.className = 'piece-3d';
-                pieceEl.innerHTML = create3dPieceSVG(piece.toUpperCase(), color);
+                const pieceType = piece.toUpperCase();
+                pieceEl.className = 'piece-3d piece-' + pieceType;
+                pieceEl.innerHTML = create3dPieceSVG(pieceType, color);
                 squareEl.appendChild(pieceEl);
             }
 

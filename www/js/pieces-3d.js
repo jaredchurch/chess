@@ -2,8 +2,8 @@
 // Licensed under the MIT License. See LICENSE file in the project root for details.
 //
 // 3D Pieces Module - Generates inline SVGs for all 3D chess pieces with
-// gradient-based shading. Each piece shares a common tapered body with a
-// distinctive top. Supports white and black.
+// gradient-based shading. Most pieces share a common tapered body; the rook
+// has its own columnar body with a distinct ring. Supports white and black.
 //
 
 const PIECE_COLORS = {
@@ -53,8 +53,7 @@ function kingTop(gradId, c) {
     return `
         <rect x="40" y="${y(20)}" width="20" height="${y(15)}" rx="2" fill="url(#${gradId})" stroke="${s}" stroke-width="0.5"/>
         ${commonCollar(gradId, c, 20, 12)}
-        <path d="M${y(42)} ${y(20)} L${y(42)} ${y(6)} M${y(58)} ${y(20)} L${y(58)} ${y(6)} M50 0 L50 ${y(16)}" stroke="url(#${gradId})" stroke-width="${y(4)}" fill="none" stroke-linecap="round"/>
-        <circle cx="50" cy="0" r="${y(4)}" fill="url(#${gradId})" stroke="${s}" stroke-width="0.5"/>`;
+        <path d="M47 0 L53 0 L53 ${y(7)} L63 ${y(7)} L63 ${y(10)} L53 ${y(10)} L53 ${y(18)} L47 ${y(18)} L47 ${y(10)} L37 ${y(10)} L37 ${y(7)} L47 ${y(7)} Z" fill="url(#${gradId})" stroke="${s}" stroke-width="0.5"/>`;
 }
 
 function queenTop(gradId, c) {
@@ -71,11 +70,24 @@ function queenTop(gradId, c) {
         <circle cx="50" cy="0" r="${y(3.5)}" fill="url(#${gradId})" stroke="${s}" stroke-width="0.5"/>`;
 }
 
+function rookBody(gradId, c) {
+    const s = c.s;
+    const br = 22;
+    const bl = 50 - br, bR = 50 + br;
+    const shadow = c.isWhite ? 'rgba(0,0,0,0.08)' : 'rgba(0,0,0,0.2)';
+    const mid = 46;
+    return `
+        <ellipse cx="50" cy="${y(100)}" rx="${br}" ry="${y(6)}" fill="url(#${gradId})" stroke="${s}" stroke-width="0.5"/>
+        <path d="M${bl} ${y(100)} Q${bl} ${y(85)} ${bl+2} ${y(70)} L${bl+2} ${y(mid)} Q${bl+2} ${y(38)} ${bl+6} ${y(34)} Q44 ${y(34)} 50 ${y(34)} Q56 ${y(34)} ${bR-6} ${y(34)} Q${bR-2} ${y(38)} ${bR-2} ${y(mid)} L${bR-2} ${y(70)} Q${bR} ${y(85)} ${bR} ${y(100)} Z" fill="url(#${gradId})" stroke="${s}" stroke-width="0.5"/>
+        <ellipse cx="50" cy="${y(100)}" rx="${br}" ry="${y(3)}" fill="${shadow}"/>`;
+}
+
 function rookTop(gradId, c) {
     const s = c.s;
     return `
         <rect x="40" y="${y(14)}" width="20" height="${y(20)}" rx="2" fill="url(#${gradId})" stroke="${s}" stroke-width="0.5"/>
         ${commonCollar(gradId, c, 14, 12)}
+        <ellipse cx="50" cy="${y(36)}" rx="18" ry="${y(3)}" fill="url(#${gradId})" stroke="${s}" stroke-width="0.5"/>
         <rect x="34" y="${y(6)}" width="32" height="${y(8)}" fill="url(#${gradId})" stroke="${s}" stroke-width="0.5"/>
         <rect x="34" y="0" width="5" height="${y(6)}" fill="url(#${gradId})" stroke="${s}" stroke-width="0.5"/>
         <rect x="41" y="0" width="5" height="${y(6)}" fill="url(#${gradId})" stroke="${s}" stroke-width="0.5"/>
@@ -114,15 +126,21 @@ const TOPS = {
     B: bishopTop, N: knightTop, P: pawnTop,
 };
 
+const BODIES = {
+    R: rookBody,
+};
+
 export function create3dPieceSVG(piece, color) {
     const c = PIECE_COLORS[color] || PIECE_COLORS.white;
     const gradId = 'p' + piece + color;
     const topFn = TOPS[piece] || kingTop;
     const viewH = y(100);
 
-    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 ${viewH}" width="100%" height="100%">
+    const bodyFn = BODIES[piece] || commonBody;
+
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 ${viewH}" width="100%" height="100%" preserveAspectRatio="xMidYMax meet">
         ${buildDefs(gradId, c)}
-        ${commonBody(gradId, c)}
+        ${bodyFn(gradId, c)}
         ${topFn(gradId, c)}
     </svg>`;
 }

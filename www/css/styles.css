@@ -336,7 +336,7 @@ button:hover { background: #2980b9; }
 
 /* 3D group - the entire board assembly tilted in perspective */
 #board-wrapper.mode-3d .board-3d-group {
-    transform: rotateX(55deg);
+    transform: rotateX(65deg);
     transform-style: preserve-3d;
     display: flex;
     flex-direction: column;
@@ -389,6 +389,36 @@ button:hover { background: #2980b9; }
     height: 100%;
     filter: drop-shadow(1px 3px 4px rgba(0,0,0,0.35));
     pointer-events: none;
+}
+
+/* Per-piece height — pawn shortest, king tallest */
+#board-wrapper.mode-3d .piece-3d.piece-P { height: 78%; }
+#board-wrapper.mode-3d .piece-3d.piece-R { height: 96%; }
+#board-wrapper.mode-3d .piece-3d.piece-N { height: 102%; }
+#board-wrapper.mode-3d .piece-3d.piece-B { height: 106%; }
+#board-wrapper.mode-3d .piece-3d.piece-Q { height: 126%; }
+#board-wrapper.mode-3d .piece-3d.piece-K { height: 138%; }
+
+#board-wrapper.mode-3d .piece-3d.piece-white {
+    color: var(--piece-white);
+
+    text-shadow:
+        0 1px 0 rgba(0,0,0,0.08),
+        0 2px 0 rgba(0,0,0,0.07),
+        0 3px 1px rgba(0,0,0,0.06),
+        0 4px 2px rgba(0,0,0,0.05),
+        0 5px 3px rgba(0,0,0,0.04),
+        0 6px 4px rgba(0,0,0,0.03);
+}
+
+#board-wrapper.mode-3d .piece-3d.piece-black {
+    color: var(--piece-black);
+    text-shadow:
+        0 1px 0 rgba(0,0,0,0.15),
+        0 2px 0 rgba(0,0,0,0.13),
+        0 3px 1px rgba(0,0,0,0.11),
+        0 4px 2px rgba(0,0,0,0.09),
+        0 5px 3px rgba(0,0,0,0.07);
 }
 
 #board-wrapper.mode-3d .piece-3d.piece-white {
