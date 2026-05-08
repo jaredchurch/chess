@@ -45,7 +45,7 @@ export class ChessRenderer3D {
         this.scene.background = new THREE.Color(0x2c3e50);
 
         this.camera = new THREE.PerspectiveCamera(28, w / h, 0.1, 100);
-        this.camera.position.set(0, 12, 24);
+        this.camera.position.set(0, 12, 20);
         this.camera.lookAt(0, 0, 0);
         this.camera.updateMatrixWorld(true);
 
@@ -56,18 +56,13 @@ export class ChessRenderer3D {
 
         this._setupLights();
 
-        // BUG 48 fix: create wrapper for board + pieces
+        // create wrapper for board + pieces
         this._boardWrap = new THREE.Group();
         this.scene.add(this._boardWrap);
 
         this._createBoard();
         this.pieceGroup = new THREE.Group();
         this._boardWrap.add(this.pieceGroup);
-
-        // Rotate entire wrapper 180° when player is black
-        if (typeof window !== 'undefined' && window.boardOrientation === 'black') {
-            this._boardWrap.rotation.y = Math.PI;
-        }
 
         this._frameBoard();
 
@@ -93,10 +88,9 @@ export class ChessRenderer3D {
         if (this._orientation === side) return;
         this._orientation = side;
         
-        const z = side === 'black' ? -18 : 18;
-        this.camera.position.set(0, 12, z);
-        this.camera.lookAt(0, 0, 0);
-        this.camera.updateMatrixWorld(true);
+        if (this._boardWrap) {
+            this._boardWrap.rotation.y = (side === 'black') ? Math.PI : 0;
+        }
         this._frameBoard();
     }
 
@@ -112,15 +106,12 @@ export class ChessRenderer3D {
 
     _createBoard() {
         if (this.boardGroup) {
-            this.scene.remove(this.boardGroup);
+            this._boardWrap.remove(this.boardGroup);
             this._disposeGroup(this.boardGroup);
         }
         this.boardGroup = new THREE.Group();
-        this.scene.add(this.boardGroup);
-        // BUG 48 fix: rotate board 180° when player is black
-        if (typeof window !== 'undefined' && window.boardOrientation === 'black') {
-            this.boardGroup.rotation.y = Math.PI;
-        }
+        this._boardWrap.add(this.boardGroup);
+        
         this.squareMeshes = [];
         this.squareMap = {};
 
@@ -230,12 +221,7 @@ export class ChessRenderer3D {
     }
 
     _rebuildBoard() {
-        const oldGroup = this.boardGroup;
         this._createBoard();
-        if (oldGroup) {
-            this.scene.remove(oldGroup);
-            this._disposeGroup(oldGroup);
-        }
     }
 
     // ---- Low-poly piece builders ----
