@@ -276,6 +276,7 @@ function renderBoard3d(boardEl) {
     let container = document.getElementById('renderer-3d-container');
 
     if (!container) {
+        console.log('function renderBoard3d: Creating 3D renderer container');
         boardEl.innerHTML = '';
         container = document.createElement('div');
         container.id = 'renderer-3d-container';
@@ -286,8 +287,12 @@ function renderBoard3d(boardEl) {
             overlay.className = 'board-outline-overlay';
             container.appendChild(overlay);
         }
+        console.log('Container1 WxH:', container.clientWidth, 'x', container.clientHeight);
         boardEl.appendChild(container);
+        console.log('Container2 WxH:', container.clientWidth, 'x', container.clientHeight);
         const renderer = createRenderer(container);
+        console.log('Renderer WxH:', renderer.container.clientWidth, 'x', renderer.container.clientHeight);
+
         window._chessRenderer = renderer;
         renderer.onSquareClick = (square) => handleSquareClick(square);
     }
@@ -300,10 +305,8 @@ function renderBoard3d(boardEl) {
         renderer.setSelection(window.selectedSquare);
     }
 
+    console.log('Container created with WxH:', renderer.container.clientWidth, 'x', renderer.container.clientHeight);
     renderer.resize();
-    
-    // Fallback for BUG33/41: Force resize after a short delay to catch any layout shifts
-    setTimeout(() => renderer.resize(), 50);
 }
 
 /**

@@ -418,9 +418,15 @@ export class ChessRenderer3D {
     }
 
     resize() {
+        console.warn('resize called');
+        console.log('C/R/D: ', !this.container || !this.renderer || this._disposed)
         if (!this.container || !this.renderer || this._disposed) return;
+
+        // when 3D mode is turned on the width of this container is very small 57, but I expect it to be 600 - need to fix this
         const w = this.container.clientWidth;
         const h = this.container.clientHeight;
+        console.log('Width/Height: ', w, 'x', h);
+
         if (w === 0 || h === 0) return;
         this.camera.aspect = w / h;
         this.camera.updateProjectionMatrix();
