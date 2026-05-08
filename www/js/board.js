@@ -9,7 +9,7 @@ import { pieceUnicode, isWhitePiece, PIECE_TYPES } from './ui.js';
 import { skinRegistry } from './skins.js';
 import { getLegalMoves, applyMove, getGameState } from './chess-wasm.js';
 import { getCapturedPiece, getBoardStateAtMove } from './game.js';
-import { create3dPieceSVG } from './pieces-3d.js';
+import { createRenderer } from './renderer-3d.js';
 
 window.boardOrientation = 'white';
 window.selectedSquare = null;
@@ -23,7 +23,10 @@ window.legalMoves = [];
 window.updateBoardSize = function() {
     const board = document.getElementById('board');
     if (!board) return;
-    
+
+    // In 3D mode, Three.js ResizeObserver handles sizing
+    if (window._chessRenderer) return;
+
     // Get actual container dimensions to maximize board size
     const container = document.getElementById('board-container');
     const isMobile = window.innerWidth <= 700;
@@ -156,16 +159,20 @@ export function renderBoard() {
     });
 
     if (is3d) {
+        // Clear fixed sizing from 2D mode to allow 3D canvas to fill container
+        boardEl.style.width = '';
+        boardEl.style.height = '';
         renderBoard3d(boardEl);
         return;
     }
 
-    // When switching FROM 3D mode, restore board element to wrapper
-    const scene = boardWrapper ? boardWrapper.querySelector('.board-3d-group') : null;
-    if (scene && scene.contains(boardEl)) {
-        boardWrapper.appendChild(boardEl);
-        scene.remove();
+    // When switching FROM 3D mode, clean up Three.js renderer
+    if (window._chessRenderer) {
+        window._chessRenderer.dispose();
+        window._chessRenderer = null;
     }
+    const r3d = document.getElementById('renderer-3d-container');
+    if (r3d) r3d.remove();
 
     boardEl.innerHTML = '';
 
@@ -173,6 +180,7 @@ export function renderBoard() {
     boardEl.style.placeItems = '';
     boardEl.style.background = '';
     boardEl.style.display = 'grid';
+    window.updateBoardSize();
 
     const useImagePieces = activeSkin && activeSkin.pieceSet && activeSkin.pieceSet.type === PIECE_TYPES.IMAGE;
     const pieceMapping = useImagePieces ? (activeSkin.pieceSet.mapping || {}) : {};
@@ -218,72 +226,41 @@ export function renderBoard() {
 }
 
 /**
- * Renders a 3D perspective view of the board.
- * Board is tilted at ~40 degrees for a realistic isometric view.
- * Currently shows the board with a single queen piece.
+ * Renders a 3D perspective view of the board using Three.js.
+ * Creates a procedural low-poly chess scene with piece placement from FEN.
  */
 function renderBoard3d(boardEl) {
-    boardEl.innerHTML = '';
+    let container = document.getElementById('renderer-3d-container');
 
-    const boardWrapper = document.getElementById('board-wrapper');
-
-    // Build the 3D scene: group -> frame(board) + edge
-    let group = boardWrapper.querySelector('.board-3d-group');
-    if (!group) {
-        group = document.createElement('div');
-        group.className = 'board-3d-group';
-        boardWrapper.appendChild(group);
-    }
-
-    let frame = group.querySelector('.board-frame');
-    if (!frame) {
-        frame = document.createElement('div');
-        frame.className = 'board-frame';
-        frame.appendChild(boardEl);
-        group.insertBefore(frame, group.firstChild);
-    } else {
-        if (boardEl.parentNode !== frame) {
-            frame.appendChild(boardEl);
+    if (!container) {
+        boardEl.innerHTML = '';
+        container = document.createElement('div');
+        container.id = 'renderer-3d-container';
+        // Board outline as overlay div (renders on top of WebGL canvas)
+        const showOutline = localStorage.getItem('chess_board_outline') === 'true' ||
+            new URLSearchParams(window.location.search).has('board_outline');
+        if (showOutline) {
+            const overlay = document.createElement('div');
+            overlay.className = 'board-outline-overlay';
+            container.appendChild(overlay);
         }
+        boardEl.appendChild(container);
+        const renderer = createRenderer(container);
+        window._chessRenderer = renderer;
+        renderer.onSquareClick = (square) => handleSquareClick(square);
     }
 
-    // Create and append the board edge (visible 3D thickness)
-    let edge = group.querySelector('.board-edge');
-    if (!edge) {
-        edge = document.createElement('div');
-        edge.className = 'board-edge';
+    const renderer = window._chessRenderer;
+    renderer.setPosition(window.currentFen);
+
+    if (window.selectedSquare) {
+        renderer.setSelection(window.selectedSquare);
     }
-    group.appendChild(edge);
 
-    const orientation = window.boardOrientation;
-    const ranks = orientation === 'white' ? [7, 6, 5, 4, 3, 2, 1, 0] : [0, 1, 2, 3, 4, 5, 6, 7];
-    const files = orientation === 'white' ? [0, 1, 2, 3, 4, 5, 6, 7] : [7, 6, 5, 4, 3, 2, 1, 0];
+    const legalMoves = getLegalMoves(window.currentFen) || [];
+    legalMoves.forEach(m => renderer.highlightSquare(m.to, true));
 
-    const pieces = parseFenPieces(window.currentFen);
-    window.legalMoves = getLegalMoves(window.currentFen) || [];
-
-    ranks.forEach((rank, ri) => {
-        files.forEach((file, fi) => {
-            const squareName = String.fromCharCode(97 + file) + (rank + 1);
-            const squareEl = document.createElement('div');
-            squareEl.className = `square ${(ri + fi) % 2 === 0 ? 'black-square' : 'white-square'}`;
-            if (window.selectedSquare === squareName) squareEl.classList.add('highlight');
-
-            const piece = pieces[squareName];
-            if (piece) {
-                const color = piece === piece.toUpperCase() ? 'white' : 'black';
-                squareEl.classList.add('piece-' + color);
-                const pieceEl = document.createElement('span');
-                const pieceType = piece.toUpperCase();
-                pieceEl.className = 'piece-3d piece-' + pieceType;
-                pieceEl.innerHTML = create3dPieceSVG(pieceType, color);
-                squareEl.appendChild(pieceEl);
-            }
-
-            squareEl.onclick = () => handleSquareClick(squareName);
-            boardEl.appendChild(squareEl);
-        });
-    });
+    renderer.resize();
 }
 
 /**

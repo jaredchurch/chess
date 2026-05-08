@@ -108,6 +108,7 @@ window.updateBoardSize = window.updateBoardSize;
 window.updateBoardLabels = window.updateBoardLabels;
 window.flipBoard = window.flipBoard;
 window.closePreviewDialog = window.closePreviewDialog;
+window.toggleBoardOutline = window.toggleBoardOutline;
 window.showNewGameDialog = window.showNewGameDialog;
 window.closeNewGameDialog = window.closeNewGameDialog;
 window.toggleNewGameCloudSettings = window.toggleNewGameCloudSettings;
