@@ -153,15 +153,23 @@ export function renderBoard() {
     }
 
     // Hide board labels in 3D mode (they don't work with perspective)
-    ['board-labels-top', 'board-labels-bottom', 'board-labels-left', 'board-labels-right'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.style.display = is3d ? 'none' : '';
-    });
+    if (is3d) {
+        ['board-labels-top', 'board-labels-bottom', 'board-labels-left', 'board-labels-right'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.style.display = 'none';
+        });
+    } else {
+        ['board-labels-top', 'board-labels-bottom', 'board-labels-left', 'board-labels-right'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.style.display = '';
+        });
+    }
 
     if (is3d) {
         // Clear fixed sizing from 2D mode to allow 3D canvas to fill container
         boardEl.style.width = '';
         boardEl.style.height = '';
+        window.legalMoves = getLegalMoves(window.currentFen) || [];
         renderBoard3d(boardEl);
         return;
     }
@@ -236,9 +244,8 @@ function renderBoard3d(boardEl) {
         boardEl.innerHTML = '';
         container = document.createElement('div');
         container.id = 'renderer-3d-container';
-        // Board outline as overlay div (renders on top of WebGL canvas)
-        const showOutline = localStorage.getItem('chess_board_outline') === 'true' ||
-            new URLSearchParams(window.location.search).has('board_outline');
+        // Board outline: only show if URL param is set (BUG50 fix)
+        const showOutline = new URLSearchParams(window.location.search).has('board_outline');
         if (showOutline) {
             const overlay = document.createElement('div');
             overlay.className = 'board-outline-overlay';
@@ -251,14 +258,12 @@ function renderBoard3d(boardEl) {
     }
 
     const renderer = window._chessRenderer;
+    renderer.setOrientation(window.boardOrientation);
     renderer.setPosition(window.currentFen);
 
     if (window.selectedSquare) {
         renderer.setSelection(window.selectedSquare);
     }
-
-    const legalMoves = getLegalMoves(window.currentFen) || [];
-    legalMoves.forEach(m => renderer.highlightSquare(m.to, true));
 
     renderer.resize();
 }
@@ -285,6 +290,72 @@ export function parseFenPieces(fen) {
  * Manages piece selection, move validation, and executing moves
  * @param {string} square - The clicked square (e.g., 'e4')
  */
+function getPieceAtSquare(sq) {
+    const pieces = {};
+    let rank = 7, file = 0;
+    for (const ch of window.currentFen.split(' ')[0]) {
+        if (ch === '/') { rank--; file = 0; }
+        else if (ch >= '1' && ch <= '8') { file += parseInt(ch); }
+        else { pieces[String.fromCharCode(97 + file) + (rank + 1)] = ch; file++; }
+    }
+    return pieces[sq] || null;
+}
+
+function findCastlingMove(kingSq, rookSq) {
+    const kingFile = kingSq.charCodeAt(0) - 97;
+    const rookFile = rookSq.charCodeAt(0) - 97;
+    let targetFile;
+    if (rookFile > kingFile) {
+        targetFile = kingFile + 2; // kingside: e1→g1
+    } else {
+        targetFile = kingFile - 2; // queenside: e1→c1
+    }
+    const targetSq = String.fromCharCode(targetFile + 97) + kingSq[1];
+    return window.legalMoves.find(m => m.from === kingSq && m.to === targetSq) || null;
+}
+
+function showCastlingDialog(move, clickedSq) {
+    let dialog = document.getElementById('castling-dialog');
+    if (!dialog) {
+        dialog = document.createElement('div');
+        dialog.id = 'castling-dialog';
+        const isKingside = (move.to.charCodeAt(0) - 97) > (move.from.charCodeAt(0) - 97);
+        const side = isKingside ? 'kingside' : 'queenside';
+        dialog.innerHTML = `
+            <div class="castling-content">
+                <div class="castling-header">Castle ${side}?</div>
+                <div class="castling-options">
+                    <button class="castling-btn-yes">Yes</button>
+                    <button class="castling-btn-no">No</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(dialog);
+        dialog.onclick = (e) => {
+            if (e.target === dialog) closeCastlingDialog();
+        };
+    }
+    dialog.querySelectorAll('.castling-btn-yes').forEach(btn => {
+        btn.onclick = () => {
+            closeCastlingDialog();
+            makeMove(move);
+        };
+    });
+    dialog.querySelectorAll('.castling-btn-no').forEach(btn => {
+        btn.onclick = () => {
+            closeCastlingDialog();
+            window.selectedSquare = clickedSq;
+            renderBoard();
+        };
+    });
+    dialog.style.display = 'flex';
+}
+
+window.closeCastlingDialog = function() {
+    const dialog = document.getElementById('castling-dialog');
+    if (dialog) dialog.style.display = 'none';
+};
+
 export function handleSquareClick(square) {
     if (window.selectedSquare === square) {
         window.selectedSquare = null;
@@ -297,6 +368,18 @@ export function handleSquareClick(square) {
             }
             makeMove(move);
         } else {
+            // Check for castling: king selected, rook clicked
+            const selectedPiece = getPieceAtSquare(window.selectedSquare);
+            const clickedPiece = getPieceAtSquare(square);
+            const isKing = selectedPiece && selectedPiece.toUpperCase() === 'K';
+            const isRook = clickedPiece && clickedPiece.toUpperCase() === 'R';
+            if (isKing && isRook) {
+                const castlingMove = findCastlingMove(window.selectedSquare, square);
+                if (castlingMove) {
+                    showCastlingDialog(castlingMove, square);
+                    return;
+                }
+            }
             window.selectedSquare = square;
         }
     } else {

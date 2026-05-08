@@ -45,7 +45,7 @@ export class ChessRenderer3D {
         this.scene.background = new THREE.Color(0x2c3e50);
 
         this.camera = new THREE.PerspectiveCamera(28, w / h, 0.1, 100);
-        this.camera.position.set(0, 12, 18);
+        this.camera.position.set(0, 12, 24);
         this.camera.lookAt(0, 0, 0);
         this.camera.updateMatrixWorld(true);
 
@@ -55,9 +55,19 @@ export class ChessRenderer3D {
         container.appendChild(this.renderer.domElement);
 
         this._setupLights();
+
+        // BUG 48 fix: create wrapper for board + pieces
+        this._boardWrap = new THREE.Group();
+        this.scene.add(this._boardWrap);
+
         this._createBoard();
         this.pieceGroup = new THREE.Group();
-        this.scene.add(this.pieceGroup);
+        this._boardWrap.add(this.pieceGroup);
+
+        // Rotate entire wrapper 180° when player is black
+        if (typeof window !== 'undefined' && window.boardOrientation === 'black') {
+            this._boardWrap.rotation.y = Math.PI;
+        }
 
         this._frameBoard();
 
@@ -73,6 +83,21 @@ export class ChessRenderer3D {
     setBoardColors(light, dark) {
         this.boardColors = { light, dark };
         this._rebuildBoard();
+    }
+
+    /**
+     * Sets the board orientation (perspective)
+     * @param {string} side - 'white' or 'black'
+     */
+    setOrientation(side) {
+        if (this._orientation === side) return;
+        this._orientation = side;
+        
+        const z = side === 'black' ? -18 : 18;
+        this.camera.position.set(0, 12, z);
+        this.camera.lookAt(0, 0, 0);
+        this.camera.updateMatrixWorld(true);
+        this._frameBoard();
     }
 
     _setupLights() {
@@ -92,12 +117,16 @@ export class ChessRenderer3D {
         }
         this.boardGroup = new THREE.Group();
         this.scene.add(this.boardGroup);
+        // BUG 48 fix: rotate board 180° when player is black
+        if (typeof window !== 'undefined' && window.boardOrientation === 'black') {
+            this.boardGroup.rotation.y = Math.PI;
+        }
         this.squareMeshes = [];
         this.squareMap = {};
 
         for (let r = 0; r < 8; r++) {
             for (let f = 0; f < 8; f++) {
-                const isLight = (r + f) % 2 === 0;
+                const isLight = (r + f) % 2 !== 0;
                 const color = isLight ? this.boardColors.light : this.boardColors.dark;
                 const mat = new THREE.MeshBasicMaterial({ color });
                 const geo = new THREE.BoxGeometry(1, 0.04, 1);
@@ -115,8 +144,53 @@ export class ChessRenderer3D {
         const bMat = new THREE.MeshBasicMaterial({ color: 0x5c3a1e });
         const bGeo = new THREE.BoxGeometry(8.6, 0.12, 8.6);
         const border = new THREE.Mesh(bGeo, bMat);
-        border.position.set(0, -0.02, 0);
+        border.position.set(0, -0.08, 0);
         this.boardGroup.add(border);
+
+        this._createLabels();
+    }
+
+    _makeLabelSprite(text) {
+        // Guard for Node.js test environment where document is not defined
+        if (typeof document === 'undefined') {
+            const mat = new THREE.SpriteMaterial({ color: 0xffffff });
+            return new THREE.Sprite(mat);
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = 64; canvas.height = 64;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#95a5a6';
+        ctx.font = 'bold 13px monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(text, 32, 34);
+        const texture = new THREE.CanvasTexture(canvas);
+        const mat = new THREE.SpriteMaterial({ map: texture, transparent: true });
+        return new THREE.Sprite(mat);
+    }
+
+    _createLabels() {
+        const files = ['a','b','c','d','e','f','g','h'];
+        const ranks = [1,2,3,4,5,6,7,8];
+
+        // Files along top (z = 4.5, above board centre row)
+        for (let f = 0; f < 8; f++) {
+            const x = f - 3.5;
+            const top = this._makeLabelSprite(files[f]);
+            top.position.set(x, 0.05, 5.0);
+            this.boardGroup.add(top);
+        }
+
+        // Ranks along left (x = -4.5) and right (x = 4.5)
+        for (let r = 0; r < 8; r++) {
+            const z = -(r - 3.5);
+            const left = this._makeLabelSprite(ranks[r].toString());
+            left.position.set(-4.5, 0.05, z);
+            this.boardGroup.add(left);
+            const right = this._makeLabelSprite(ranks[r].toString());
+            right.position.set(4.5, 0.05, z);
+            this.boardGroup.add(right);
+        }
     }
 
     highlightSquare(sq, on) {
@@ -127,7 +201,7 @@ export class ChessRenderer3D {
         } else {
             const f = sq.charCodeAt(0) - 97;
             const r = parseInt(sq[1]) - 1;
-            const isLight = (r + f) % 2 === 0;
+            const isLight = (r + f) % 2 !== 0;
             mesh.material.color.setHex(isLight ? this.boardColors.light : this.boardColors.dark);
         }
     }
@@ -264,6 +338,15 @@ export class ChessRenderer3D {
     // ---- Public API ----
 
     setPosition(fen) {
+        // Clear all square highlights before rebuilding
+        for (const mesh of this.squareMeshes) {
+            const sq = mesh.userData.square;
+            const f = sq.charCodeAt(0) - 97;
+            const r = parseInt(sq[1]) - 1;
+            const isLight = (r + f) % 2 !== 0;
+            mesh.material.color.setHex(isLight ? this.boardColors.light : this.boardColors.dark);
+        }
+
         this._clearPieces();
         this.piecesMap = {};
 
