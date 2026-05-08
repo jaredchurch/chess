@@ -26,4 +26,8 @@ Once we have worked through doing the spec for them, they should be marked as do
 - [x] 23. User should be able to interact with screen while search is happening (it should not lock up).
 - [x] 24. further search optimisation.
 - [x] 25. adjust that model to set goal of best move as maximising the score differential (i.e. engine's score minus opponent's score.
-
+- [ ] 26. Ensure structure of code supports concept of skins on the game.
+- [ ] 27. Explain the reason for particular move selection (show 2nd/3rd best move).
+- [ ] 28. Configurable game length (number of mins per player).
+- [ ] 29. Configurable one user must checkmate to win (i.e if user doesn't reach checkmate they lose, stalemate means that user loses).
+- [ ] 30. indication of probability of win direction given where at in the game.
