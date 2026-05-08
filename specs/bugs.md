@@ -33,7 +33,7 @@
 - [?] BUG33 - when I first select 3D mode in the setting dialog the viewport is very narrow and I have to subsequently refresh the board to get the full size viewport, modify so that the full size viewport is there immediately.
 - [ ] BUG34 - when I check the 3d Mode checkbox (refer line 57 in dailogs.js) the 3d board is tiny within the viewport and should be rendered filling the veiwport. If I do a page refresh after this then the size gets fixed.
 - [ ] BUG35 - when I realod a page and am playing black, the timers get out of sync and it times my move on white. ensure that the timers are correctly idenitfying which colour is having it's turn.
-- [ ] BUG36 - 
+- [ ] BUG36 - playing in 2D mode, the board moves around (vertically) when pieces are selected and when moves are completed. ensure that the board position is static for these. It looks like the container the board is in is sometimes too tall for the board.
 - [ ] BUG37 - 
 - [ ] BUG38 - 
 - [ ] BUG39 - 
