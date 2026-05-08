@@ -4,7 +4,7 @@ import init, {
     apply_move, 
     get_best_move_wasm, 
     get_game_state
-} from './pkg/chess_core.js';
+} from '../pkg/chess_core.js';
 
 let wasmReady = false;
 
@@ -32,5 +32,14 @@ export function getBestMove(fen, level = 2) {
 }
 
 export function getGameState(fen) {
-    return get_game_state(fen);
+    try {
+        const result = get_game_state(fen);
+        if (!result || result === null || result === undefined) {
+            console.warn('get_game_state returned null/undefined for FEN:', fen);
+        }
+        return result;
+    } catch(e) {
+        console.error('Error calling get_game_state:', e, 'for FEN:', fen);
+        return null;
+    }
 }

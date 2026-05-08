@@ -104,7 +104,7 @@ pub fn parse_fen(fen: &str) -> Result<Board, String> {
     }
 
     // Validate castling rights match actual piece positions
-    validate_castling_rights(&board)?;
+    validate_castling_rights(&mut board);
 
     // Validate EP square if present
     if let Some(ep_sq) = board.en_passant_square {
@@ -241,7 +241,7 @@ fn square_to_string(sq: Square) -> String {
     format!("{}{}", file as char, rank as char)
 }
 
-fn validate_castling_rights(board: &Board) -> Result<(), String> {
+fn validate_castling_rights(board: &mut Board) {
     let white_king = board.pieces[5];
     let white_rook_k = board.pieces[3];
     let white_rook_q = board.pieces[2];
@@ -263,31 +263,67 @@ fn validate_castling_rights(board: &Board) -> Result<(), String> {
     let actual_kq = (board.castling_rights & 0x4) != 0;
     let actual_qq = (board.castling_rights & 0x8) != 0;
 
+    // Clear invalid castling rights instead of failing
     if actual_k && !can_white_k {
-        return Err("Invalid FEN: White kingside castling but pieces not in position".to_string());
+        board.castling_rights &= !0x1;
     }
     if actual_q && !can_white_q {
-        return Err("Invalid FEN: White queenside castling but pieces not in position".to_string());
+        board.castling_rights &= !0x2;
     }
     if actual_kq && !can_black_k {
-        return Err("Invalid FEN: Black kingside castling but pieces not in position".to_string());
+        board.castling_rights &= !0x4;
     }
     if actual_qq && !can_black_q {
-        return Err("Invalid FEN: Black queenside castling but pieces not in position".to_string());
+        board.castling_rights &= !0x8;
     }
-
-    Ok(())
 }
 
-fn validate_en_passant_square(_board: &Board, ep_square: Square) -> Result<(), String> {
-    // EP square validation: EP square must be on valid rank (3 or 4 in 0-indexed)
-    // The rank check alone is sufficient - we check the actual pawn below
+fn validate_en_passant_square(board: &Board, ep_square: Square) -> Result<(), String> {
+    // EP square validation:
+    // - EP square must be on rank 2 or 5 (0-indexed)
+    // - There must be an opposing pawn on an adjacent file on the same rank as EP
+    // - For White's turn: black just moved two squares, EP on rank 5, black pawn on rank 6
+    // - For Black's turn: white just moved two squares, EP on rank 2, white pawn on rank 1
+    
     let ep_idx = ep_square.as_u32();
-    let rank = ep_idx / 8;
-
-    if !(2..=5).contains(&rank) {
-        return Err("Invalid FEN: En passant square invalid".to_string());
+    let ep_rank = ep_idx / 8;
+    let ep_file = ep_idx % 8;
+    
+    // EP square must be on rank 2 or 5 (0-indexed)
+    if ep_rank != 2 && ep_rank != 5 {
+        return Err("Invalid FEN: En passant square must be on rank 3 or 6".to_string());
     }
-
-    Ok(())
+    
+    // Determine expected pawn color and rank
+    let (expected_color, pawn_rank) = if board.side_to_move == Color::White {
+        // White's turn -> black just moved two squares
+        // EP is on rank 5, black pawn should be on rank 6
+        (Color::Black, 6u32)
+    } else {
+        // Black's turn -> white just moved two squares
+        // EP is on rank 2, white pawn should be on rank 1
+        (Color::White, 1u32)
+    };
+    
+    // Check left file (if not on file a)
+    if ep_file > 0 {
+        let pawn_sq = Square::from_u8_unchecked((pawn_rank * 8 + ep_file - 1) as u8);
+        if let Some(piece) = board.get_piece_at(pawn_sq) {
+            if piece.piece_type == PieceType::Pawn && piece.color == expected_color {
+                return Ok(());
+            }
+        }
+    }
+    
+    // Check right file (if not on file h)
+    if ep_file < 7 {
+        let pawn_sq = Square::from_u8_unchecked((pawn_rank * 8 + ep_file + 1) as u8);
+        if let Some(piece) = board.get_piece_at(pawn_sq) {
+            if piece.piece_type == PieceType::Pawn && piece.color == expected_color {
+                return Ok(());
+            }
+        }
+    }
+    
+    Err("Invalid FEN: No valid pawn for en passant capture".to_string())
 }

@@ -7,6 +7,8 @@
 pub mod evaluation;
 pub mod greedy;
 pub mod move_ordering;
+#[cfg(feature = "profiling")]
+pub mod profiler;
 pub mod search;
 pub mod transposition;
 

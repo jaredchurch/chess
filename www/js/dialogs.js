@@ -1,5 +1,18 @@
-window.moveHistoryCollapsed = window.moveHistoryCollapsed || false;
+// Copyright (c) 2026 Chess Core Team
+// Licensed under the MIT License. See LICENSE file in the project root for details.
+//
+// Dialogs Module - Game menu, FEN display, and panel management dialogs.
+//
 
+import { getGameStats } from './storage.js';
+
+window.moveHistoryCollapsed = window.moveHistoryCollapsed || false;
+window.getGameStats = getGameStats;
+
+/**
+ * Shows the game menu dialog with settings and game options
+ * Pre-fills form fields with current settings
+ */
 window.showGameMenu = function() {
     const existing = document.getElementById('game-menu-dialog');
     if (existing) { existing.remove(); return; }
@@ -45,6 +58,7 @@ window.showGameMenu = function() {
                 <input type="file" id="import-file" style="display:none" onchange="importHistory(this)">
                 <hr style="border-color:#4a5f7f;margin:15px 0;">
                 <button onclick="showFenDialog();" style="display:block;width:100%;margin:8px 0;padding:10px;">Show FEN</button>
+                <button onclick="showGameStats();" style="display:block;width:100%;margin:8px 0;padding:10px;">Game Statistics</button>
                 <hr style="border-color:#4a5f7f;margin:15px 0;">
                 <button onclick="flipBoard();" style="display:block;width:100%;margin:8px 0;padding:10px;">Rotate View</button>
             </div>
@@ -60,11 +74,20 @@ window.showGameMenu = function() {
     dialog.onclick = (e) => { if (e.target === dialog) closeGameMenu(); };
 };
 
+/**
+ * Closes the game menu dialog
+ */
 window.closeGameMenu = function() {
     const dialog = document.getElementById('game-menu-dialog');
     if (dialog) dialog.remove();
 };
 
+/**
+ * Toggles visibility of a panel (score card or move history)
+ * Also triggers board resize to adjust layout
+ * @param {string} id - Panel element ID
+ * @param {boolean} visible - Whether to show or hide the panel
+ */
 window.togglePanelDisplay = function(id, visible) {
     const el = document.getElementById(id);
     if (!el) return;
@@ -74,23 +97,36 @@ window.togglePanelDisplay = function(id, visible) {
         el.classList.add('panel-hidden');
     }
     requestAnimationFrame(() => {
-        if (typeof updateBoardSize === 'function') updateBoardSize();
+        if (typeof window.updateBoardSize === 'function') window.updateBoardSize();
     });
 };
 
-// Helper to check if panel is visible
+/**
+ * Checks if a panel is currently visible
+ * @param {string} id - Panel element ID
+ * @returns {boolean} True if panel is visible
+ */
 window.isPanelVisible = function(id) {
     const el = document.getElementById(id);
     if (!el) return false;
     return !el.classList.contains('panel-hidden');
 };
 
+/**
+ * Toggles board label visibility and saves preference to localStorage
+ * Also updates board display and triggers resize
+ * @param {boolean} visible - Whether to show board labels
+ */
 window.toggleBoardLabels = function(visible) {
     localStorage.setItem('chess_show_board_labels', visible ? 'true' : 'false');
-    if (typeof updateBoardLabels === 'function') updateBoardLabels();
-    if (typeof updateBoardSize === 'function') updateBoardSize();
+    if (typeof window.updateBoardLabels === 'function') window.updateBoardLabels();
+    if (typeof window.updateBoardSize === 'function') window.updateBoardSize();
 };
 
+/**
+ * Shows a dialog with the current FEN string
+ * Provides option to copy FEN to clipboard
+ */
 window.showFenDialog = function() {
     const existing = document.getElementById('fen-dialog');
     if (existing) { existing.remove(); return; }
@@ -110,7 +146,104 @@ window.showFenDialog = function() {
     dialog.onclick = (e) => { if (e.target === dialog) closeFenDialog(); };
 };
 
+/**
+ * Closes the FEN dialog
+ */
 window.closeFenDialog = function() {
     const dialog = document.getElementById('fen-dialog');
+    if (dialog) dialog.remove();
+};
+
+/**
+ * Shows game statistics dialog
+ * Displays total games, wins, losses, draws, and breakdown by result type
+ */
+window.showGameStats = function() {
+    const existing = document.getElementById('stats-dialog');
+    if (existing) { existing.remove(); return; }
+    
+    const stats = window.getGameStats(window.activeProfile?.id);
+    if (!stats) {
+        alert('No game history found or failed to load statistics.');
+        return;
+    }
+    
+    // Build result breakdown HTML
+    let resultRows = '';
+    if (stats.by_result) {
+        const resultLabels = {
+            'draw': 'Draw',
+            'win_white': 'White Win',
+            'win_black': 'Black Win',
+            'in_progress': 'In Progress'
+        };
+        for (const [result, count] of Object.entries(stats.by_result)) {
+            const label = resultLabels[result] || result;
+            resultRows += `<tr><td style="padding:5px 15px;text-align:left;">${label}</td><td style="padding:5px 15px;text-align:right;">${count}</td></tr>`;
+        }
+    }
+    
+    const dialog = document.createElement('div');
+    dialog.id = 'stats-dialog';
+    dialog.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.8);z-index:1000;display:flex;align-items:center;justify-content:center;';
+    dialog.innerHTML = `
+        <div style="background:#34495e;border-radius:10px;padding:20px;min-width:300px;max-width:90%;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;">
+                <div style="font-size:1.2em;font-weight:bold;">Game Statistics</div>
+                <button onclick="closeGameStats();" style="background:transparent;border:none;color:white;font-size:1.5em;cursor:pointer;">&times;</button>
+            </div>
+            <div style="background:#2c3e50;border-radius:5px;padding:15px;margin-bottom:15px;">
+                <div style="display:flex;justify-content:space-between;margin:8px 0;">
+                    <span>Total Games:</span>
+                    <span style="font-weight:bold;">${stats.total_games}</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;margin:8px 0;">
+                    <span>Wins:</span>
+                    <span style="font-weight:bold;color:#2ecc71;">${stats.wins}</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;margin:8px 0;">
+                    <span>Losses:</span>
+                    <span style="font-weight:bold;color:#e74c3c;">${stats.losses}</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;margin:8px 0;">
+                    <span>Draws:</span>
+                    <span style="font-weight:bold;color:#95a5a6;">${stats.draws}</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;margin:8px 0;">
+                    <span>Checkmates:</span>
+                    <span>${stats.checkmates}</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;margin:8px 0;">
+                    <span>Stalemates:</span>
+                    <span>${stats.stalemates}</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;margin:8px 0;">
+                    <span>In Progress:</span>
+                    <span>${stats.in_progress}</span>
+                </div>
+            </div>
+            <div style="font-size:0.9em;margin-bottom:10px;">Breakdown by Result:</div>
+            <table style="width:100%;border-collapse:collapse;font-size:0.9em;">
+                <thead>
+                    <tr style="border-bottom:1px solid #4a5f7f;">
+                        <th style="padding:5px 15px;text-align:left;">Result</th>
+                        <th style="padding:5px 15px;text-align:right;">Count</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${resultRows}
+                </tbody>
+            </table>
+        </div>
+    `;
+    document.body.appendChild(dialog);
+    dialog.onclick = (e) => { if (e.target === dialog) closeGameStats(); };
+};
+
+/**
+ * Closes the game statistics dialog
+ */
+window.closeGameStats = function() {
+    const dialog = document.getElementById('stats-dialog');
     if (dialog) dialog.remove();
 };

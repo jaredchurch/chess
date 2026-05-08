@@ -23,3 +23,6 @@ Thumbs.db
 # Temp folder
 tmp
 
+
+# Node.js dependencies
+node_modules/

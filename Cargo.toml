@@ -31,5 +31,8 @@ criterion = "0.5"
 name = "move_gen"
 harness = false
 
+[features]
+profiling = []
+
 [lib]
 crate-type = ["cdylib", "rlib"]

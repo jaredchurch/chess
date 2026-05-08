@@ -61,6 +61,49 @@ Benchmark results are saved to `target/criterion/` and can be compared across ru
 cargo bench --allow-dirty  # Run without requiring clean working tree
 ```
 
+### Search Profiling
+
+The engine includes an optional phase-level profiler to identify performance bottlenecks
+in the search algorithm. It measures time spent in each major phase (move generation,
+evaluation, sorting, transposition table ops, quiescence, etc.) using atomic counters.
+
+Enable with the `profiling` feature:
+
+```bash
+# Profile a depth-4 search from the starting position
+cargo run --release --features profiling --example profile_search -- 4
+
+# Custom depth and FEN
+cargo run --release --features profiling --example profile_search -- 5 startpos
+cargo run --release --features profiling --example profile_search -- 3 "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1"
+```
+
+The profile report shows call counts, wall time, percentage of total, and average
+nanoseconds per call for each phase:
+
+```
+======= SEARCH PROFILE =======
+Phase            Calls     Time(ms)     %Total    ns/call
+------------------------------------------------------------
+MoveGen            853       2.77ms     16.9%       3245
+Eval               832       0.57ms      3.5%        682
+Sort               851       1.43ms      8.7%       1682
+TTLookup          5392       2.24ms     13.6%        415
+TTStore            851       2.98ms     18.2%       3506
+IsInCheck         5242       0.00ms      0.0%          0
+CloneBoard        5773       0.00ms      0.0%          0
+MakeMove          5753       0.00ms      0.0%          0
+NullMove            20       0.00ms      0.0%          0
+Quiescence        4390       4.18ms     25.4%        951
+Total                0       0.00ms      0.0%          0
+Other/Overhd         -       2.25ms     13.7%          -
+------------------------------------------------------------
+Total: 5392 nodes | 328 nodes/ms | 328412 nodes/s | 0.02s wall
+```
+
+**Note**: The profiling feature adds measurement overhead (atomic ops + `Instant::now()`
+calls). Times are relative, not absolute. Use `--release` for realistic ratios.
+
 ### Running WASM Prototype
 The project includes a WebAssembly bridge and a basic web prototype in the `www/` directory.
 
