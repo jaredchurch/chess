@@ -31,8 +31,8 @@
 - [x] BUG31 - relates to BUG48 - now the 3D board appears to be fixed with black at front and does not rotate for white at front when user plays white.
 - [x] BUG32 - there are labels on the 3D board for files and ranks, the labels for files only appear on the white side of the board, I want the file labels (a-g) to appear on the side of the board closest to the camera.
 - [?] BUG33 - when I first select 3D mode in the setting dialog the viewport is very narrow and I have to subsequently refresh the board to get the full size viewport, modify so that the full size viewport is there immediately.
-- [ ] BUG34 - 
-- [ ] BUG35 - 
+- [ ] BUG34 - when I check the 3d Mode checkbox (refer line 57 in dailogs.js) the 3d board is tiny within the viewport and should be rendered filling the veiwport. If I do a page refresh after this then the size gets fixed.
+- [ ] BUG35 - when I realod a page and am playing black, the timers get out of sync and it times my move on white. ensure that the timers are correctly idenitfying which colour is having it's turn.
 - [ ] BUG36 - 
 - [ ] BUG37 - 
 - [ ] BUG38 - 
