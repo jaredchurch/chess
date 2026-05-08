@@ -34,6 +34,8 @@ export class ChessRenderer3D {
         this.mouse = new THREE.Vector2();
         this._disposed = false;
         this.boardColors = { light: 0xf5ece0, dark: 0x3d2b1f };
+        this.fileLabelsBottom = [];
+        this.fileLabelsTop = [];
     }
 
     init(container) {
@@ -91,6 +93,15 @@ export class ChessRenderer3D {
         if (this._boardWrap) {
             this._boardWrap.rotation.y = (side === 'black') ? Math.PI : 0;
         }
+
+        // Toggle file labels visibility so only the ones closest to camera are shown
+        // When side is 'white', bottom labels (z=5.0) are close, top labels (z=-5.0) are far.
+        // When side is 'black', the board is rotated 180 deg, so bottom labels (z=5.0 relative to board)
+        // are now at z=-5.0 in world space, and top labels are at z=5.0 in world space.
+        const showBottom = (side === 'white');
+        this.fileLabelsBottom.forEach(l => l.visible = showBottom);
+        this.fileLabelsTop.forEach(l => l.visible = !showBottom);
+
         this._frameBoard();
     }
 
@@ -164,16 +175,21 @@ export class ChessRenderer3D {
         const files = ['a','b','c','d','e','f','g','h'];
         const ranks = [1,2,3,4,5,6,7,8];
 
+        this.fileLabelsBottom = [];
+        this.fileLabelsTop = [];
+
         // Files along bottom (z = 5.0, near Rank 1) and top (z = -5.0, near Rank 8)
         for (let f = 0; f < 8; f++) {
             const x = f - 3.5;
             const bottom = this._makeLabelSprite(files[f]);
             bottom.position.set(x, 0.05, 5.0);
             this.boardGroup.add(bottom);
+            this.fileLabelsBottom.push(bottom);
 
             const top = this._makeLabelSprite(files[f]);
             top.position.set(x, 0.05, -5.0);
             this.boardGroup.add(top);
+            this.fileLabelsTop.push(top);
         }
 
         // Ranks along left (x = -4.5) and right (x = 4.5)
