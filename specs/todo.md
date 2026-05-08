@@ -35,7 +35,7 @@ Once we have worked through doing the spec for them, they should be marked as do
 - [ ] 32. 3d mode should be selectable through URL parameters.
 - [x] 33. focus on the board itself, not the pieces. currently all the squares on the board appear the same colour. I want you to write a test that can identify that all squares are the same colour and then modify to make sure that the white and black squares are differentiated from each other clearly (high contrast between the two). work hard on this and ensure you get to the end result.
 - [x] 34. Currently in 3D mode I cannot select and move pieces. please make that part work.
-- [ ] 35. add a new page that allows focus on the 3D models, showing one of each piece that can be viewed for the purposes of adjusting them, and also include 3d model of the board in there as well. this will also be used if developing a new 3D skin
+- [?] 35. add a new page that allows focus on the 3D models, showing one of each piece that can be viewed for the purposes of adjusting them, and also include 3d model of the board in there as well. this will also be used if developing a new 3D skin
 - [ ] 36. In 3D mode, pieces should slide smoothly across the board when moving.
 - [ ] 37. Give the black pieces more contrast from the light source. when close together (one in front of another) it's difficult to differentiate one from the other.
 - [ ] 38. give shadows from the light source for each piece.
