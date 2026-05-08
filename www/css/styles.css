@@ -303,3 +303,93 @@ button:hover { background: #2980b9; }
     background: #3498db;
     transform: scale(1.1);
 }
+
+/* 3D Mode Styles */
+#board-wrapper.mode-3d {
+    perspective: 900px;
+    perspective-origin: 50% 20%;
+    background: linear-gradient(180deg, #1a1a2e 0%, #2c3e50 40%, #16213e 100%);
+    border-radius: 12px;
+    padding: 30px 20px 10px;
+    margin: -10px;
+    position: relative;
+    overflow: visible;
+}
+
+/* Ground shadow beneath the board */
+#board-wrapper.mode-3d::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 5%;
+    width: 90%;
+    height: 50px;
+    background: radial-gradient(ellipse, rgba(0,0,0,0.35) 0%, transparent 70%);
+    transform: translateY(25px);
+    pointer-events: none;
+}
+
+/* 3D board tilt container */
+#board-wrapper.mode-3d .board-3d-scene {
+    transform: rotateX(35deg);
+    transform-style: preserve-3d;
+    display: inline-block;
+    box-shadow: 0 30px 60px rgba(0,0,0,0.35);
+    border-radius: 4px;
+}
+
+#board-wrapper.mode-3d #board {
+    transform-style: preserve-3d;
+    box-shadow: inset 0 0 0 4px #6b4c2a;
+    border: none;
+    border-radius: 2px 2px 0 0;
+}
+
+/* Wooden edge below the board for 3D depth */
+#board-wrapper.mode-3d .board-edge {
+    height: 14px;
+    background: linear-gradient(180deg, #6b4c2a 0%, #3d2b1f 100%);
+    border-radius: 0 0 3px 3px;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.square-3d {
+    transform: translateZ(2px);
+    transform-style: preserve-3d;
+}
+
+.square-3d.highlight {
+    transform: translateZ(4px);
+    box-shadow: 0 0 15px rgba(241, 196, 15, 0.6);
+}
+
+.piece-3d {
+    display: inline-block;
+    transform: translateZ(6px) scale(0.95);
+    transition: transform 0.15s ease;
+    filter: drop-shadow(1px 2px 3px rgba(0,0,0,0.4));
+    font-size: 0.9em;
+}
+
+.piece-3d.piece-white {
+    text-shadow:
+        0 1px 0 rgba(0,0,0,0.08),
+        0 2px 0 rgba(0,0,0,0.07),
+        0 3px 1px rgba(0,0,0,0.06),
+        0 4px 2px rgba(0,0,0,0.05),
+        0 5px 3px rgba(0,0,0,0.04),
+        0 6px 4px rgba(0,0,0,0.03),
+        0 7px 5px rgba(0,0,0,0.02);
+    color: var(--piece-white);
+}
+
+.piece-3d.piece-black {
+    text-shadow:
+        0 1px 0 rgba(0,0,0,0.15),
+        0 2px 0 rgba(0,0,0,0.13),
+        0 3px 1px rgba(0,0,0,0.11),
+        0 4px 2px rgba(0,0,0,0.09),
+        0 5px 3px rgba(0,0,0,0.07),
+        0 6px 4px rgba(0,0,0,0.05);
+    color: var(--piece-black);
+}

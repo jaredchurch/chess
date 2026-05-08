@@ -38,48 +38,50 @@ const SKIN_DEFINITIONS = [
         },
         pieceSet: { type: 'unicode' }
     },
-    {
-        id: '3d-classic',
-        name: '3D Classic',
-        type: '3d',
-        theme: {
-            whiteSquare: '#e8dcc8',
-            blackSquare: '#6b4c2a',
-            highlight: '#ffd700',
-            pieceWhite: '#ffffff',
-            pieceBlack: '#1a1a1a'
-        },
-        pieceSet: { type: 'unicode' }
-    },
-    {
-        id: 'pokemon',
-        name: 'Pokemon',
-        type: '2d',
-        theme: {
-            whiteSquare: '#78C850',
-            blackSquare: '#A8B820',
-            highlight: '#F8D030',
-            pieceWhite: '#ffffff',
-            pieceBlack: '#1a1a1a'
-        },
-        pieceSet: {
-            type: 'image',
-            mapping: {
-                'K': 'assets/skins/pokemon/pikachu_king.svg',
-                'Q': 'assets/skins/pokemon/mewtwo_queen.svg',
-                'R': 'assets/skins/pokemon/charizard_rook.svg',
-                'B': 'assets/skins/pokemon/jigglypuff_bishop.svg',
-                'N': 'assets/skins/pokemon/rapidash_knight.svg',
-                'P': 'assets/skins/pokemon/eevee_pawn.svg',
-                'k': 'assets/skins/pokemon/meowth_king.svg',
-                'q': 'assets/skins/pokemon/absol_queen.svg',
-                'r': 'assets/skins/pokemon/tyranitar_rook.svg',
-                'b': 'assets/skins/pokemon/haunter_bishop.svg',
-                'n': 'assets/skins/pokemon/sneasel_knight.svg',
-                'p': 'assets/skins/pokemon/zubat_pawn.svg'
-            }
-        }
-    }
+    // Disabled temporarily — needs proper 3D rendering via WebGL/Three.js
+    // {
+    //     id: '3d-classic',
+    //     name: '3D Classic',
+    //     type: '3d',
+    //     theme: {
+    //         whiteSquare: '#e8dcc8',
+    //         blackSquare: '#6b4c2a',
+    //         highlight: '#ffd700',
+    //         pieceWhite: '#ffffff',
+    //         pieceBlack: '#1a1a1a'
+    //     },
+    //     pieceSet: { type: 'unicode' }
+    // },
+    // // Disabled temporarily — needs proper image assets
+    // {
+    //     id: 'pokemon',
+    //     name: 'Pokemon',
+    //     type: '2d',
+    //     theme: {
+    //         whiteSquare: '#78C850',
+    //         blackSquare: '#A8B820',
+    //         highlight: '#F8D030',
+    //         pieceWhite: '#ffffff',
+    //         pieceBlack: '#1a1a1a'
+    //     },
+    //     pieceSet: {
+    //         type: 'image',
+    //         mapping: {
+    //             'K': 'assets/skins/pokemon/pikachu_king.svg',
+    //             'Q': 'assets/skins/pokemon/mewtwo_queen.svg',
+    //             'R': 'assets/skins/pokemon/charizard_rook.svg',
+    //             'B': 'assets/skins/pokemon/jigglypuff_bishop.svg',
+    //             'N': 'assets/skins/pokemon/rapidash_knight.svg',
+    //             'P': 'assets/skins/pokemon/eevee_pawn.svg',
+    //             'k': 'assets/skins/pokemon/meowth_king.svg',
+    //             'q': 'assets/skins/pokemon/absol_queen.svg',
+    //             'r': 'assets/skins/pokemon/tyranitar_rook.svg',
+    //             'b': 'assets/skins/pokemon/haunter_bishop.svg',
+    //             'n': 'assets/skins/pokemon/sneasel_knight.svg',
+    //             'p': 'assets/skins/pokemon/zubat_pawn.svg'
+    //         }
+    //     }
+    // }
 ];
 
 /**
@@ -182,6 +184,20 @@ export function switchSkin(skinId) {
 
     const infoPanel = document.getElementById('info-panel');
     if (infoPanel) infoPanel.style.display = is3d ? 'none' : '';
+
+    // Hide board labels in 3D mode (they don't work with perspective)
+    ['board-labels-top', 'board-labels-bottom', 'board-labels-left', 'board-labels-right'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = is3d ? 'none' : '';
+    });
+
+    // Force layout reflow so visibility changes take effect before sizing
+    document.body.offsetWidth;
+
+    // Recalculate board size BEFORE rendering so grid template is correct
+    if (typeof window.updateBoardSize === 'function') {
+        window.updateBoardSize();
+    }
 
     if (typeof renderBoard === 'function') renderBoard();
     return true;

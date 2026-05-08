@@ -22,3 +22,8 @@
 - [?] BUG22. sometimes when I start a new game the ranks are numbered reverse to what they should be. rank 1 should always be the rank that contains white king as the start of the game.
 - [x] BUG23. The option to display board at a point in move history isn't working.
 - [x] BUG24. Game stats have both "wins" and "checkmates" plus some other similar. this should get fixed.
+- [x] BUG25. when changing the skin the board often gets extra rows in it - validate that the board drawing works correctly.
+- [?] BUG26. The 3D skin doesn't work at all, it should give a view looking down at the board from an angle and the pieces should have 3 dimensions to them.
+- [x] BUG27. pokemon theme pieces dont move properly. this is dependent on bug28 being resolved.
+- [x] BUG28. when I click on a piece to move it the board gets messed up. ensure that it always remains as an 8 by 8 board with only the playing pieces displayed on it in their correct location.
+- [x] BUG29. I have to reload the page to see a move after it's made, it doesn't refresh properly on move.

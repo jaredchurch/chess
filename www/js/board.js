@@ -140,22 +140,31 @@ export function renderBoard() {
     skinRegistry.applyActive();
 
     const activeSkin = skinRegistry.getActive();
+    const is3d = activeSkin && activeSkin.type === '3d';
 
-    // 3D mode bridge - show placeholder when 3D skin is active
-    if (activeSkin && activeSkin.type === '3d') {
-        boardEl.innerHTML = '';
-        boardEl.style.display = 'grid';
-        boardEl.style.placeItems = 'center';
-        boardEl.style.background = '#2c3e50';
-        const placeholder = document.createElement('div');
-        placeholder.style.textAlign = 'center';
-        placeholder.style.color = '#95a5a6';
-        placeholder.style.padding = '40px';
-        placeholder.innerHTML = '<div style="font-size:2em;margin-bottom:10px;">🎮</div><div style="font-size:1.2em;">3D Mode</div><div style="font-size:0.9em;margin-top:5px;">Select a 2D skin to play</div>';
-        boardEl.appendChild(placeholder);
+    // Toggle 3D mode class on board wrapper
+    const boardWrapper = document.getElementById('board-wrapper');
+    if (boardWrapper) {
+        boardWrapper.classList.toggle('mode-3d', is3d);
+    }
+
+    if (is3d) {
+        renderBoard3d(boardEl);
         return;
     }
 
+    // When switching FROM 3D mode, restore board element to wrapper
+    const scene = boardWrapper ? boardWrapper.querySelector('.board-3d-scene') : null;
+    if (scene && scene.contains(boardEl)) {
+        boardWrapper.appendChild(boardEl);
+        scene.remove();
+    }
+
+    boardEl.innerHTML = '';
+
+    // Reset any 3D styles that may have leaked from 3D mode
+    boardEl.style.placeItems = '';
+    boardEl.style.background = '';
     boardEl.style.display = 'grid';
 
     const useImagePieces = activeSkin && activeSkin.pieceSet && activeSkin.pieceSet.type === PIECE_TYPES.IMAGE;
@@ -176,22 +185,73 @@ export function renderBoard() {
             
             const piece = pieces[squareName];
             if (piece) {
+                squareEl.classList.add(piece === piece.toUpperCase() ? 'piece-white' : 'piece-black');
                 const imgSrc = pieceMapping[piece];
                 if (useImagePieces && imgSrc) {
                     const img = document.createElement('img');
                     img.src = imgSrc;
                     img.alt = piece;
-                    img.style.width = '80%';
-                    img.style.height = '80%';
+                    img.style.width = '100%';
+                    img.style.height = '100%';
                     img.style.objectFit = 'contain';
+                    img.style.pointerEvents = 'none';
                     img.onerror = function() {
-                        this.outerHTML = pieceUnicode[piece];
+                        this.replaceWith(pieceUnicode[piece]);
                     };
                     squareEl.appendChild(img);
                 } else {
                     squareEl.innerText = pieceUnicode[piece];
-                    squareEl.classList.add(piece === piece.toUpperCase() ? 'piece-white' : 'piece-black');
                 }
+            }
+
+            squareEl.onclick = () => handleSquareClick(squareName);
+            boardEl.appendChild(squareEl);
+        });
+    });
+}
+
+/**
+ * Renders a 3D perspective view of the board using CSS 3D transforms.
+ * Creates a tilted isometric view with a visible board edge and 3D-extruded pieces.
+ */
+function renderBoard3d(boardEl) {
+    boardEl.innerHTML = '';
+
+    // Create 3D scene container that wraps board + edge together
+    let scene = boardEl.parentNode.querySelector('.board-3d-scene');
+    if (!scene) {
+        scene = document.createElement('div');
+        scene.className = 'board-3d-scene';
+        boardEl.parentNode.insertBefore(scene, boardEl);
+    }
+    scene.appendChild(boardEl);
+
+    // Create and append the board edge (visible 3D thickness)
+    let edge = scene.querySelector('.board-edge');
+    if (!edge) {
+        edge = document.createElement('div');
+        edge.className = 'board-edge';
+    }
+    scene.appendChild(edge);
+
+    const pieces = parseFenPieces(window.currentFen);
+
+    const ranks = window.boardOrientation === 'white' ? [7, 6, 5, 4, 3, 2, 1, 0] : [0, 1, 2, 3, 4, 5, 6, 7];
+    const files = window.boardOrientation === 'white' ? [0, 1, 2, 3, 4, 5, 6, 7] : [7, 6, 5, 4, 3, 2, 1, 0];
+
+    ranks.forEach((rank, ri) => {
+        files.forEach((file, fi) => {
+            const squareName = String.fromCharCode(97 + file) + (rank + 1);
+            const squareEl = document.createElement('div');
+            squareEl.className = `square square-3d ${(ri + fi) % 2 === 0 ? 'black-square' : 'white-square'}`;
+            if (window.selectedSquare === squareName) squareEl.classList.add('highlight');
+
+            const piece = pieces[squareName];
+            if (piece) {
+                const pieceEl = document.createElement('span');
+                pieceEl.className = `piece-3d ${piece === piece.toUpperCase() ? 'piece-white' : 'piece-black'}`;
+                pieceEl.textContent = pieceUnicode[piece];
+                squareEl.appendChild(pieceEl);
             }
 
             squareEl.onclick = () => handleSquareClick(squareName);
@@ -334,21 +394,22 @@ export function renderPreviewBoard(boardEl, fen, highlightFrom, highlightTo) {
             
             const piece = pieces[squareName];
             if (piece) {
+                squareEl.classList.add(piece === piece.toUpperCase() ? 'piece-white' : 'piece-black');
                 const imgSrc = pieceMapping[piece];
                 if (useImagePieces && imgSrc) {
                     const img = document.createElement('img');
                     img.src = imgSrc;
                     img.alt = piece;
-                    img.style.width = '80%';
-                    img.style.height = '80%';
+                    img.style.width = '100%';
+                    img.style.height = '100%';
                     img.style.objectFit = 'contain';
+                    img.style.pointerEvents = 'none';
                     img.onerror = function() {
-                        this.outerHTML = pieceUnicode[piece];
+                        this.replaceWith(pieceUnicode[piece]);
                     };
                     squareEl.appendChild(img);
                 } else {
                     squareEl.innerText = pieceUnicode[piece];
-                    squareEl.classList.add(piece === piece.toUpperCase() ? 'piece-white' : 'piece-black');
                 }
             }
 
