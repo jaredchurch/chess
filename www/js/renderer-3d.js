@@ -164,11 +164,15 @@ export class ChessRenderer3D {
         const files = ['a','b','c','d','e','f','g','h'];
         const ranks = [1,2,3,4,5,6,7,8];
 
-        // Files along top (z = 4.5, above board centre row)
+        // Files along bottom (z = 5.0, near Rank 1) and top (z = -5.0, near Rank 8)
         for (let f = 0; f < 8; f++) {
             const x = f - 3.5;
+            const bottom = this._makeLabelSprite(files[f]);
+            bottom.position.set(x, 0.05, 5.0);
+            this.boardGroup.add(bottom);
+
             const top = this._makeLabelSprite(files[f]);
-            top.position.set(x, 0.05, 5.0);
+            top.position.set(x, 0.05, -5.0);
             this.boardGroup.add(top);
         }
 

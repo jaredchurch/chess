@@ -28,8 +28,8 @@
 - [x] BUG28. when I click on a piece to move it the board gets messed up. ensure that it always remains as an 8 by 8 board with only the playing pieces displayed on it in their correct location.
 - [x] BUG29. I have to reload the page to see a move after it's made, it doesn't refresh properly on move.
 - [x] BUG30. The top of the 3d container view port and the top of the score-card should be aligned. they are not, the container is above the top of the score card.
-- [ ] BUG31 - relates to BUG48 - now the 3D board appears to be fixed with black at front and does not rotate for white at front when user plays white.
-- [ ] BUG32 - 
+- [x] BUG31 - relates to BUG48 - now the 3D board appears to be fixed with black at front and does not rotate for white at front when user plays white.
+- [x] BUG32 - there are labels on the 3D board for files and ranks, the labels for files only appear on the white side of the board, I want the file labels (a-g) to appear on the side of the board closest to the camera.
 - [ ] BUG33 - 
 - [ ] BUG34 - 
 - [ ] BUG35 - 
@@ -45,6 +45,6 @@
 - [ ] BUG45 - board_outline should also be drawn on 2D boards.
 - [ ] BUG46 - when a skin is selected the setting dialog should not exit automatically. as with all other settings the dialog should remain open until the user click outside the dialog
 - [x] BUG47 - the outline around the 3D board should be turned off if the url param is not set.
-- [?] BUG48 - in 3D skin, board should present the colour being played by the player at the bottom of the screen. right now if I play black I see white at bottom of screen and black at top of screen - board needs to be rotated 180 degrees. Refer bug 31 as well.
+- [x] BUG48 - in 3D skin, board should present the colour being played by the player at the bottom of the screen. right now if I play black I see white at bottom of screen and black at top of screen - board needs to be rotated 180 degrees. Refer bug 31 as well.
 - [ ] BUG49 - when user clicks on a square it will only highlight if that square contains a valid piece for that user. If that piece cannot be moved for some reason, then it should highlight red outline instead of yellow. Also, make the highlight always just outline rather than solid colour.
 - [x] BUG50 - In 3D skin, remove labels that are outside of the viewport, only labels inside the viewport should exist in 3D mode. Ensure that you don't impact the labels in 2D mode when you fix this.
