@@ -26,3 +26,6 @@ tmp
 
 # Node.js dependencies
 node_modules/
+
+# Ignore spec kit files
+.specify/
