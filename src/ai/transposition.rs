@@ -80,16 +80,8 @@ impl TranspositionTable {
             if entry.depth >= depth {
                 match entry.entry_type {
                     TT_EXACT => return (Some(entry.score), best_move),
-                    TT_LOWER_BOUND => {
-                        if entry.score >= beta {
-                            return (Some(entry.score), best_move);
-                        }
-                    }
-                    TT_UPPER_BOUND => {
-                        if entry.score <= alpha {
-                            return (Some(entry.score), best_move);
-                        }
-                    }
+                    TT_LOWER_BOUND if entry.score >= beta => return (Some(entry.score), best_move),
+                    TT_UPPER_BOUND if entry.score <= alpha => return (Some(entry.score), best_move),
                     _ => {}
                 }
             }

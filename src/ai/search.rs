@@ -774,8 +774,8 @@ fn quiescence(board: &Board, mut alpha: i32, beta: i32, start_time: f64, q_depth
     for i in 0..limit {
         let mut best = i;
         let mut best_score = score_capture(&captures[i], board);
-        for j in (i + 1)..captures.len() {
-            let s = score_capture(&captures[j], board);
+        for (j, capture) in captures.iter().enumerate().skip(i + 1) {
+            let s = score_capture(capture, board);
             if s > best_score {
                 best_score = s;
                 best = j;
@@ -787,13 +787,11 @@ fn quiescence(board: &Board, mut alpha: i32, beta: i32, start_time: f64, q_depth
     }
 
     let mut best_value = stand_pat;
-    for i in 0..limit {
+    for &m in captures.iter().take(limit) {
         // Check timeout during quiescence search
         if check_timeout_full(start_time).is_some() {
             return best_value;
         }
-
-        let m = captures[i];
 
         // Legality check: clone, make move, ensure king not in check.
         // We defer this from move generation to avoid cloning every
