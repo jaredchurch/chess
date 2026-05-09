@@ -272,13 +272,13 @@ export class ChessRenderer3D {
         add(new THREE.CylinderGeometry(0.26, 0.28, 0.06, 8), 0.03);
         add(new THREE.CylinderGeometry(0.20, 0.24, 0.6, 8), 0.36);
         add(new THREE.CylinderGeometry(0.24, 0.24, 0.05, 8), 0.70);
-        add(new THREE.CylinderGeometry(0.14, 0.16, 0.25, 8), 0.88);
-        const plat = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.06, 0.48), mat);
-        plat.position.y = 1.08;
+        const plat = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.26, 0.06, 12), mat);
+        plat.position.y = 0.755;
         group.add(plat);
-        for (const [dx, dz] of [[-0.18,-0.18], [0.18,-0.18], [-0.18,0.18], [0.18,0.18]]) {
-            const b = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.12, 0.07), mat);
-            b.position.set(dx, 1.19, dz);
+        for (let i = 0; i < 8; i++) {
+            const a = (i / 8) * Math.PI * 2;
+            const b = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.10, 0.06), mat);
+            b.position.set(Math.cos(a) * 0.20, 0.845, Math.sin(a) * 0.20);
             group.add(b);
         }
     }
