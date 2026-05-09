@@ -193,10 +193,16 @@ export function renderBoard() {
             const el = document.getElementById(id);
             if (el) el.style.display = 'none';
         });
+        document.querySelectorAll('.label-corner').forEach(el => {
+            el.style.display = 'none';
+        });
     } else {
         ['board-labels-top', 'board-labels-bottom', 'board-labels-left', 'board-labels-right'].forEach(id => {
             const el = document.getElementById(id);
             if (el) el.style.display = '';
+        });
+        document.querySelectorAll('.label-corner').forEach(el => {
+            el.style.display = '';
         });
     }
 
@@ -216,6 +222,12 @@ export function renderBoard() {
     }
     const r3d = document.getElementById('renderer-3d-container');
     if (r3d) r3d.remove();
+
+    // Reset board-container positioning from 3D mode (BUG35)
+    const boardContainer = document.getElementById('board-container');
+    if (boardContainer) {
+        boardContainer.style.position = '';
+    }
 
     boardEl.innerHTML = '';
 
@@ -276,10 +288,22 @@ function renderBoard3d(boardEl) {
     let container = document.getElementById('renderer-3d-container');
 
     if (!container) {
-        console.log('function renderBoard3d: Creating 3D renderer container');
         boardEl.innerHTML = '';
+
+        // Make board-container the positioning parent so the 3D container
+        // can use absolute positioning to bypass CSS grid auto-sizing (BUG35)
+        const boardContainer = document.getElementById('board-container');
+        if (boardContainer && boardContainer.style.position !== 'relative') {
+            boardContainer.style.position = 'relative';
+        }
+
         container = document.createElement('div');
         container.id = 'renderer-3d-container';
+        container.style.position = 'absolute';
+        container.style.top = '0';
+        container.style.left = '0';
+        container.style.width = '100%';
+        container.style.height = '100%';
         // Board outline: only show if URL param is set (BUG50 fix)
         const showOutline = new URLSearchParams(window.location.search).has('board_outline');
         if (showOutline) {
@@ -287,11 +311,8 @@ function renderBoard3d(boardEl) {
             overlay.className = 'board-outline-overlay';
             container.appendChild(overlay);
         }
-        console.log('Container1 WxH:', container.clientWidth, 'x', container.clientHeight);
         boardEl.appendChild(container);
-        console.log('Container2 WxH:', container.clientWidth, 'x', container.clientHeight);
         const renderer = createRenderer(container);
-        console.log('Renderer WxH:', renderer.container.clientWidth, 'x', renderer.container.clientHeight);
 
         window._chessRenderer = renderer;
         renderer.onSquareClick = (square) => handleSquareClick(square);
@@ -305,7 +326,6 @@ function renderBoard3d(boardEl) {
         renderer.setSelection(window.selectedSquare);
     }
 
-    console.log('Container created with WxH:', renderer.container.clientWidth, 'x', renderer.container.clientHeight);
     renderer.resize();
 }
 

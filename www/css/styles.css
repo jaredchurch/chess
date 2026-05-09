@@ -395,7 +395,7 @@ button:hover { background: #2980b9; }
     background: transparent;
     padding: 0;
     margin: 0;
-    position: relative;
+    position: static;
     display: flex !important; /* Use flex to fill container */
     flex: 1;
     width: 100%;
