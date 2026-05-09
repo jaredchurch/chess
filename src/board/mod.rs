@@ -210,12 +210,12 @@ impl Board {
         if m.flag == MoveFlag::DoublePawnPush {
             // Calculate the en passant square (the square the pawn skipped over)
             let ep_idx = if piece.color == Color::White {
-                m.from.as_u32() + 8  // White moved up, EP is one square forward
+                m.from.as_u32() + 8 // White moved up, EP is one square forward
             } else {
-                m.from.as_u32() - 8  // Black moved down, EP is one square back
+                m.from.as_u32() - 8 // Black moved down, EP is one square back
             };
             let ep_sq = Square::from_u8_unchecked(ep_idx as u8);
-            
+
             // Check if there's an opposing pawn on an adjacent file that can capture.
             // The capturing pawn sits on the DESTINATION rank of the double push,
             // which is one rank above (white) or below (black) the EP square.
@@ -223,7 +223,7 @@ impl Board {
             let ep_file = (ep_idx % 8) as i8;
             let capture_rank_offset: i32 = if piece.color == Color::White { 8 } else { -8 };
             let mut can_capture = false;
-            
+
             // Check left file (if not on file a)
             if ep_file > 0 {
                 let check_idx = (ep_idx as i32 + capture_rank_offset - 1) as u32;
@@ -234,7 +234,7 @@ impl Board {
                     }
                 }
             }
-            
+
             // Check right file (if not on file h)
             if ep_file < 7 {
                 let check_idx = (ep_idx as i32 + capture_rank_offset + 1) as u32;
@@ -245,7 +245,7 @@ impl Board {
                     }
                 }
             }
-            
+
             // Only set EP square if there's a pawn that can capture
             if can_capture {
                 self.en_passant_square = Some(ep_sq);
