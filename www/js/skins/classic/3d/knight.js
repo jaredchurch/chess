@@ -15,11 +15,11 @@ import * as THREE from 'three';
 export function buildKnight(group, mat) {
     const add = (geo, y) => { const m = new THREE.Mesh(geo, mat); m.position.y = y; group.add(m); };
     // BASE: Cylinder (r=0.24, h=0.06) at y=0.03
-    add(new THREE.CylinderGeometry(0.24, 0.28, 0.06, 8), 0.03);
+    add(new THREE.CylinderGeometry(0.24, 0.28, 0.06, 24), 0.03);
     // NECK: Cylinder (r=0.16, h=0.22) at y=0.36
-    add(new THREE.CylinderGeometry(0.16, 0.22, 0.5, 8), 0.30);
+    add(new THREE.CylinderGeometry(0.16, 0.22, 0.5, 24), 0.30);
     // CHEST: Cylinder (r=0.12, h=0.15) at y=0.56
-    add(new THREE.CylinderGeometry(0.12, 0.14, 0.15, 8), 0.56);
+    add(new THREE.CylinderGeometry(0.12, 0.14, 0.15, 24), 0.56);
     // HEAD: Box (0.28x0.18x0.18) at (0.04, 0.75, -0.02), rotated z=0.08, x=0.15
     const head = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.18, 0.18), mat);
     head.position.set(0.04, 0.75, -0.02);
