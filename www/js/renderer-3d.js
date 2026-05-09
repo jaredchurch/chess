@@ -7,6 +7,12 @@
 //
 
 import * as THREE from 'three';
+import { buildPawn } from './skins/classic/3d/pawn.js';
+import { buildRook } from './skins/classic/3d/rook.js';
+import { buildKnight } from './skins/classic/3d/knight.js';
+import { buildBishop } from './skins/classic/3d/bishop.js';
+import { buildQueen } from './skins/classic/3d/queen.js';
+import { buildKing } from './skins/classic/3d/king.js';
 
 const WHITE_MAT = { color: 0xf0f0f0, roughness: 0.25, metalness: 0.05 };
 const BLACK_MAT = { color: 0x333333, roughness: 0.45, metalness: 0.1  };
@@ -257,102 +263,14 @@ export class ChessRenderer3D {
         this._createBoard();
     }
 
-    // ---- Low-poly piece builders ----
+    // ---- Low-poly piece builders (delegated to skins/classic/3d/) ----
 
-    _buildPawn(group, mat) {
-        const add = (geo, y) => { const m = new THREE.Mesh(geo, mat); m.position.y = y; group.add(m); };
-        add(new THREE.CylinderGeometry(0.24, 0.28, 0.06, 8), 0.03);
-        add(new THREE.CylinderGeometry(0.14, 0.22, 0.55, 8), 0.34);
-        add(new THREE.SphereGeometry(0.14, 6, 5), 0.74);
-        add(new THREE.SphereGeometry(0.10, 6, 5), 0.88);
-    }
-
-    _buildRook(group, mat) {
-        const add = (geo, y) => { const m = new THREE.Mesh(geo, mat); m.position.y = y; group.add(m); };
-        add(new THREE.CylinderGeometry(0.26, 0.28, 0.06, 8), 0.03);
-        add(new THREE.CylinderGeometry(0.20, 0.24, 0.6, 8), 0.36);
-        add(new THREE.CylinderGeometry(0.24, 0.24, 0.05, 8), 0.70);
-        const plat = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.26, 0.06, 12), mat);
-        plat.position.y = 0.755;
-        group.add(plat);
-        for (let i = 0; i < 8; i++) {
-            const a = (i / 8) * Math.PI * 2;
-            const b = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.10, 0.06), mat);
-            b.position.set(Math.cos(a) * 0.20, 0.845, Math.sin(a) * 0.20);
-            group.add(b);
-        }
-    }
-
-    _buildKnight(group, mat) {
-        const add = (geo, y) => { const m = new THREE.Mesh(geo, mat); m.position.y = y; group.add(m); };
-        add(new THREE.CylinderGeometry(0.24, 0.28, 0.06, 8), 0.03);
-        add(new THREE.CylinderGeometry(0.16, 0.22, 0.5, 8), 0.30);
-        add(new THREE.CylinderGeometry(0.12, 0.14, 0.15, 8), 0.56);
-        const head = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.18, 0.18), mat);
-        head.position.set(0.04, 0.75, -0.02);
-        head.rotation.z = 0.08;
-        head.rotation.x = 0.15;
-        group.add(head);
-        const ear = new THREE.Mesh(new THREE.ConeGeometry(0.035, 0.12, 5), mat);
-        ear.position.set(0.10, 0.88, 0.03);
-        ear.rotation.z = -0.15;
-        ear.rotation.x = 0.25;
-        group.add(ear);
-    }
-
-    _buildBishop(group, mat) {
-        const add = (geo, y) => { const m = new THREE.Mesh(geo, mat); m.position.y = y; group.add(m); };
-        add(new THREE.CylinderGeometry(0.24, 0.28, 0.06, 8), 0.03);
-        add(new THREE.CylinderGeometry(0.16, 0.22, 0.5, 8), 0.30);
-        add(new THREE.CylinderGeometry(0.16, 0.18, 0.05, 8), 0.58);
-        add(new THREE.CylinderGeometry(0.08, 0.10, 0.22, 6), 0.70);
-        add(new THREE.ConeGeometry(0.08, 0.26, 6), 0.92);
-    }
-
-    _buildQueen(group, mat) {
-        const add = (geo, y) => { const m = new THREE.Mesh(geo, mat); m.position.y = y; group.add(m); };
-        add(new THREE.CylinderGeometry(0.24, 0.28, 0.06, 8), 0.03);
-        add(new THREE.CylinderGeometry(0.16, 0.22, 0.5, 8), 0.30);
-        add(new THREE.CylinderGeometry(0.18, 0.20, 0.05, 8), 0.58);
-        add(new THREE.CylinderGeometry(0.08, 0.10, 0.3, 6), 0.73);
-        const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.18, 0.06, 8), mat);
-        crown.position.y = 0.93;
-        group.add(crown);
-        const n = 6;
-        for (let i = 0; i < n; i++) {
-            const a = (i / n) * Math.PI * 2;
-            const p = new THREE.Mesh(new THREE.ConeGeometry(0.025, 0.12, 4), mat);
-            p.position.set(Math.cos(a) * 0.16, 1.02, Math.sin(a) * 0.16);
-            group.add(p);
-        }
-        const top = new THREE.Mesh(new THREE.SphereGeometry(0.05, 6, 5), mat);
-        top.position.y = 1.12;
-        group.add(top);
-    }
-
-    _buildKing(group, mat) {
-        const add = (geo, y) => { const m = new THREE.Mesh(geo, mat); m.position.y = y; group.add(m); };
-        add(new THREE.CylinderGeometry(0.24, 0.28, 0.06, 8), 0.03);
-        add(new THREE.CylinderGeometry(0.16, 0.22, 0.55, 8), 0.32);
-        add(new THREE.CylinderGeometry(0.18, 0.20, 0.05, 8), 0.63);
-        add(new THREE.CylinderGeometry(0.08, 0.10, 0.3, 6), 0.78);
-        const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.20, 0.06, 8), mat);
-        crown.position.y = 0.98;
-        group.add(crown);
-        const n = 5;
-        for (let i = 0; i < n; i++) {
-            const a = (i / n) * Math.PI * 2;
-            const p = new THREE.Mesh(new THREE.ConeGeometry(0.025, 0.10, 4), mat);
-            p.position.set(Math.cos(a) * 0.18, 1.07, Math.sin(a) * 0.18);
-            group.add(p);
-        }
-        const vert = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.32, 0.05), mat);
-        vert.position.y = 1.26;
-        group.add(vert);
-        const horiz = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.05, 0.05), mat);
-        horiz.position.y = 1.24;
-        group.add(horiz);
-    }
+    _buildPawn(group, mat) { buildPawn(group, mat); }
+    _buildRook(group, mat) { buildRook(group, mat); }
+    _buildKnight(group, mat) { buildKnight(group, mat); }
+    _buildBishop(group, mat) { buildBishop(group, mat); }
+    _buildQueen(group, mat) { buildQueen(group, mat); }
+    _buildKing(group, mat) { buildKing(group, mat); }
 
     // ---- Public API ----
 
@@ -384,10 +302,10 @@ export class ChessRenderer3D {
             const grp = new THREE.Group();
             const type = ch.toUpperCase();
             const builders = {
-                P: this._buildPawn, R: this._buildRook, N: this._buildKnight,
-                B: this._buildBishop, Q: this._buildQueen, K: this._buildKing,
+                P: buildPawn, R: buildRook, N: buildKnight,
+                B: buildBishop, Q: buildQueen, K: buildKing,
             };
-            (builders[type] || this._buildPawn).call(this, grp, mat);
+            (builders[type] || buildPawn)(grp, mat);
             grp.traverse(child => { if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; } });
 
             const pos = this._squareToPos(sq);
@@ -432,10 +350,10 @@ export class ChessRenderer3D {
         const mat = new THREE.MeshStandardMaterial({ ...opts, flatShading: true });
         const grp = new THREE.Group();
         const builders = {
-            P: this._buildPawn, R: this._buildRook, N: this._buildKnight,
-            B: this._buildBishop, Q: this._buildQueen, K: this._buildKing,
+            P: buildPawn, R: buildRook, N: buildKnight,
+            B: buildBishop, Q: buildQueen, K: buildKing,
         };
-        (builders[typeUpper] || this._buildPawn).call(this, grp, mat);
+        (builders[typeUpper] || buildPawn)(grp, mat);
         grp.traverse(child => { if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; } });
         const box = new THREE.Box3().setFromObject(grp);
         const center = box.getCenter(new THREE.Vector3());

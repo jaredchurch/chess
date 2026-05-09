@@ -1,0 +1,24 @@
+// Copyright (c) 2026 Chess Core Team
+// Licensed under the MIT License. See LICENSE file in the project root for details.
+//
+// Classic 3D Pawn - Low-poly pawn piece geometry builder.
+// Components (from bottom to top):
+//   BASE: Cylinder (r=0.24, h=0.06) at y=0.03
+//   NECK: Cylinder (r=0.14, h=0.22) at y=0.34
+//   BODY: Sphere (r=0.14) at y=0.74
+//   KNOB: Sphere (r=0.10) at y=0.88
+//
+
+import * as THREE from 'three';
+
+export function buildPawn(group, mat) {
+    const add = (geo, y) => { const m = new THREE.Mesh(geo, mat); m.position.y = y; group.add(m); };
+    // BASE: Cylinder (r=0.24, h=0.06) at y=0.03
+    add(new THREE.CylinderGeometry(0.24, 0.28, 0.06, 8), 0.03);
+    // NECK: Cylinder (r=0.14, h=0.22) at y=0.34
+    add(new THREE.CylinderGeometry(0.14, 0.22, 0.55, 8), 0.34);
+    // BODY: Sphere (r=0.14) at y=0.74
+    add(new THREE.SphereGeometry(0.14, 6, 5), 0.74);
+    // KNOB: Sphere (r=0.10) at y=0.88
+    add(new THREE.SphereGeometry(0.10, 6, 5), 0.88);
+}
