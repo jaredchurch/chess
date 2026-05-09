@@ -51,6 +51,8 @@ export class ChessRenderer3D {
         this.renderer = new THREE.WebGLRenderer({ antialias: true });
         this.renderer.setSize(w, h);
         this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        this.renderer.shadowMap.enabled = true;
+        this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         container.appendChild(this.renderer.domElement);
 
         this._setupLights();
@@ -110,6 +112,16 @@ export class ChessRenderer3D {
         this.scene.add(this.ambientLight);
         this.mainLight = new THREE.DirectionalLight(0xffffff, 1.8);
         this.mainLight.position.set(5, 15, 10);
+        this.mainLight.castShadow = true;
+        this.mainLight.shadow.mapSize.width = 2048;
+        this.mainLight.shadow.mapSize.height = 2048;
+        this.mainLight.shadow.camera.near = 0.5;
+        this.mainLight.shadow.camera.far = 30;
+        this.mainLight.shadow.camera.left = -8;
+        this.mainLight.shadow.camera.right = 8;
+        this.mainLight.shadow.camera.top = 8;
+        this.mainLight.shadow.camera.bottom = -8;
+        this.mainLight.shadow.bias = -0.001;
         this.scene.add(this.mainLight);
         this.fillLight = new THREE.DirectionalLight(0x8888cc, 0.3);
         this.fillLight.position.set(-3, 5, -5);
@@ -131,12 +143,11 @@ export class ChessRenderer3D {
             for (let f = 0; f < 8; f++) {
                 const isLight = (r + f) % 2 !== 0;
                 const color = isLight ? this.boardColors.light : this.boardColors.dark;
-                const mat = new THREE.MeshBasicMaterial({ color });
+                const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.6, metalness: 0 });
                 const geo = new THREE.BoxGeometry(1, 0.04, 1);
                 const mesh = new THREE.Mesh(geo, mat);
-                const x = f - 3.5;
-                const z = -(r - 3.5);
-                mesh.position.set(x, 0, z);
+                mesh.position.set(f - 3.5, 0, -(r - 3.5));
+                mesh.receiveShadow = true;
                 mesh.userData.square = String.fromCharCode(97 + f) + (r + 1);
                 this.boardGroup.add(mesh);
                 this.squareMeshes.push(mesh);
@@ -144,10 +155,11 @@ export class ChessRenderer3D {
             }
         }
 
-        const bMat = new THREE.MeshBasicMaterial({ color: 0x5c3a1e });
+        const bMat = new THREE.MeshStandardMaterial({ color: 0x5c3a1e, roughness: 0.8, metalness: 0 });
         const bGeo = new THREE.BoxGeometry(8.6, 0.12, 8.6);
         const border = new THREE.Mesh(bGeo, bMat);
         border.position.set(0, -0.08, 0);
+        border.receiveShadow = true;
         this.boardGroup.add(border);
 
         this._createLabels();
@@ -376,6 +388,7 @@ export class ChessRenderer3D {
                 B: this._buildBishop, Q: this._buildQueen, K: this._buildKing,
             };
             (builders[type] || this._buildPawn).call(this, grp, mat);
+            grp.traverse(child => { if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; } });
 
             const pos = this._squareToPos(sq);
             grp.position.set(pos.x, 0, pos.z);
@@ -423,6 +436,7 @@ export class ChessRenderer3D {
             B: this._buildBishop, Q: this._buildQueen, K: this._buildKing,
         };
         (builders[typeUpper] || this._buildPawn).call(this, grp, mat);
+        grp.traverse(child => { if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; } });
         const box = new THREE.Box3().setFromObject(grp);
         const center = box.getCenter(new THREE.Vector3());
         grp.position.sub(center);
@@ -450,7 +464,10 @@ export class ChessRenderer3D {
         this.camera.fov = isPiece ? 29 : 28;
         this.camera.updateProjectionMatrix();
         this._boardWrap.rotation.set(0, 0, 0);
-        this._frameBoard();
+        // Only auto-frame the board in full/board mode — in piece mode
+        // there is no board visible and the close camera would produce
+        // an extreme FOV from projecting empty board corners
+        if (!isPiece) this._frameBoard();
     }
 
     getCameraPosition() {
