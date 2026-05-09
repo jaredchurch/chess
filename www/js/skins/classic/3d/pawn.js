@@ -18,9 +18,12 @@ export function buildPawn(group, mat) {
     // NECK: Cylinder (r=0.14, h=0.22) at y=0.34
     add(new THREE.CylinderGeometry(0.14, 0.22, 0.40, 64), 0.2);
     // NECK: Cylinder (r=0.14, h=0.22) at y=0.34
-    add(new THREE.CylinderGeometry(0.08, 0.18, 0.1, 64), 0.45);
+    const torus = new THREE.Mesh(new THREE.TorusGeometry(0.13, 0.05, 100,100), mat);
+    torus.position.y = 0.45;
+    torus.rotation.x = Math.PI / 2;
+    group.add(torus);
     // BODY: Sphere (r=0.14) at y=0.74
-    add(new THREE.SphereGeometry(0.14, 64, 32), 0.6);
+    add(new THREE.SphereGeometry(0.14, 64, 32), 0.55);
     // KNOB: Sphere (r=0.10) at y=0.88
     // add(new THREE.SphereGeometry(0.10, 6, 5), 0.88);
 }
