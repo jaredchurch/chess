@@ -284,7 +284,7 @@ export function renderBoard() {
  * Renders a 3D perspective view of the board using Three.js.
  * Creates a procedural low-poly chess scene with piece placement from FEN.
  */
-function renderBoard3d(boardEl) {
+export function renderBoard3d(boardEl) {
     let container = document.getElementById('renderer-3d-container');
 
     if (!container) {

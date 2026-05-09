@@ -43,7 +43,7 @@ The 3D scene state is managed as a combination of mutable properties on the
 
 | Mode | Position | FOV |
 |------|----------|-----|
-| Full / Board | (0, 10, 15) | 28° |
+| Full / Board | (0, 11.8, 16.5) | 28° |
 | Piece | (0, 4, 5) | 28° |
 
 ### Lighting defaults

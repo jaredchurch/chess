@@ -19,9 +19,9 @@ written. Tasks focus on fixing remaining issues and completing the implementatio
 
 **Purpose**: Bug fixes and infrastructure that blocks all user stories
 
-- [ ] T001 Make `resetCamera()` mode-aware in `www/js/renderer-3d.js` — use (0, 10, 15) FOV 28 for full/board mode, (0, 4, 5) FOV 28 for piece mode. Read `this._viewMode` to determine defaults.
-- [ ] T002 [P] Reset `_boardWrap.rotation` in `resetCamera()` in `www/js/renderer-3d.js` so drag rotation is cleared on camera reset
-- [ ] T003 Wire camera reset in `switchViewMode('piece')` in `www/js/model-viewer.js` — call `resetCamera()` when switching TO piece mode too (currently only called when switching away from piece)
+- [x] T001 Make `resetCamera()` mode-aware in `www/js/renderer-3d.js` — use (0, 10, 15) FOV 28 for full/board mode, (0, 4, 5) FOV 28 for piece mode. Read `this._viewMode` to determine defaults.
+- [x] T002 [P] Reset `_boardWrap.rotation` in `resetCamera()` in `www/js/renderer-3d.js` so drag rotation is cleared on camera reset
+- [x] T003 Wire camera reset in `switchViewMode('piece')` in `www/js/model-viewer.js` — call `resetCamera()` when switching TO piece mode too (currently only called when switching away from piece)
 
 **Checkpoint**: Foundation ready — mode-aware camera reset works, drag rotation resets.
 
@@ -34,11 +34,11 @@ written. Tasks focus on fixing remaining issues and completing the implementatio
 **Independent Test**: Open viewer. Click Full → Board → Piece → Full. Each click
 changes what's visible (full board+pieces, board only, single piece, back to full).
 
-- [ ] T004 [P] [US1] Verify `setViewMode('full')` shows `boardGroup` and `pieceGroup`, hides `_singlePieceGroup` in `www/js/renderer-3d.js`
-- [ ] T005 [P] [US1] Verify `setViewMode('board')` shows `boardGroup`, hides `pieceGroup` and `_singlePieceGroup`
-- [ ] T006 [P] [US1] Verify `setViewMode('piece')` shows `_singlePieceGroup`, hides `boardGroup` and `pieceGroup`
-- [ ] T007 [P] [US1] Add `resetCamera()` call when switching TO piece mode in `www/js/model-viewer.js` `switchViewMode()`
-- [ ] T008 [US1] Verify buttons set active class correctly in `www/js/model-viewer.js` — button with `data-mode` matching current mode gets `.active` class
+- [x] T004 [P] [US1] Verify `setViewMode('full')` shows `boardGroup` and `pieceGroup`, hides `_singlePieceGroup` in `www/js/renderer-3d.js`
+- [x] T005 [P] [US1] Verify `setViewMode('board')` shows `boardGroup`, hides `pieceGroup` and `_singlePieceGroup`
+- [x] T006 [P] [US1] Verify `setViewMode('piece')` shows `_singlePieceGroup`, hides `boardGroup` and `pieceGroup`
+- [x] T007 [P] [US1] Add `resetCamera()` call when switching TO piece mode in `www/js/model-viewer.js` `switchViewMode()`
+- [x] T008 [US1] Verify buttons set active class correctly in `www/js/model-viewer.js` — button with `data-mode` matching current mode gets `.active` class
 
 **Checkpoint**: View mode buttons work. Full shows all, Board shows only board, Piece shows single piece.
 
@@ -51,42 +51,20 @@ changes what's visible (full board+pieces, board only, single piece, back to ful
 **Independent Test**: Move each slider, verify the scene updates and the numeric
 readout changes. Click Reset Camera, verify view returns to default.
 
-- [ ] T009 [P] [US2] Verify camera slider `input` handlers call `setCameraPosition(x, y, z)` and `setCameraFov(fov)` in `www/js/model-viewer.js` `onCamSlider()`
-- [ ] T010 [P] [US2] Verify `syncCameraSliders()` reads `renderer.getCameraPosition()` and updates all slider values and readout spans
-- [ ] T011 [P] [US2] Verify Reset Camera button calls `renderer.resetCamera()` then `syncCameraSliders()` in `www/js/model-viewer.js`
-- [ ] T012 [US2] Verify mode-aware reset: Full/Board → (0, 10, 15), Piece → (0, 4, 5) in `www/js/renderer-3d.js` `resetCamera()`
+- [x] T009 [P] [US2] Verify camera slider `input` handlers call `setCameraPosition(x, y, z)` and `setCameraFov(fov)` in `www/js/model-viewer.js` `onCamSlider()`
+- [x] T010 [P] [US2] Verify `syncCameraSliders()` reads `renderer.getCameraPosition()` and updates all slider values and readout spans
+- [x] T011 [P] [US2] Verify Reset Camera button calls `renderer.resetCamera()` then `syncCameraSliders()` in `www/js/model-viewer.js`
+- [x] T012 [US2] Verify mode-aware reset: Full/Board → (0, 10, 15), Piece → (0, 4, 5) in `www/js/renderer-3d.js` `resetCamera()`
 
-**Checkpoint**: Camera sliders control the view. Reset restores mode-appropriate defaults.
+- [x] T013 [P] [US3] Verify light slider `input` handlers call `setMainLightPosition()`, `setMainLightIntensity()`, and `setAmbientIntensity()` in `www/js/model-viewer.js` `onLightSlider()`
+- [x] T014 [P] [US3] Verify `syncLightSliders()` reads `renderer.getLightState()` and updates all slider values and readout spans
+- [x] T015 [US3] Verify setter methods update light properties on `this.mainLight` and `this.ambientLight` in `www/js/renderer-3d.js`
 
----
-
-## Phase 4: User Story 3 — Lighting Control (Priority: P1)
-
-**Goal**: Light position/intensity sliders adjust scene lighting in real time.
-
-**Independent Test**: Move each light slider, verify the scene illumination changes.
-Slider readouts update as values change.
-
-- [ ] T013 [P] [US3] Verify light slider `input` handlers call `setMainLightPosition()`, `setMainLightIntensity()`, and `setAmbientIntensity()` in `www/js/model-viewer.js` `onLightSlider()`
-- [ ] T014 [P] [US3] Verify `syncLightSliders()` reads `renderer.getLightState()` and updates all slider values and readout spans
-- [ ] T015 [US3] Verify setter methods update light properties on `this.mainLight` and `this.ambientLight` in `www/js/renderer-3d.js`
-
-**Checkpoint**: Light sliders control scene illumination. Initial defaults match spec.
-
----
-
-## Phase 5: User Story 4 — Mouse & Touch Interaction (Priority: P1)
-
-**Goal**: Drag-to-rotate and scroll-to-zoom on the viewport.
-
-**Independent Test**: Drag on viewport → scene rotates. Scroll → camera zooms in/out.
-Camera sliders do NOT change during drag.
-
-- [ ] T016 [P] [US4] Verify `mousedown`/`mousemove`/`mouseup` handlers on `#renderer-3d-container` rotate `_boardWrap` in `www/js/model-viewer.js` `setupDragControls()`
-- [ ] T017 [P] [US4] Verify touch event handlers (`touchstart`/`touchmove`/`touchend`) rotate `_boardWrap` in `www/js/model-viewer.js` `setupDragControls()`
-- [ ] T018 [P] [US4] Verify `wheel` handler zooms camera (clamped between 5-30 units from origin) in `www/js/model-viewer.js` `setupDragControls()`
-- [ ] T019 [US4] Verify drag rotation does NOT update camera position sliders — `syncCameraSliders()` is not called during drag (decoupled per clarification)
-- [ ] T020 [US4] Verify cursor changes to `grabbing` during drag and `grab` when idle in `www/js/model-viewer.js`
+- [x] T016 [P] [US4] Verify `mousedown`/`mousemove`/`mouseup` handlers on `#renderer-3d-container` rotate `_boardWrap` in `www/js/model-viewer.js` `setupDragControls()`
+- [x] T017 [P] [US4] Verify touch event handlers (`touchstart`/`touchmove`/`touchend`) rotate `_boardWrap` in `www/js/model-viewer.js` `setupDragControls()`
+- [x] T018 [P] [US4] Verify `wheel` handler zooms camera (clamped between 5-30 units from origin) in `www/js/model-viewer.js` `setupDragControls()`
+- [x] T019 [US4] Verify drag rotation does NOT update camera position sliders — `syncCameraSliders()` is not called during drag (decoupled per clarification)
+- [x] T020 [US4] Verify cursor changes to `grabbing` during drag and `grab` when idle in `www/js/model-viewer.js`
 
 **Checkpoint**: Drag rotates, scroll zooms. Sliders stay decoupled from drag.
 
@@ -113,10 +91,10 @@ rank/file labels visible.
 
 **Purpose**: Edge cases, error handling, and final verification
 
-- [ ] T025 Add WebGL detection in `www/js/model-viewer.js` — show error message in `#status-text` if WebGL unavailable
-- [ ] T026 [P] Add `#model-container` sizing verification — confirm CSS `position: relative` and `flex: 1` are present in `www/css/styles.css`
-- [ ] T027 Run all quality checks: JS syntax, module exports, regression tests, `cargo clippy`, `cargo test`, WASM build
-- [ ] T028 Update bug tracker `specs/bugs.md` — mark BUG35 and BUG46 items as `[?]` needing validation
+- [x] T025 Add WebGL detection in `www/js/model-viewer.js` — show error message in `#status-text` if WebGL unavailable
+- [x] T026 [P] Add `#model-container` sizing verification — confirm CSS `position: relative` and `flex: 1` are present in `www/css/styles.css`
+- [x] T027 Run all quality checks: JS syntax, module exports, regression tests, `cargo clippy`, `cargo test`, WASM build
+- [x] T028 Update bug tracker `specs/bugs.md` — mark BUG35 and BUG46 items as `[?]` needing validation
 
 ---
 

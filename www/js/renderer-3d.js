@@ -8,15 +8,6 @@
 
 import * as THREE from 'three';
 
-const PIECE_PROPS = {
-    P: { h: 1.0  },
-    R: { h: 1.25 },
-    N: { h: 1.33 },
-    B: { h: 1.38 },
-    Q: { h: 1.65 },
-    K: { h: 1.8  },
-};
-
 const WHITE_MAT = { color: 0xf0f0f0, roughness: 0.25, metalness: 0.05 };
 const BLACK_MAT = { color: 0x1a1a1a, roughness: 0.45, metalness: 0.1  };
 
@@ -36,6 +27,12 @@ export class ChessRenderer3D {
         this.boardColors = { light: 0xf5ece0, dark: 0x3d2b1f };
         this.fileLabelsBottom = [];
         this.fileLabelsTop = [];
+        this._singlePieceGroup = null;
+        this._viewMode = 'full';
+        this._manualCamera = false;
+        this.mainLight = null;
+        this.fillLight = null;
+        this.ambientLight = null;
     }
 
     init(container) {
@@ -47,7 +44,7 @@ export class ChessRenderer3D {
         this.scene.background = new THREE.Color(0x2c3e50);
 
         this.camera = new THREE.PerspectiveCamera(28, w / h, 0.1, 100);
-        this.camera.position.set(0, 12, 20);
+        this.camera.position.set(0, 11.8, 16.5); // position x, y, z
         this.camera.lookAt(0, 0, 0);
         this.camera.updateMatrixWorld(true);
 
@@ -65,6 +62,9 @@ export class ChessRenderer3D {
         this._createBoard();
         this.pieceGroup = new THREE.Group();
         this._boardWrap.add(this.pieceGroup);
+        this._singlePieceGroup = new THREE.Group();
+        this._singlePieceGroup.visible = false;
+        this._boardWrap.add(this._singlePieceGroup);
 
         this._frameBoard();
 
@@ -106,13 +106,14 @@ export class ChessRenderer3D {
     }
 
     _setupLights() {
-        this.scene.add(new THREE.AmbientLight(0xffffff, 0.7));
-        const main = new THREE.DirectionalLight(0xffffff, 1.8);
-        main.position.set(5, 15, 10);
-        this.scene.add(main);
-        const fill = new THREE.DirectionalLight(0x8888cc, 0.3);
-        fill.position.set(-3, 5, -5);
-        this.scene.add(fill);
+        this.ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+        this.scene.add(this.ambientLight);
+        this.mainLight = new THREE.DirectionalLight(0xffffff, 1.8);
+        this.mainLight.position.set(5, 15, 10);
+        this.scene.add(this.mainLight);
+        this.fillLight = new THREE.DirectionalLight(0x8888cc, 0.3);
+        this.fillLight.position.set(-3, 5, -5);
+        this.scene.add(this.fillLight);
     }
 
     _createBoard() {
@@ -392,6 +393,97 @@ export class ChessRenderer3D {
         }
     }
 
+    setViewMode(mode) {
+        this._viewMode = mode;
+        const showBoard = mode === 'full' || mode === 'board';
+        const showPieces = mode === 'full';
+        const showSingle = mode === 'piece';
+        if (this.boardGroup) this.boardGroup.visible = showBoard;
+        if (this.pieceGroup) this.pieceGroup.visible = showPieces;
+        if (this._singlePieceGroup) this._singlePieceGroup.visible = showSingle;
+    }
+
+    setSinglePiece(type, color) {
+        const typeUpper = type.toUpperCase();
+        if (!this._singlePieceGroup) {
+            this._singlePieceGroup = new THREE.Group();
+            this._boardWrap.add(this._singlePieceGroup);
+        }
+        while (this._singlePieceGroup.children.length) {
+            const child = this._singlePieceGroup.children[0];
+            this._disposeGroup(child);
+            this._singlePieceGroup.remove(child);
+        }
+        const isWhite = color === 'white';
+        const opts = isWhite ? WHITE_MAT : BLACK_MAT;
+        const mat = new THREE.MeshStandardMaterial({ ...opts, flatShading: true });
+        const grp = new THREE.Group();
+        const builders = {
+            P: this._buildPawn, R: this._buildRook, N: this._buildKnight,
+            B: this._buildBishop, Q: this._buildQueen, K: this._buildKing,
+        };
+        (builders[typeUpper] || this._buildPawn).call(this, grp, mat);
+        const box = new THREE.Box3().setFromObject(grp);
+        const center = box.getCenter(new THREE.Vector3());
+        grp.position.sub(center);
+        this._singlePieceGroup.add(grp);
+    }
+
+    setCameraPosition(x, y, z) {
+        this._manualCamera = true;
+        this.camera.position.set(x, y, z);
+        this.camera.lookAt(0, 0, 0);
+        this.camera.updateProjectionMatrix();
+    }
+
+    setCameraFov(fov) {
+        this._manualCamera = true;
+        this.camera.fov = fov;
+        this.camera.updateProjectionMatrix();
+    }
+
+    resetCamera() {
+        this._manualCamera = false;
+        const isPiece = this._viewMode === 'piece';
+        this.camera.position.set(0, isPiece ? 4 : 11.8, isPiece ? 5 : 16.5);
+        this.camera.lookAt(0, 0, 0);
+        this.camera.fov = isPiece ? 29 : 28;
+        this.camera.updateProjectionMatrix();
+        this._boardWrap.rotation.set(0, 0, 0);
+        this._frameBoard();
+    }
+
+    getCameraPosition() {
+        return {
+            x: this.camera.position.x,
+            y: this.camera.position.y,
+            z: this.camera.position.z,
+            fov: this.camera.fov,
+        };
+    }
+
+    setMainLightPosition(x, y, z) {
+        if (this.mainLight) this.mainLight.position.set(x, y, z);
+    }
+
+    setMainLightIntensity(intensity) {
+        if (this.mainLight) this.mainLight.intensity = intensity;
+    }
+
+    setAmbientIntensity(intensity) {
+        if (this.ambientLight) this.ambientLight.intensity = intensity;
+    }
+
+    getLightState() {
+        return {
+            mainX: this.mainLight ? this.mainLight.position.x : 5,
+            mainY: this.mainLight ? this.mainLight.position.y : 15,
+            mainZ: this.mainLight ? this.mainLight.position.z : 10,
+            mainIntensity: this.mainLight ? this.mainLight.intensity : 1.8,
+            ambientIntensity: this.ambientLight ? this.ambientLight.intensity : 0.7,
+        };
+    }
+
     setSelection(sq) {
         if (this.selectedSquare) this.highlightSquare(this.selectedSquare, false);
         this.selectedSquare = sq;
@@ -427,7 +519,7 @@ export class ChessRenderer3D {
         this.camera.aspect = w / h;
         this.camera.updateProjectionMatrix();
         this.renderer.setSize(w, h);
-        this._frameBoard();
+        if (!this._manualCamera) this._frameBoard();
     }
 
     _animate() {
@@ -454,6 +546,7 @@ export class ChessRenderer3D {
         this._disposed = true;
         this._disposeGroup(this.boardGroup);
         this._disposeGroup(this.pieceGroup);
+        this._disposeGroup(this._singlePieceGroup);
         if (this._resizeObserver) this._resizeObserver.disconnect();
         if (this.renderer) this.renderer.dispose();
         if (this.container && this.renderer && this.renderer.domElement) {

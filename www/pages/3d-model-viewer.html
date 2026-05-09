@@ -15,197 +15,68 @@
     </script>
 </head>
 <body>
-    <div id="header" style="position:fixed;top:0;left:0;right:0;height:50px;background:#2c3e50;display:flex;align-items:center;justify-content:space-between;padding:0 10px;z-index:99;box-shadow:0 2px 5px rgba(0,0,0,0.3);">
-        <div style="display:flex;gap:5px;align-items:center;">
-            <button id="back-btn" onclick="window.location.href='../index.html'" style="background:transparent;border:none;color:white;font-size:20px;padding:8px;display:flex;align-items:center;">&#8592;</button>
-            <span style="font-size:1.2em;font-weight:bold;">3D Model Viewer</span>
+    <div id="header">
+        <div class="header-left">
+            <button id="back-btn" onclick="window.location.href='../index.html'">&#8592;</button>
+            <span>3D Model Viewer</span>
         </div>
-        <div id="status-text" style="color:white;font-size:1.2em;">Loading 3D models...</div>
+        <div id="status-text">Loading 3D models...</div>
     </div>
-    
-    <div id="app">
-        <div id="model-container" style="flex:1;display:flex;align-items:center;justify-content:center;">
-            <div id="board-wrapper" style="position:relative;width:800px;height:600px;">
+
+    <div id="viewer-layout">
+        <div id="model-container">
+            <div id="board-wrapper">
                 <div id="board"></div>
+            </div>
+        </div>
+        <div id="viewer-controls">
+            <div class="control-section">
+                <h3>View</h3>
+                <div class="btn-group">
+                    <button class="view-mode-btn active" data-mode="full">Full</button>
+                    <button class="view-mode-btn" data-mode="board">Board</button>
+                    <button class="view-mode-btn" data-mode="piece">Piece</button>
+                </div>
+            </div>
+            <div class="control-section" id="piece-controls" style="display:none">
+                <h3>Piece</h3>
+                <label>Type:
+                    <select id="piece-type">
+                        <option value="K">King</option>
+                        <option value="Q">Queen</option>
+                        <option value="R">Rook</option>
+                        <option value="B">Bishop</option>
+                        <option value="N">Knight</option>
+                        <option value="P">Pawn</option>
+                    </select>
+                </label>
+                <label>Color:
+                    <select id="piece-color">
+                        <option value="white">White</option>
+                        <option value="black">Black</option>
+                    </select>
+                </label>
+            </div>
+            <div class="control-section">
+                <h3>Camera</h3>
+                <label>X: <input type="range" id="cam-x" min="-20" max="20" step="0.1" value="0"> <span id="cam-x-val" class="cam-val">0.0</span></label>
+                <label>Y: <input type="range" id="cam-y" min="1" max="30" step="0.1" value="11.8"> <span id="cam-y-val" class="cam-val">11.8</span></label>
+                <label>Z: <input type="range" id="cam-z" min="-20" max="20" step="0.1" value="16.5"> <span id="cam-z-val" class="cam-val">16.5</span></label>
+                <label>FOV: <input type="range" id="cam-fov" min="5" max="80" step="1" value="28"> <span id="cam-fov-val" class="cam-val">28</span></label>
+                <button id="reset-camera">Reset Camera</button>
+            </div>
+            <div class="control-section">
+                <h3>Lighting</h3>
+                <label>Light X: <input type="range" id="light-x" min="-20" max="20" step="0.5" value="5"> <span id="light-x-val" class="cam-val">5.0</span></label>
+                <label>Light Y: <input type="range" id="light-y" min="1" max="30" step="0.5" value="15"> <span id="light-y-val" class="cam-val">15.0</span></label>
+                <label>Light Z: <input type="range" id="light-z" min="-20" max="20" step="0.5" value="10"> <span id="light-z-val" class="cam-val">10.0</span></label>
+                <label>Intensity: <input type="range" id="light-intensity" min="0" max="5" step="0.05" value="1.8"> <span id="light-intensity-val" class="cam-val">1.80</span></label>
+                <label>Ambient: <input type="range" id="ambient-intensity" min="0" max="2" step="0.05" value="0.7"> <span id="ambient-intensity-val" class="cam-val">0.70</span></label>
             </div>
         </div>
     </div>
 
     <script type="module" src="../js/index.js"></script>
-    <script type="module">
-        // Force 3D mode for this page
-        window.toggle3dMode(true);
-        
-        // Override some functions to make this a model viewer rather than a game
-        window.renderBoard = function() {
-            const boardEl = document.getElementById('board');
-            if (!boardEl) {
-                console.warn('Board element not found');
-                return;
-            }
-
-            // Apply active skin
-            skinRegistry.applyActive();
-
-            const activeSkin = skinRegistry.getActive();
-            const is3d = skinRegistry.get3dMode();
-
-            // Toggle 3D mode class on board wrapper
-            const boardWrapper = document.getElementById('board-wrapper');
-            if (boardWrapper) {
-                boardWrapper.classList.toggle('mode-3d', is3d);
-            }
-
-            if (is3d) {
-                // Clear fixed sizing from 2D mode to allow 3D canvas to fill container
-                boardEl.style.width = '';
-                boardEl.style.height = '';
-                
-                // Show all pieces in their starting positions for viewing
-                renderBoard3d(boardEl);
-                
-                // Set up rotation controls for viewing
-                setupModelControls();
-                return;
-            }
-        };
-
-        function setupModelControls() {
-            // Add event listeners for mouse drag to rotate the model
-            const rendererDiv = document.getElementById('renderer-3d-container');
-            if (!rendererDiv) return;
-            
-            let isDragging = false;
-            let previousMousePosition = { x: 0, y: 0 };
-            
-            rendererDiv.addEventListener('mousedown', (e) => {
-                isDragging = true;
-                previousMousePosition = { x: e.clientX, y: e.clientY };
-                rendererDiv.style.cursor = 'grabbing';
-            });
-            
-            rendererDiv.addEventListener('mousemove', (e) => {
-                if (!isDragging) return;
-                
-                const deltaMove = {
-                    x: e.clientX - previousMousePosition.x,
-                    y: e.clientY - previousMousePosition.y
-                };
-                
-                if (window._chessRenderer) {
-                    // Rotate the board wrapper based on mouse movement
-                    const rotationSpeed = 0.005;
-                    window._chessRenderer._boardWrap.rotation.y += deltaMove.x * rotationSpeed;
-                    window._chessRenderer._boardWrap.rotation.x += deltaMove.y * rotationSpeed;
-                    
-                    // Limit vertical rotation to prevent flipping
-                    const maxVerticalAngle = Math.PI / 2; // 90 degrees
-                    window._chessRenderer._boardWrap.rotation.x = Math.max(
-                        -maxVerticalAngle, 
-                        Math.min(maxVerticalAngle, window._chessRenderer._boardWrap.rotation.x)
-                    );
-                }
-                
-                previousMousePosition = { x: e.clientX, y: e.clientY };
-            });
-            
-            rendererDiv.addEventListener('mouseup', () => {
-                isDragging = false;
-                rendererDiv.style.cursor = 'grab';
-            });
-            
-            rendererDiv.addEventListener('mouseleave', () => {
-                isDragging = false;
-                rendererDiv.style.cursor = 'grab';
-            });
-            
-            // Add touch support
-            rendererDiv.addEventListener('touchstart', (e) => {
-                if (e.touches.length === 1) {
-                    isDragging = true;
-                    previousMousePosition = { 
-                        x: e.touches[0].clientX, 
-                        y: e.touches[0].clientY 
-                    };
-                    rendererDiv.style.cursor = 'grabbing';
-                }
-            });
-            
-            rendererDiv.addEventListener('touchmove', (e) => {
-                if (!isDragging || e.touches.length !== 1) return;
-                
-                const deltaMove = {
-                    x: e.touches[0].clientX - previousMousePosition.x,
-                    y: e.touches[0].clientY - previousMousePosition.y
-                };
-                
-                if (window._chessRenderer) {
-                    const rotationSpeed = 0.005;
-                    window._chessRenderer._boardWrap.rotation.y += deltaMove.x * rotationSpeed;
-                    window._chessRenderer._boardWrap.rotation.x += deltaMove.y * rotationSpeed;
-                    
-                    // Limit vertical rotation to prevent flipping
-                    const maxVerticalAngle = Math.PI / 2; // 90 degrees
-                    window._chessRenderer._boardWrap.rotation.x = Math.max(
-                        -maxVerticalAngle, 
-                        Math.min(maxVerticalAngle, window._chessRenderer._boardWrap.rotation.x)
-                    );
-                }
-                
-                previousMousePosition = { 
-                    x: e.touches[0].clientX, 
-                    y: e.touches[0].clientY 
-                };
-            });
-            
-            rendererDiv.addEventListener('touchend', () => {
-                isDragging = false;
-                rendererDiv.style.cursor = 'grab';
-            });
-            
-            // Add zoom with wheel
-            rendererDiv.addEventListener('wheel', (e) => {
-                e.preventDefault();
-                if (window._chessRenderer) {
-                    const zoomSpeed = 0.001;
-                    const distance = window._chessRenderer.camera.position.distanceTo(new THREE.Vector3(0, 0, 0));
-                    const zoomAmount = e.deltaY * zoomSpeed;
-                    
-                    // Move camera closer/further from target
-                    const direction = new THREE.Vector3()
-                        .subVectors(window._chessRenderer.camera.position, new THREE.Vector3(0, 0, 0))
-                        .normalize();
-                    
-                    const newDistance = Math.max(5, Math.min(30, distance + zoomAmount));
-                    window._chessRenderer.camera.position.copy(
-                        new THREE.Vector3(0, 0, 0)
-                    ).add(
-                        direction.multiplyScalar(newDistance)
-                    );
-                    
-                    window._chessRenderer.camera.lookAt(0, 0, 0);
-                    window._chessRenderer.camera.updateProjectionMatrix();
-                }
-            });
-            
-            // Set initial camera position for better viewing
-            if (window._chessRenderer) {
-                window._chessRenderer.camera.position.set(0, 10, 15);
-                window._chessRenderer.camera.lookAt(0, 0, 0);
-                window._chessRenderer.camera.updateProjectionMatrix();
-            }
-        }
-        
-        // Initialize the board when the page loads
-        window.addEventListener('load', () => {
-            document.getElementById('status-text').textContent = 'Loading 3D models...';
-            setTimeout(() => {
-                if (typeof window.renderBoard === 'function') {
-                    window.renderBoard();
-                    document.getElementById('status-text').textContent = '3D Model Viewer - Drag to rotate, scroll to zoom';
-                }
-            }, 100);
-        });
-    </script>
+    <script type="module" src="../js/model-viewer.js"></script>
 </body>
 </html>
