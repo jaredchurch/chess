@@ -100,8 +100,12 @@ window.showGameMenu = function() {
  * Updates the active skin, persists it, closes the menu, and re-renders the board
  */
 window.onSkinChange = function(skinId) {
-    if (switchSkin(skinId)) {
-        closeGameMenu();
+    switchSkin(skinId);
+    // Update dialog to reflect new skin's options (e.g. 3D mode visibility)
+    const mode3dLabel = document.getElementById('mode-3d-label');
+    if (mode3dLabel) {
+        const skin = skinRegistry.getActive();
+        mode3dLabel.style.display = (skin && skin.supports3d) ? '' : 'none';
     }
 };
 

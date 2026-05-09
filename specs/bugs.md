@@ -43,7 +43,7 @@
 - [x] BUG43 - if answering no to the castle question, when it returns the rook should be the selected piece.
 - [x] BUG44 - In 2D mode, before a pieces is selected the board is positioned incorrect on the screen. Please fix this.
 - [ ] BUG45 - board_outline should also be drawn on 2D boards.
-- [ ] BUG46 - when a skin is selected the setting dialog should not exit automatically. as with all other settings the dialog should remain open until the user click outside the dialog
+- [x] BUG46 - when a skin is selected the setting dialog should not exit automatically. as with all other settings the dialog should remain open until the user click outside the dialog
 - [x] BUG47 - the outline around the 3D board should be turned off if the url param is not set.
 - [x] BUG48 - in 3D skin, board should present the colour being played by the player at the bottom of the screen. right now if I play black I see white at bottom of screen and black at top of screen - board needs to be rotated 180 degrees. Refer bug 31 as well.
 - [ ] BUG49 - when user clicks on a square it will only highlight if that square contains a valid piece for that user. If that piece cannot be moved for some reason, then it should highlight red outline instead of yellow. Also, make the highlight always just outline rather than solid colour.
