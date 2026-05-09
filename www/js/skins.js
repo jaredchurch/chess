@@ -27,6 +27,20 @@ const SKIN_DEFINITIONS = [
         pieceSet: { type: 'unicode' }
     },
     {
+        id: 'classic2',
+        name: 'Classic 2',
+        type: '2d',
+        supports3d: true,
+        theme: {
+            whiteSquare: '#f0d9b5',
+            blackSquare: '#b58863',
+            highlight: '#f1c40f',
+            pieceWhite: '#ffffff',
+            pieceBlack: '#000000'
+        },
+        pieceSet: { type: 'unicode' }
+    },
+    {
         id: 'wood',
         name: 'Wood',
         type: '2d',

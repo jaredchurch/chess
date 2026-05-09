@@ -7,12 +7,19 @@
 //
 
 import * as THREE from 'three';
-import { buildPawn } from './skins/classic/3d/pawn.js';
-import { buildRook } from './skins/classic/3d/rook.js';
-import { buildKnight } from './skins/classic/3d/knight.js';
-import { buildBishop } from './skins/classic/3d/bishop.js';
-import { buildQueen } from './skins/classic/3d/queen.js';
-import { buildKing } from './skins/classic/3d/king.js';
+import { skinRegistry } from './skins.js';
+import { buildPawn as buildPawnClassic } from './skins/classic/3d/pawn.js';
+import { buildRook as buildRookClassic } from './skins/classic/3d/rook.js';
+import { buildKnight as buildKnightClassic } from './skins/classic/3d/knight.js';
+import { buildBishop as buildBishopClassic } from './skins/classic/3d/bishop.js';
+import { buildQueen as buildQueenClassic } from './skins/classic/3d/queen.js';
+import { buildKing as buildKingClassic } from './skins/classic/3d/king.js';
+import { buildPawn as buildPawnClassic2 } from './skins/classic2/3d/pawn.js';
+import { buildRook as buildRookClassic2 } from './skins/classic2/3d/rook.js';
+import { buildKnight as buildKnightClassic2 } from './skins/classic2/3d/knight.js';
+import { buildBishop as buildBishopClassic2 } from './skins/classic2/3d/bishop.js';
+import { buildQueen as buildQueenClassic2 } from './skins/classic2/3d/queen.js';
+import { buildKing as buildKingClassic2 } from './skins/classic2/3d/king.js';
 
 const WHITE_MAT = { color: 0xf0f0f0, roughness: 0.25, metalness: 0.05 };
 const BLACK_MAT = { color: 0x333333, roughness: 0.45, metalness: 0.1  };
@@ -263,14 +270,59 @@ export class ChessRenderer3D {
         this._createBoard();
     }
 
-    // ---- Low-poly piece builders (delegated to skins/classic/3d/) ----
+    // ---- Low-poly piece builders (delegated to skins/classic/3d/ or skins/classic2/3d/) ----
 
-    _buildPawn(group, mat) { buildPawn(group, mat); }
-    _buildRook(group, mat) { buildRook(group, mat); }
-    _buildKnight(group, mat) { buildKnight(group, mat); }
-    _buildBishop(group, mat) { buildBishop(group, mat); }
-    _buildQueen(group, mat) { buildQueen(group, mat); }
-    _buildKing(group, mat) { buildKing(group, mat); }
+    _buildPawn(group, mat) {
+        const activeSkinId = skinRegistry.getActive()?.id || 'classic';
+        console.log('_buildPawn called with activeSkinId:', activeSkinId);
+        if (activeSkinId === 'classic2') {
+            console.log('_buildPawn using classic2 builder');
+            buildPawnClassic2(group, mat);
+        } else {
+            console.log('_buildPawn using classic builder');
+            buildPawnClassic(group, mat);
+        }
+    }
+    _buildRook(group, mat) {
+        const activeSkinId = skinRegistry.getActive()?.id || 'classic';
+        if (activeSkinId === 'classic2') {
+            buildRookClassic2(group, mat);
+        } else {
+            buildRookClassic(group, mat);
+        }
+    }
+    _buildKnight(group, mat) {
+        const activeSkinId = skinRegistry.getActive()?.id || 'classic';
+        if (activeSkinId === 'classic2') {
+            buildKnightClassic2(group, mat);
+        } else {
+            buildKnightClassic(group, mat);
+        }
+    }
+    _buildBishop(group, mat) {
+        const activeSkinId = skinRegistry.getActive()?.id || 'classic';
+        if (activeSkinId === 'classic2') {
+            buildBishopClassic2(group, mat);
+        } else {
+            buildBishopClassic(group, mat);
+        }
+    }
+    _buildQueen(group, mat) {
+        const activeSkinId = skinRegistry.getActive()?.id || 'classic';
+        if (activeSkinId === 'classic2') {
+            buildQueenClassic2(group, mat);
+        } else {
+            buildQueenClassic(group, mat);
+        }
+    }
+    _buildKing(group, mat) {
+        const activeSkinId = skinRegistry.getActive()?.id || 'classic';
+        if (activeSkinId === 'classic2') {
+            buildKingClassic2(group, mat);
+        } else {
+            buildKingClassic(group, mat);
+        }
+    }
 
     // ---- Public API ----
 
@@ -302,10 +354,14 @@ export class ChessRenderer3D {
             const grp = new THREE.Group();
             const type = ch.toUpperCase();
             const builders = {
-                P: buildPawn, R: buildRook, N: buildKnight,
-                B: buildBishop, Q: buildQueen, K: buildKing,
+                P: (grp, mat) => this._buildPawn(grp, mat),
+                R: (grp, mat) => this._buildRook(grp, mat),
+                N: (grp, mat) => this._buildKnight(grp, mat),
+                B: (grp, mat) => this._buildBishop(grp, mat),
+                Q: (grp, mat) => this._buildQueen(grp, mat),
+                K: (grp, mat) => this._buildKing(grp, mat),
             };
-            (builders[type] || buildPawn)(grp, mat);
+            (builders[type] || builders.P)(grp, mat);
             grp.traverse(child => { if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; } });
 
             const pos = this._squareToPos(sq);
@@ -350,8 +406,12 @@ export class ChessRenderer3D {
         const mat = new THREE.MeshStandardMaterial({ ...opts, flatShading: true });
         const grp = new THREE.Group();
         const builders = {
-            P: buildPawn, R: buildRook, N: buildKnight,
-            B: buildBishop, Q: buildQueen, K: buildKing,
+            P: (grp, mat) => this._buildPawn(grp, mat),
+            R: (grp, mat) => this._buildRook(grp, mat),
+            N: (grp, mat) => this._buildKnight(grp, mat),
+            B: (grp, mat) => this._buildBishop(grp, mat),
+            Q: (grp, mat) => this._buildQueen(grp, mat),
+            K: (grp, mat) => this._buildKing(grp, mat),
         };
         (builders[typeUpper] || buildPawn)(grp, mat);
         grp.traverse(child => { if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; } });

@@ -30,33 +30,41 @@
             </div>
         </div>
         <div id="viewer-controls">
-            <div class="control-section">
-                <h3>View</h3>
-                <div class="btn-group">
-                    <button class="view-mode-btn active" data-mode="full">Full</button>
-                    <button class="view-mode-btn" data-mode="board">Board</button>
-                    <button class="view-mode-btn" data-mode="piece">Piece</button>
-                </div>
-            </div>
-            <div class="control-section" id="piece-controls" style="display:none">
-                <h3>Piece</h3>
-                <label>Type:
-                    <select id="piece-type">
-                        <option value="K">King</option>
-                        <option value="Q">Queen</option>
-                        <option value="R">Rook</option>
-                        <option value="B">Bishop</option>
-                        <option value="N">Knight</option>
-                        <option value="P">Pawn</option>
-                    </select>
-                </label>
-                <label>Color:
-                    <select id="piece-color">
-                        <option value="white">White</option>
-                        <option value="black">Black</option>
-                    </select>
-                </label>
-            </div>
+             <div class="control-section">
+                 <h3>View</h3>
+                 <div class="btn-group">
+                     <button class="view-mode-btn active" data-mode="full">Full</button>
+                     <button class="view-mode-btn" data-mode="board">Board</button>
+                     <button class="view-mode-btn" data-mode="piece">Piece</button>
+                 </div>
+             </div>
+             <div class="control-section">
+                 <h3>Skin</h3>
+                 <label>
+                     <select id="skin-select">
+                         <!-- Options will be populated by JavaScript -->
+                     </select>
+                 </label>
+             </div>
+             <div class="control-section" id="piece-controls" style="display:none">
+                 <h3>Piece</h3>
+                 <label>Type:
+                     <select id="piece-type">
+                         <option value="K">King</option>
+                         <option value="Q">Queen</option>
+                         <option value="R">Rook</option>
+                         <option value="B">Bishop</option>
+                         <option value="N">Knight</option>
+                         <option value="P">Pawn</option>
+                     </select>
+                 </label>
+                 <label>Color:
+                     <select id="piece-color">
+                         <option value="white">White</option>
+                         <option value="black">Black</option>
+                     </select>
+                 </label>
+             </div>
             <div class="control-section">
                 <h3>Camera</h3>
                 <label>X: <input type="range" id="cam-x" min="-20" max="20" step="0.1" value="0"> <span id="cam-x-val" class="cam-val">0.0</span></label>

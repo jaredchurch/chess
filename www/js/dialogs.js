@@ -47,12 +47,12 @@ window.showGameMenu = function() {
                 <label style="display:block;margin:10px 0;cursor:pointer;">
                     <input type="checkbox" id="board-outline" ${localStorage.getItem('chess_board_outline') === 'true' || new URLSearchParams(window.location.search).has('board_outline') ? 'checked' : ''} onchange="toggleBoardOutline(this.checked)"> Board Outline
                 </label>
-                <div style="margin:15px 0;">
-                    <label style="display:block;margin-bottom:5px;font-weight:bold;">Skin</label>
-                    <select id="skin-select" style="width:100%;padding:8px;border-radius:5px;border:1px solid #4a5f7f;background:#2c3e50;color:white;" onchange="window.onSkinChange(this.value)">
-                        ${skinRegistry.getAll().map(s => `<option value="${s.id}" ${s.id === skinRegistry.activeSkinId ? 'selected' : ''}>${s.name}</option>`).join('')}
-                    </select>
-                </div>
+                 <div style="margin:15px 0;">
+                     <label style="display:block;margin-bottom:5px;font-weight:bold;">Skin</label>
+                     <select id="skin-select" style="width:100%;padding:8px;border-radius:5px;border:1px solid #4a5f7f;background:#2c3e50;color:white;" onchange="window.onSkinChange(this.value)">
+                         ${skinRegistry.getAll().filter(s => s.id !== 'classic2').map(s => `<option value="${s.id}" ${s.id === skinRegistry.activeSkinId ? 'selected' : ''}>${s.name}</option>`).join('')}
+                     </select>
+                 </div>
                 <label style="display:block;margin:10px 0;cursor:pointer;" id="mode-3d-label">
                     <input type="checkbox" id="mode-3d" ${skinRegistry.get3dMode() ? 'checked' : ''} onchange="window.toggle3dMode(this.checked)"> 3D Mode
                 </label>
