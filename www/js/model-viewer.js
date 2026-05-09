@@ -24,6 +24,7 @@ function setupViewerControls() {
         if (mode === 'piece') {
             updateSinglePiece();
         }
+        saveViewerState();
     }
     viewModeBtns.forEach(btn => {
         btn.addEventListener('click', () => switchViewMode(btn.dataset.mode));
@@ -33,6 +34,7 @@ function setupViewerControls() {
     const pieceColor = document.getElementById('piece-color');
     function updateSinglePiece() {
         renderer.setSinglePiece(pieceType.value, pieceColor.value);
+        saveViewerState();
     }
     pieceType.addEventListener('change', updateSinglePiece);
     pieceColor.addEventListener('change', updateSinglePiece);
@@ -42,18 +44,6 @@ function setupViewerControls() {
     const camZ = document.getElementById('cam-z');
     const camFov = document.getElementById('cam-fov');
 
-    function syncCameraSliders() {
-        const pos = renderer.getCameraPosition();
-        camX.value = pos.x.toFixed(1);
-        camY.value = pos.y.toFixed(1);
-        camZ.value = pos.z.toFixed(1);
-        camFov.value = Math.round(pos.fov);
-        document.getElementById('cam-x-val').textContent = pos.x.toFixed(1);
-        document.getElementById('cam-y-val').textContent = pos.y.toFixed(1);
-        document.getElementById('cam-z-val').textContent = pos.z.toFixed(1);
-        document.getElementById('cam-fov-val').textContent = Math.round(pos.fov);
-    }
-
     function onCamSlider() {
         const x = parseFloat(camX.value);
         const y = parseFloat(camY.value);
@@ -62,6 +52,7 @@ function setupViewerControls() {
         renderer.setCameraPosition(x, y, z);
         renderer.setCameraFov(fov);
         syncCameraSliders();
+        saveViewerState();
     }
 
     camX.addEventListener('input', onCamSlider);
@@ -72,6 +63,7 @@ function setupViewerControls() {
     document.getElementById('reset-camera').addEventListener('click', () => {
         renderer.resetCamera();
         syncCameraSliders();
+        saveViewerState();
     });
 
     renderer.resetCamera();
@@ -89,20 +81,6 @@ function setupLightControls() {
     const li = document.getElementById('light-intensity');
     const ai = document.getElementById('ambient-intensity');
 
-    function syncLightSliders() {
-        const s = renderer.getLightState();
-        lx.value = s.mainX.toFixed(1);
-        ly.value = s.mainY.toFixed(1);
-        lz.value = s.mainZ.toFixed(1);
-        li.value = s.mainIntensity.toFixed(2);
-        ai.value = s.ambientIntensity.toFixed(2);
-        document.getElementById('light-x-val').textContent = s.mainX.toFixed(1);
-        document.getElementById('light-y-val').textContent = s.mainY.toFixed(1);
-        document.getElementById('light-z-val').textContent = s.mainZ.toFixed(1);
-        document.getElementById('light-intensity-val').textContent = s.mainIntensity.toFixed(2);
-        document.getElementById('ambient-intensity-val').textContent = s.ambientIntensity.toFixed(2);
-    }
-
     function onLightSlider() {
         renderer.setMainLightPosition(
             parseFloat(lx.value), parseFloat(ly.value), parseFloat(lz.value)
@@ -110,6 +88,7 @@ function setupLightControls() {
         renderer.setMainLightIntensity(parseFloat(li.value));
         renderer.setAmbientIntensity(parseFloat(ai.value));
         syncLightSliders();
+        saveViewerState();
     }
 
     lx.addEventListener('input', onLightSlider);
@@ -117,6 +96,8 @@ function setupLightControls() {
     lz.addEventListener('input', onLightSlider);
     li.addEventListener('input', onLightSlider);
     ai.addEventListener('input', onLightSlider);
+
+    document.getElementById('reset-lighting').addEventListener('click', resetLighting);
 
     syncLightSliders();
 }
@@ -219,6 +200,74 @@ function setupDragControls() {
     });
 }
 
+const VIEWER_STATE_KEY = 'chess_3d_viewer_state';
+
+function syncCameraSliders() {
+    const r = window._chessRenderer;
+    if (!r) return;
+    const pos = r.getCameraPosition();
+    const el = id => document.getElementById(id);
+    el('cam-x').value = pos.x.toFixed(1);
+    el('cam-y').value = pos.y.toFixed(1);
+    el('cam-z').value = pos.z.toFixed(1);
+    el('cam-fov').value = Math.round(pos.fov);
+    el('cam-x-val').textContent = pos.x.toFixed(1);
+    el('cam-y-val').textContent = pos.y.toFixed(1);
+    el('cam-z-val').textContent = pos.z.toFixed(1);
+    el('cam-fov-val').textContent = Math.round(pos.fov);
+}
+
+function syncLightSliders() {
+    const r = window._chessRenderer;
+    if (!r) return;
+    const s = r.getLightState();
+    const el = id => document.getElementById(id);
+    el('light-x').value = s.mainX.toFixed(1);
+    el('light-y').value = s.mainY.toFixed(1);
+    el('light-z').value = s.mainZ.toFixed(1);
+    el('light-intensity').value = s.mainIntensity.toFixed(2);
+    el('ambient-intensity').value = s.ambientIntensity.toFixed(2);
+    el('light-x-val').textContent = s.mainX.toFixed(1);
+    el('light-y-val').textContent = s.mainY.toFixed(1);
+    el('light-z-val').textContent = s.mainZ.toFixed(1);
+    el('light-intensity-val').textContent = s.mainIntensity.toFixed(2);
+    el('ambient-intensity-val').textContent = s.ambientIntensity.toFixed(2);
+}
+
+function saveViewerState() {
+    const r = window._chessRenderer;
+    if (!r) return;
+    const pos = r.getCameraPosition();
+    const light = r.getLightState();
+    const state = {
+        viewMode: r._viewMode,
+        cameraX: pos.x, cameraY: pos.y, cameraZ: pos.z, cameraFov: pos.fov,
+        lightX: light.mainX, lightY: light.mainY, lightZ: light.mainZ,
+        lightIntensity: light.mainIntensity, ambientIntensity: light.ambientIntensity,
+        pieceType: document.getElementById('piece-type')?.value || 'K',
+        pieceColor: document.getElementById('piece-color')?.value || 'white',
+        boardRotation: r._boardWrap ? { x: r._boardWrap.rotation.x, y: r._boardWrap.rotation.y } : null
+    };
+    try { localStorage.setItem(VIEWER_STATE_KEY, JSON.stringify(state)); } catch (e) {}
+}
+
+function loadViewerState() {
+    try {
+        const raw = localStorage.getItem(VIEWER_STATE_KEY);
+        return raw ? JSON.parse(raw) : null;
+    } catch (e) { return null; }
+}
+
+function resetLighting() {
+    const r = window._chessRenderer;
+    if (!r) return;
+    r.setMainLightPosition(5, 15, 10);
+    r.setMainLightIntensity(2.95);
+    r.setAmbientIntensity(0.3);
+    syncLightSliders();
+    saveViewerState();
+}
+
 // WebGL detection — set flag; error message shown in load handler if unavailable
 let _webglOk = true;
 try {
@@ -251,6 +300,42 @@ window.renderBoard = function() {
     setupDragControls();
     setupViewerControls();
     setupLightControls();
+
+    // Restore persisted state if available (overrides defaults set above)
+    const saved = loadViewerState();
+    if (saved) {
+        const r = window._chessRenderer;
+        if (!r) return;
+
+        if (saved.viewMode) {
+            document.querySelectorAll('.view-mode-btn').forEach(b =>
+                b.classList.toggle('active', b.dataset.mode === saved.viewMode));
+            document.getElementById('piece-controls').style.display =
+                saved.viewMode === 'piece' ? '' : 'none';
+            r.setViewMode(saved.viewMode);
+        }
+
+        if (saved.viewMode === 'piece') {
+            document.getElementById('piece-type').value = saved.pieceType || 'K';
+            document.getElementById('piece-color').value = saved.pieceColor || 'white';
+            r.setSinglePiece(saved.pieceType || 'K', saved.pieceColor || 'white');
+        }
+
+        if (saved.cameraX !== undefined) r.setCameraPosition(saved.cameraX, saved.cameraY, saved.cameraZ);
+        if (saved.cameraFov !== undefined) r.setCameraFov(saved.cameraFov);
+
+        if (saved.lightX !== undefined) r.setMainLightPosition(saved.lightX, saved.lightY, saved.lightZ);
+        if (saved.lightIntensity !== undefined) r.setMainLightIntensity(saved.lightIntensity);
+        if (saved.ambientIntensity !== undefined) r.setAmbientIntensity(saved.ambientIntensity);
+
+        if (saved.boardRotation && r._boardWrap) {
+            r._boardWrap.rotation.x = saved.boardRotation.x;
+            r._boardWrap.rotation.y = saved.boardRotation.y;
+        }
+
+        syncCameraSliders();
+        syncLightSliders();
+    }
 };
 
 window.addEventListener('load', () => {
