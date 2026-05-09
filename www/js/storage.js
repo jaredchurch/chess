@@ -112,6 +112,22 @@ export function exportHistory(profileId) {
     URL.revokeObjectURL(url);
 }
 
+export function getActiveSkinId() {
+    return getStorageItem('chess_active_skin') || 'classic';
+}
+
+export function setActiveSkinId(skinId) {
+    return setStorageItem('chess_active_skin', skinId);
+}
+
+export function get3dMode() {
+    return getStorageItem('chess_3d_mode') === 'true';
+}
+
+export function set3dMode(enabled) {
+    return setStorageItem('chess_3d_mode', enabled ? 'true' : 'false');
+}
+
 export function getAllProfiles() {
     try {
         const profilesJson = getStorageItem(STORAGE_KEY_PROFILES);

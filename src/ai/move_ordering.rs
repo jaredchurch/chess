@@ -204,7 +204,12 @@ pub fn sort_moves(
 
     let mut scored_moves: Vec<(Move, i32)> = moves
         .iter()
-        .map(|&m| (m, score_move(&m, board, depth, &kt_guard, &ht_guard, hash_move)))
+        .map(|&m| {
+            (
+                m,
+                score_move(&m, board, depth, &kt_guard, &ht_guard, hash_move),
+            )
+        })
         .collect();
 
     scored_moves.sort_by_key(|b| std::cmp::Reverse(b.1)); // Descending order

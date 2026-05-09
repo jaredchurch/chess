@@ -8,7 +8,7 @@
 - [x] BUG8. On iPhone the board is flakey and keeps changing size of rows. The board size needs to be enforced as static on each screen. Board size and position is paramount and should be prioritised over other visual elements.
 - [x] BUG9. If lots of pieces get taken, then card displaying taken piece icons is not graceful - the icons and points move to overflow the card, suggest there should be a wrapping mechanism or some other more graceful method.
 - [x] BUG10. similar to bug8, but is affecting chrome browser on macOS & Windows.
-- [ ] BUG11. on small screen when score and move history is hidden by default the menu item to show/hide them is not correctly matching the state.
+- [?] BUG11. on small screen when score and move history is hidden by default the menu item to show/hide them is not correctly matching the state.
 - [x] BUG12. On iPad screen, I'm still getting board row heights changing (compared to BUG8)
 - [x] BUG13. The gear menu icon, hamburger menu icon and text for who's turn it is along with turn and game time should all be in a single row. the who's turn and turn/game time should be vertically bottom aligned with each other, and the two icons should be vertically centre aligned with the text.
 - [x] BUG14. Remove the "Controls Card" it is unnecessary.
@@ -22,3 +22,29 @@
 - [x] BUG22. sometimes when I start a new game the ranks are numbered reverse to what they should be. rank 1 should always be the rank that contains white king as the start of the game.
 - [x] BUG23. The option to display board at a point in move history isn't working.
 - [x] BUG24. Game stats have both "wins" and "checkmates" plus some other similar. this should get fixed.
+- [x] BUG25. when changing the skin the board often gets extra rows in it - validate that the board drawing works correctly.
+- [x] BUG26. The 3D mode didn't work — now uses Three.js with procedural low-poly pieces and WebGL rendering.
+- [x] BUG27. pokemon theme pieces dont move properly. this is dependent on bug28 being resolved.
+- [x] BUG28. when I click on a piece to move it the board gets messed up. ensure that it always remains as an 8 by 8 board with only the playing pieces displayed on it in their correct location.
+- [x] BUG29. I have to reload the page to see a move after it's made, it doesn't refresh properly on move.
+- [x] BUG30. The top of the 3d container view port and the top of the score-card should be aligned. they are not, the container is above the top of the score card.
+- [x] BUG31 - relates to BUG48 - now the 3D board appears to be fixed with black at front and does not rotate for white at front when user plays white.
+- [x] BUG32 - there are labels on the 3D board for files and ranks, the labels for files only appear on the white side of the board, I want the file labels (a-g) to appear on the side of the board closest to the camera.
+- [x] BUG33 - when I first select 3D mode in the setting dialog the viewport is very narrow and I have to subsequently refresh the board to get the full size viewport, modify so that the full size viewport is there immediately.
+- [ ] BUG34 - when I check the 3d Mode checkbox (refer line 57 in dailogs.js) the 3d board is tiny within the viewport and should be rendered filling the veiwport. If I do a page refresh after this then the size gets fixed.
+- [x] BUG35 - when I realod a page and am playing black, the timers get out of sync and it times my move on white. ensure that the timers are correctly idenitfying which colour is having it's turn. I suspect this is related to the comment that is in renderer-3d.js at line 425 in the resize function. suspect container created at line 281 of board.js is narrow when we get to renderer.resize at line 309 of board.js. when I switch to 3D mode the container is 57x400, however when I refresh the page the container at the same place is 600x496. please make sure that when the 3D mode is switched on that the container should be resized to fill the screen, I expect it to be 600x496, same as when the page gets refreshed.
+- [ ] BUG36 - playing in 2D mode, the board moves around (vertically) when pieces are selected and when moves are completed. ensure that the board position is static for these. It looks like the container the board is in is sometimes too tall for the board. this is a bug that was introduced somewhere between the HEAD of main branch and now.
+- [ ] BUG37 - 
+- [ ] BUG38 - 
+- [ ] BUG39 - 
+- [x] BUG40. many squares on the 3D board are showing yellow for some reason. This was highlighting all of the valid moves
+- [x] BUG41 - when I select 3D mode on the setting dialog, the viewport starts very narrow and I have to reload the page to get it's correct width. please ensure that the width is correct as soon as 3D mode is selected.
+- [x] BUG42 - in 3d mode the board labels for ranks and columns are not showing, please add these.
+- [x] BUG43 - if answering no to the castle question, when it returns the rook should be the selected piece.
+- [x] BUG44 - In 2D mode, before a pieces is selected the board is positioned incorrect on the screen. Please fix this.
+- [ ] BUG45 - board_outline should also be drawn on 2D boards.
+- [x] BUG46 - when a skin is selected the setting dialog should not exit automatically. as with all other settings the dialog should remain open until the user click outside the dialog
+- [x] BUG47 - the outline around the 3D board should be turned off if the url param is not set.
+- [x] BUG48 - in 3D skin, board should present the colour being played by the player at the bottom of the screen. right now if I play black I see white at bottom of screen and black at top of screen - board needs to be rotated 180 degrees. Refer bug 31 as well.
+- [ ] BUG49 - when user clicks on a square it will only highlight if that square contains a valid piece for that user. If that piece cannot be moved for some reason, then it should highlight red outline instead of yellow. Also, make the highlight always just outline rather than solid colour.
+- [x] BUG50 - In 3D skin, remove labels that are outside of the viewport, only labels inside the viewport should exist in 3D mode. Ensure that you don't impact the labels in 2D mode when you fix this.

@@ -101,9 +101,11 @@ src/
 ## Task and Bug Tracking
 
 - When you complete a task or fix a bug, update the corresponding tracking file
-- For bugs: Update `specs/bugs.md` by changing `- [ ]` to `- [x]` for the completed bug
-- For todo items: Update `specs/todo.md` by changing `- [ ]` to `- [x]` for completed items
-- Always mark items as complete immediately after verifying the fix works, before committing
+- For bugs: Update `specs/bugs.md` by changing `- [ ]` to `- [?]` for items needing validation
+- For todo items: Update `specs/todo.md` by changing `- [ ]` to `- [?]` for items needing validation
+- Mark items as `[?]` after implementing, then ask the user to test and confirm
+- Only change `[?]` to `[x]` after the user has explicitly confirmed the fix works
+- The `[?]` marker means: "implemented but needs user testing to validate"
 
 ## Testing Before Completing Work
 
@@ -173,3 +175,8 @@ src/
 8. NOW you can commit
 
 **Key Rule: If ANY test fails, DO NOT commit! Fix the errors first.**
+
+<!-- SPECKIT START -->
+For additional context about technologies to be used, project structure,
+shell commands, and other important information, read the current plan
+<!-- SPECKIT END -->

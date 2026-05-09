@@ -43,7 +43,16 @@ impl TranspositionTable {
     fn new() -> Self {
         let size = TT_SIZE;
         TranspositionTable {
-            entries: vec![TTEntry { hash: 0, depth: 0, score: 0, entry_type: 0, best_move: 0 }; size],
+            entries: vec![
+                TTEntry {
+                    hash: 0,
+                    depth: 0,
+                    score: 0,
+                    entry_type: 0,
+                    best_move: 0
+                };
+                size
+            ],
             mask: size - 1,
         }
     }
@@ -52,7 +61,7 @@ impl TranspositionTable {
     fn store(&mut self, hash: u64, depth: u8, score: i32, entry_type: u8, best_move: u16) {
         let idx = hash as usize & self.mask;
         let entry = &mut self.entries[idx];
-        
+
         // Always replace if new depth is greater, or if it's the same hash
         // Depth-preferred replacement keeps deeper (more valuable) entries.
         if entry.entry_type == 0 || depth >= entry.depth || hash == entry.hash {
@@ -70,7 +79,7 @@ impl TranspositionTable {
     fn lookup(&self, hash: u64, depth: u8, alpha: i32, beta: i32) -> (Option<i32>, Option<u16>) {
         let idx = hash as usize & self.mask;
         let entry = &self.entries[idx];
-        
+
         if entry.hash == hash {
             let mut best_move = None;
             if entry.best_move != 0 {
@@ -80,15 +89,9 @@ impl TranspositionTable {
             if entry.depth >= depth {
                 match entry.entry_type {
                     TT_EXACT => return (Some(entry.score), best_move),
-                    TT_LOWER_BOUND => {
-                        if entry.score >= beta {
-                            return (Some(entry.score), best_move);
-                        }
-                    }
-                    TT_UPPER_BOUND => {
-                        if entry.score <= alpha {
-                            return (Some(entry.score), best_move);
-                        }
+                    TT_LOWER_BOUND if entry.score >= beta => return (Some(entry.score), best_move),
+                    TT_UPPER_BOUND if entry.score <= alpha => {
+                        return (Some(entry.score), best_move)
                     }
                     _ => {}
                 }

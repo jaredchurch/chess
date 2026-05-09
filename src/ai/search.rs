@@ -423,7 +423,8 @@ fn alpha_beta(board: &Board, depth: u8, mut alpha: i32, beta: i32, start_time: f
         null_board.zobrist_hash ^= crate::board::zobrist::zobrist_tables().side_to_move_key;
         if let Some(ep) = null_board.en_passant_square {
             let file = ep as usize % 8;
-            null_board.zobrist_hash ^= crate::board::zobrist::zobrist_tables().en_passant_keys[file];
+            null_board.zobrist_hash ^=
+                crate::board::zobrist::zobrist_tables().en_passant_keys[file];
             null_board.en_passant_square = None;
         }
         null_board.half_move_clock = 0;
@@ -468,7 +469,10 @@ fn alpha_beta(board: &Board, depth: u8, mut alpha: i32, beta: i32, start_time: f
         // Futility pruning at depth 1: skip quiet moves that can't raise alpha
         if depth <= 2 && i > 0 {
             let is_capture = board.get_piece_at(m.to).is_some()
-                || matches!(m.flag, crate::board::move_struct::MoveFlag::EnPassantCapture);
+                || matches!(
+                    m.flag,
+                    crate::board::move_struct::MoveFlag::EnPassantCapture
+                );
             let is_promotion = matches!(m.flag, crate::board::move_struct::MoveFlag::Promotion(_));
             if !is_capture && !is_promotion {
                 let margin = if depth == 1 { 250 } else { 450 };
@@ -516,10 +520,22 @@ fn alpha_beta(board: &Board, depth: u8, mut alpha: i32, beta: i32, start_time: f
     if legal_move_count == 0 {
         if in_check {
             let score = -20000 - depth as i32;
-            crate::store_position(board_hash, depth, score, crate::ai::transposition::TT_EXACT, None);
+            crate::store_position(
+                board_hash,
+                depth,
+                score,
+                crate::ai::transposition::TT_EXACT,
+                None,
+            );
             return score;
         }
-        crate::store_position(board_hash, depth, 0, crate::ai::transposition::TT_EXACT, None);
+        crate::store_position(
+            board_hash,
+            depth,
+            0,
+            crate::ai::transposition::TT_EXACT,
+            None,
+        );
         return 0;
     }
 
@@ -535,20 +551,12 @@ fn alpha_beta(board: &Board, depth: u8, mut alpha: i32, beta: i32, start_time: f
     if profiler::is_active() {
         profiler::time(profiler::TT_STORE, || {
             crate::ai::transposition::store_position(
-                board_hash,
-                depth,
-                best_value,
-                entry_type,
-                best_move,
+                board_hash, depth, best_value, entry_type, best_move,
             )
         });
     } else {
         crate::ai::transposition::store_position(
-            board_hash,
-            depth,
-            best_value,
-            entry_type,
-            best_move,
+            board_hash, depth, best_value, entry_type, best_move,
         );
     }
     #[cfg(not(feature = "profiling"))]
@@ -605,13 +613,30 @@ fn generate_captures_fast(board: &Board, out: &mut Vec<Move>) {
             while atk != 0 {
                 let t = atk.trailing_zeros() as u8;
                 let to_sq = Square::from_u8_unchecked(t);
-                if $is_pawn && ((side == Color::White && t >= 56) || (side == Color::Black && t <= 7))
+                if $is_pawn
+                    && ((side == Color::White && t >= 56) || (side == Color::Black && t <= 7))
                 {
                     // Pawn promotion capture: generate all 4 promotions
-                    out.push(Move::new($from, to_sq, MoveFlag::Promotion(PieceType::Queen)));
-                    out.push(Move::new($from, to_sq, MoveFlag::Promotion(PieceType::Rook)));
-                    out.push(Move::new($from, to_sq, MoveFlag::Promotion(PieceType::Bishop)));
-                    out.push(Move::new($from, to_sq, MoveFlag::Promotion(PieceType::Knight)));
+                    out.push(Move::new(
+                        $from,
+                        to_sq,
+                        MoveFlag::Promotion(PieceType::Queen),
+                    ));
+                    out.push(Move::new(
+                        $from,
+                        to_sq,
+                        MoveFlag::Promotion(PieceType::Rook),
+                    ));
+                    out.push(Move::new(
+                        $from,
+                        to_sq,
+                        MoveFlag::Promotion(PieceType::Bishop),
+                    ));
+                    out.push(Move::new(
+                        $from,
+                        to_sq,
+                        MoveFlag::Promotion(PieceType::Knight),
+                    ));
                 } else {
                     out.push(Move::new($from, to_sq, MoveFlag::Capture));
                 }
@@ -774,8 +799,8 @@ fn quiescence(board: &Board, mut alpha: i32, beta: i32, start_time: f64, q_depth
     for i in 0..limit {
         let mut best = i;
         let mut best_score = score_capture(&captures[i], board);
-        for j in (i + 1)..captures.len() {
-            let s = score_capture(&captures[j], board);
+        for (j, capture) in captures.iter().enumerate().skip(i + 1) {
+            let s = score_capture(capture, board);
             if s > best_score {
                 best_score = s;
                 best = j;
@@ -787,13 +812,11 @@ fn quiescence(board: &Board, mut alpha: i32, beta: i32, start_time: f64, q_depth
     }
 
     let mut best_value = stand_pat;
-    for i in 0..limit {
+    for &m in captures.iter().take(limit) {
         // Check timeout during quiescence search
         if check_timeout_full(start_time).is_some() {
             return best_value;
         }
-
-        let m = captures[i];
 
         // Legality check: clone, make move, ensure king not in check.
         // We defer this from move generation to avoid cloning every

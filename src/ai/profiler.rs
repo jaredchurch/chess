@@ -57,18 +57,32 @@ static PHASE_NAMES: [&str; NUM_PHASES] = [
 
 /// Nanoseconds accumulated per phase
 static PHASE_NS: [AtomicU64; NUM_PHASES] = [
-    AtomicU64::new(0), AtomicU64::new(0), AtomicU64::new(0),
-    AtomicU64::new(0), AtomicU64::new(0), AtomicU64::new(0),
-    AtomicU64::new(0), AtomicU64::new(0), AtomicU64::new(0),
-    AtomicU64::new(0), AtomicU64::new(0),
+    AtomicU64::new(0),
+    AtomicU64::new(0),
+    AtomicU64::new(0),
+    AtomicU64::new(0),
+    AtomicU64::new(0),
+    AtomicU64::new(0),
+    AtomicU64::new(0),
+    AtomicU64::new(0),
+    AtomicU64::new(0),
+    AtomicU64::new(0),
+    AtomicU64::new(0),
 ];
 
 /// Call count per phase
 static PHASE_COUNT: [AtomicU64; NUM_PHASES] = [
-    AtomicU64::new(0), AtomicU64::new(0), AtomicU64::new(0),
-    AtomicU64::new(0), AtomicU64::new(0), AtomicU64::new(0),
-    AtomicU64::new(0), AtomicU64::new(0), AtomicU64::new(0),
-    AtomicU64::new(0), AtomicU64::new(0),
+    AtomicU64::new(0),
+    AtomicU64::new(0),
+    AtomicU64::new(0),
+    AtomicU64::new(0),
+    AtomicU64::new(0),
+    AtomicU64::new(0),
+    AtomicU64::new(0),
+    AtomicU64::new(0),
+    AtomicU64::new(0),
+    AtomicU64::new(0),
+    AtomicU64::new(0),
 ];
 
 /// Total search nodes visited
@@ -165,7 +179,10 @@ fn report(total_time_ms: f64) {
     let total_nodes = TOTAL_NODES.load(Ordering::Relaxed);
 
     println!("\n======= SEARCH PROFILE =======");
-    println!("{:<12} {:>12} {:>12} {:>10} {:>10}", "Phase", "Calls", "Time(ms)", "%Total", "ns/call");
+    println!(
+        "{:<12} {:>12} {:>12} {:>10} {:>10}",
+        "Phase", "Calls", "Time(ms)", "%Total", "ns/call"
+    );
     println!("{}", "-".repeat(60));
 
     let mut accounted_ns = 0u64;
@@ -206,7 +223,11 @@ fn report(total_time_ms: f64) {
     };
     println!(
         "{:<12} {:>12} {:>10.2}ms {:>8.1}% {:>10}",
-        "Other/Overhd", "-", other_ns as f64 / 1_000_000.0, other_pct, "-"
+        "Other/Overhd",
+        "-",
+        other_ns as f64 / 1_000_000.0,
+        other_pct,
+        "-"
     );
     println!("{}", "-".repeat(60));
     if total_nodes >= 1_000_000 {

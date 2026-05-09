@@ -5,6 +5,7 @@
 //
 
 import { getGameStats } from './storage.js';
+import { skinRegistry, switchSkin } from './skins.js';
 
 window.moveHistoryCollapsed = window.moveHistoryCollapsed || false;
 window.getGameStats = getGameStats;
@@ -43,6 +44,18 @@ window.showGameMenu = function() {
                 <label style="display:block;margin:10px 0;cursor:pointer;">
                     <input type="checkbox" id="show-board-labels" ${localStorage.getItem('chess_show_board_labels') !== 'false' ? 'checked' : ''} onchange="toggleBoardLabels(this.checked)"> Show Board Labels
                 </label>
+                <label style="display:block;margin:10px 0;cursor:pointer;">
+                    <input type="checkbox" id="board-outline" ${localStorage.getItem('chess_board_outline') === 'true' || new URLSearchParams(window.location.search).has('board_outline') ? 'checked' : ''} onchange="toggleBoardOutline(this.checked)"> Board Outline
+                </label>
+                <div style="margin:15px 0;">
+                    <label style="display:block;margin-bottom:5px;font-weight:bold;">Skin</label>
+                    <select id="skin-select" style="width:100%;padding:8px;border-radius:5px;border:1px solid #4a5f7f;background:#2c3e50;color:white;" onchange="window.onSkinChange(this.value)">
+                        ${skinRegistry.getAll().map(s => `<option value="${s.id}" ${s.id === skinRegistry.activeSkinId ? 'selected' : ''}>${s.name}</option>`).join('')}
+                    </select>
+                </div>
+                <label style="display:block;margin:10px 0;cursor:pointer;" id="mode-3d-label">
+                    <input type="checkbox" id="mode-3d" ${skinRegistry.get3dMode() ? 'checked' : ''} onchange="window.toggle3dMode(this.checked)"> 3D Mode
+                </label>
                 <hr style="border-color:#4a5f7f;margin:15px 0;">
                 <div style="margin-bottom:10px;font-weight:bold;">Profile</div>
                 <select id="profile-select" style="width:100%;padding:8px;margin-bottom:10px;" onchange="window.switchProfile(this.value)">
@@ -71,7 +84,29 @@ window.showGameMenu = function() {
     }
     const buildInfo = document.getElementById('build-info');
     if (buildInfo) buildInfo.textContent = buildLabel;
+
+    // Show/hide 3D mode checkbox based on active skin support
+    const mode3dLabel = document.getElementById('mode-3d-label');
+    const skin = skinRegistry.getActive();
+    if (mode3dLabel) {
+        mode3dLabel.style.display = (skin && skin.supports3d) ? '' : 'none';
+    }
+
     dialog.onclick = (e) => { if (e.target === dialog) closeGameMenu(); };
+};
+
+/**
+ * Handles skin selection change from the settings dialog
+ * Updates the active skin, persists it, closes the menu, and re-renders the board
+ */
+window.onSkinChange = function(skinId) {
+    switchSkin(skinId);
+    // Update dialog to reflect new skin's options (e.g. 3D mode visibility)
+    const mode3dLabel = document.getElementById('mode-3d-label');
+    if (mode3dLabel) {
+        const skin = skinRegistry.getActive();
+        mode3dLabel.style.display = (skin && skin.supports3d) ? '' : 'none';
+    }
 };
 
 /**
@@ -121,6 +156,24 @@ window.toggleBoardLabels = function(visible) {
     localStorage.setItem('chess_show_board_labels', visible ? 'true' : 'false');
     if (typeof window.updateBoardLabels === 'function') window.updateBoardLabels();
     if (typeof window.updateBoardSize === 'function') window.updateBoardSize();
+};
+
+/**
+ * Toggles the 3D board outline and saves preference to localStorage
+ */
+window.toggleBoardOutline = function(visible) {
+    localStorage.setItem('chess_board_outline', visible ? 'true' : 'false');
+    const container = document.getElementById('renderer-3d-container');
+    if (container) {
+        const existing = container.querySelector('.board-outline-overlay');
+        if (visible && !existing) {
+            const overlay = document.createElement('div');
+            overlay.className = 'board-outline-overlay';
+            container.appendChild(overlay);
+        } else if (!visible && existing) {
+            existing.remove();
+        }
+    }
 };
 
 /**

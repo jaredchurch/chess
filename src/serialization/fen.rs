@@ -284,16 +284,16 @@ fn validate_en_passant_square(board: &Board, ep_square: Square) -> Result<(), St
     // - There must be an opposing pawn on an adjacent file on the same rank as EP
     // - For White's turn: black just moved two squares, EP on rank 5, black pawn on rank 6
     // - For Black's turn: white just moved two squares, EP on rank 2, white pawn on rank 1
-    
+
     let ep_idx = ep_square.as_u32();
     let ep_rank = ep_idx / 8;
     let ep_file = ep_idx % 8;
-    
+
     // EP square must be on rank 2 or 5 (0-indexed)
     if ep_rank != 2 && ep_rank != 5 {
         return Err("Invalid FEN: En passant square must be on rank 3 or 6".to_string());
     }
-    
+
     // Determine expected pawn color and rank
     let (expected_color, pawn_rank) = if board.side_to_move == Color::White {
         // White's turn -> black just moved two squares
@@ -304,7 +304,7 @@ fn validate_en_passant_square(board: &Board, ep_square: Square) -> Result<(), St
         // EP is on rank 2, white pawn should be on rank 1
         (Color::White, 1u32)
     };
-    
+
     // Check left file (if not on file a)
     if ep_file > 0 {
         let pawn_sq = Square::from_u8_unchecked((pawn_rank * 8 + ep_file - 1) as u8);
@@ -314,7 +314,7 @@ fn validate_en_passant_square(board: &Board, ep_square: Square) -> Result<(), St
             }
         }
     }
-    
+
     // Check right file (if not on file h)
     if ep_file < 7 {
         let pawn_sq = Square::from_u8_unchecked((pawn_rank * 8 + ep_file + 1) as u8);
@@ -324,6 +324,6 @@ fn validate_en_passant_square(board: &Board, ep_square: Square) -> Result<(), St
             }
         }
     }
-    
+
     Err("Invalid FEN: No valid pawn for en passant capture".to_string())
 }

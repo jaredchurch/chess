@@ -1,3 +1,13 @@
+:root {
+    --board-white: #f0d9b5;
+    --board-black: #b58863;
+    --board-highlight: #f1c40f;
+    --piece-white: #ffffff;
+    --piece-black: #000000;
+    --piece-shadow: 0 0 2px rgba(0,0,0,0.8);
+    --board-border: #34495e;
+}
+
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -6,15 +16,19 @@ body {
     min-height: 100vh;
     display: flex;
     flex-direction: column;
+    overflow: hidden; /* Prevent body scroll shifting */
 }
 #app {
+    position: absolute;
+    top: 50px;
+    left: 0;
+    right: 0;
+    bottom: 0;
     display: flex;
     gap: 20px;
     padding: 20px;
-    margin: 0 auto;
-    width: 100%;
-    height: 100vh;
-    align-items: flex-start;
+    align-items: stretch;
+    overflow: hidden;
 }
 #board-container {
     flex: 1;
@@ -22,13 +36,46 @@ body {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 10px;
-    height: 100%;
 }
+
+#board-layout {
+    display: grid;
+    grid-template-columns: auto auto auto;
+    grid-template-rows: auto auto auto;
+    align-items: center;
+    justify-items: center;
+}
+
+.board-labels-row {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #95a5a6;
+    font-family: monospace;
+}
+
+.board-labels-col {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: #95a5a6;
+    font-family: monospace;
+}
+
+.label-corner {
+    width: 20px;
+    height: 20px;
+}
+
+#board-wrapper {
+    position: relative;
+    border: 2px solid var(--board-border);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+}
+
 #board {
     display: grid;
-    border: 2px solid #34495e;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
 }
 .square {
     display: flex;
@@ -37,11 +84,11 @@ body {
     cursor: pointer;
     user-select: none;
 }
-.white-square { background-color: #f0d9b5; }
-.black-square { background-color: #b58863; }
-.highlight { background-color: #f1c40f !important; }
-.piece-white { color: #ffffff; text-shadow: 0 0 2px rgba(0,0,0,0.8); }
-.piece-black { color: #000000; }
+.white-square { background-color: var(--board-white); }
+.black-square { background-color: var(--board-black); }
+.highlight { background-color: var(--board-highlight) !important; }
+.piece-white { color: var(--piece-white); text-shadow: var(--piece-shadow); }
+.piece-black { color: var(--piece-black); }
 #status { font-size: 1.2em; text-align: center; }
 .controls { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
 button {
@@ -60,7 +107,9 @@ button:hover { background: #2980b9; }
     display: flex;
     flex-direction: column;
     gap: 15px;
-    margin-top: 50px;
+    overflow-y: auto;
+    padding-right: 5px;
+    scrollbar-gutter: stable;
 }
 
 #info-panel .panel-hidden {
@@ -130,8 +179,8 @@ button:hover { background: #2980b9; }
     max-width: 150px;
     gap: 2px;
 }
-.captured-pieces .piece-white { color: #ffffff; text-shadow: 0 0 2px rgba(0,0,0,0.8); margin-right: 2px; }
-.captured-pieces .piece-black { color: #000000; margin-right: 2px; }
+.captured-pieces .piece-white { color: var(--piece-white); text-shadow: var(--piece-shadow); margin-right: 2px; }
+.captured-pieces .piece-black { color: var(--piece-black); margin-right: 2px; }
 
 /* Move History */
 #move-history {
@@ -292,4 +341,111 @@ button:hover { background: #2980b9; }
 .promotion-btn:hover {
     background: #3498db;
     transform: scale(1.1);
+}
+
+/* Castling Dialog */
+#castling-dialog {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+.castling-content {
+    background: #34495e;
+    border-radius: 10px;
+    padding: 20px;
+    text-align: center;
+}
+.castling-header {
+    color: white;
+    font-size: 1.2em;
+    margin-bottom: 15px;
+}
+.castling-options {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+.castling-btn-yes, .castling-btn-no {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1em;
+}
+.castling-btn-yes {
+    background: #2ecc71;
+    color: white;
+}
+.castling-btn-yes:hover { background: #27ae60; }
+.castling-btn-no {
+    background: #e74c3c;
+    color: white;
+}
+.castling-btn-no:hover { background: #c0392b; }
+
+/* 3D Mode Styles - Three.js WebGL board */
+#board-wrapper.mode-3d {
+    background: transparent;
+    padding: 0;
+    margin: 0;
+    position: static;
+    display: flex !important; /* Use flex to fill container */
+    flex: 1;
+    width: 100%;
+    height: 100%;
+    min-height: 500px;
+}
+
+/* Ensure the anonymous wrappers in index.html expand */
+#board-wrapper.mode-3d > div:not([id]) {
+    display: flex !important;
+    flex-direction: column;
+    flex: 1;
+    width: 100%;
+    height: 100%;
+}
+
+#board-wrapper.mode-3d > div:not([id]) > div:not([id]) {
+    display: flex !important;
+    flex: 1;
+    width: 100%;
+    height: 100%;
+}
+
+#board-wrapper.mode-3d #board {
+    border: none;
+    box-shadow: none;
+    width: 100%;
+    height: 100%;
+    display: block;
+    flex: 1;
+}
+
+#renderer-3d-container {
+    width: 100%;
+    height: 100%;
+    min-height: 400px;
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+}
+
+#renderer-3d-container canvas {
+    display: block;
+}
+
+.board-outline-overlay {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    border: 3px solid #e74c3c;
+    border-radius: 8px;
+    pointer-events: none;
+    z-index: 10;
 }

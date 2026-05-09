@@ -5,7 +5,7 @@ Once we have worked through doing the spec for them, they should be marked as do
 - [x] 2. Use the game history to allow a replay of a game.
 - [x] 3. On a wide screen Add a card on right hand side of screen that shows scores for the current game based on taking pieces using standard scoring mechanisms. On a small screen this should be available from a global context menu. a second card (also accessible through global context menu should display the move history for the current game, with ability to select a specific move and have a dialog that shows the board immediately before the move and highlights the piece that made the move and the destination square).
 - [x] 4. When game ends the ending result should show as a dialog box over the board including an explanation of the result, when thid dialog is closed it just shows the board, with highlights around key pieces that contribute to the checkmate or the stalemate. If the game ends in some other method than checkmate or stalemate there are no special highlights.
-- [] 5. Add a 3D display mode where angle of view is more like a real-world board.
+- [x] 5. Add a 3D display mode where angle of view is more like a real-world board (Three.js WebGL renderer).
 - [x] 6. Improve the engine that selects moves and have it's skill level configurable from novice to expert with 10 steps.
 - [] 7. Use play history to recommend the level for you on the skill level, by default games should start with that recommended level, recommendation should be based on a % configurable likelihood to win (default to 75% likely).
 - [] 8. Support mulitple profiles for users in the play history for people who share a single environment that they play in.
@@ -26,4 +26,17 @@ Once we have worked through doing the spec for them, they should be marked as do
 - [x] 23. User should be able to interact with screen while search is happening (it should not lock up).
 - [x] 24. further search optimisation.
 - [x] 25. adjust that model to set goal of best move as maximising the score differential (i.e. engine's score minus opponent's score.
-
+- [ ] 26. Ensure structure of code supports concept of skins on the game.
+- [ ] 27. Explain the reason for particular move selection (show 2nd/3rd best move).
+- [ ] 28. Configurable game length (number of mins per player).
+- [ ] 29. Configurable one user must checkmate to win (i.e if user doesn't reach checkmate they lose, stalemate means that user loses).
+- [ ] 30. indication of probability of win direction given where at in the game.
+- [x] 31. enable castling by selecting the king and then the rook for the castle side (this should pop-up and confirmation after click on rook seeing as it's a unique behaviour when clicking on a piece)
+- [ ] 32. 3d mode should be selectable through URL parameters.
+- [x] 33. focus on the board itself, not the pieces. currently all the squares on the board appear the same colour. I want you to write a test that can identify that all squares are the same colour and then modify to make sure that the white and black squares are differentiated from each other clearly (high contrast between the two). work hard on this and ensure you get to the end result.
+- [x] 34. Currently in 3D mode I cannot select and move pieces. please make that part work.
+- [?] 35. add a new page that allows focus on the 3D models, showing one of each piece that can be viewed for the purposes of adjusting them, and also include 3d model of the board in there as well. this will also be used if developing a new 3D skin
+- [ ] 36. In 3D mode, pieces should slide smoothly across the board when moving.
+- [ ] 37. Give the black pieces more contrast from the light source. when close together (one in front of another) it's difficult to differentiate one from the other.
+- [ ] 38. give shadows from the light source for each piece.
+- [ ] 39. Viewport should be taller to fill space on the page.

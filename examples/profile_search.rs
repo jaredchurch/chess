@@ -13,10 +13,7 @@ use std::time::Instant;
 fn main() {
     let args: Vec<String> = std::env::args().collect();
 
-    let depth: u8 = args
-        .get(1)
-        .and_then(|s| s.parse().ok())
-        .unwrap_or(4);
+    let depth: u8 = args.get(1).and_then(|s| s.parse().ok()).unwrap_or(4);
 
     let fen_str = match args.get(2) {
         Some(s) if s == "startpos" => "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",

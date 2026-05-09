@@ -118,6 +118,11 @@ cd www
 npx serve .
 ```
 
+The prototype includes several features:
+- **Main chess interface** at `index.html`
+- **3D Model Viewer** at `pages/3d-model-viewer.html` - A dedicated page for examining and adjusting 3D chess piece models, useful for skin development
+- URL parameter support for enabling board outline (`?board_outline`)
+
 ## License
 
 This project is licensed under the [MIT License](LICENSE).

@@ -17,12 +17,14 @@ Thumbs.db
 .env
 .env.local
 
-# Gemini CLI temporary files
-.gemini/tmp/
-
 # Temp folder
 tmp
 
 
 # Node.js dependencies
 node_modules/
+
+# Ignore spec kit files
+.specify/
+.opencode/
+.gemini/

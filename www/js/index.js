@@ -95,6 +95,9 @@ import {
 // Import new game dialog module
 import './dialogs-newgame.js';
 
+// Import skin module
+import { initializeSkin, switchSkin, toggle3dMode } from './skins.js';
+
 // Export key functions to window object for HTML event handlers and backward compatibility
 window.currentFen = INITIAL_FEN;
 window.pieceUnicode = pieceUnicode;
@@ -105,6 +108,7 @@ window.updateBoardSize = window.updateBoardSize;
 window.updateBoardLabels = window.updateBoardLabels;
 window.flipBoard = window.flipBoard;
 window.closePreviewDialog = window.closePreviewDialog;
+window.toggleBoardOutline = window.toggleBoardOutline;
 window.showNewGameDialog = window.showNewGameDialog;
 window.closeNewGameDialog = window.closeNewGameDialog;
 window.toggleNewGameCloudSettings = window.toggleNewGameCloudSettings;
@@ -136,5 +140,11 @@ window.recordMoveTime = recordMoveTime;
 window.makeAiMove = makeAiMove;
 window.getCloudBestMove = getCloudBestMove;
 
+// Export skin functions
+window.switchSkin = switchSkin;
+window.initializeSkin = initializeSkin;
+window.toggle3dMode = toggle3dMode;
+
 // Initialize the application
+initializeSkin();
 startGame();

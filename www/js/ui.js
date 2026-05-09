@@ -7,6 +7,8 @@ export const pieceUnicode = {
 
 export const pieceValues = { 'P': 1, 'N': 3, 'B': 3, 'R': 5, 'Q': 9, 'K': 0 };
 
+export const PIECE_TYPES = { UNICODE: 'unicode', IMAGE: 'image' };
+
 export function calculateScore(capturedList) {
     return capturedList.reduce((sum, piece) => sum + (pieceValues[piece.toUpperCase()] || 0), 0);
 }

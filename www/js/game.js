@@ -337,6 +337,10 @@ export function restoreInProgressGame() {
             }
             window.currentFen = fen;
             
+            // Sync timer's turn indicator with restored game state (fix BUG35)
+            const restoredTurn = getGameState(fen);
+            window.isWhitesTurn = restoredTurn ? restoredTurn.side_to_move === 'w' : true;
+            
             const playerSide = inProgress.player_side || 'white';
             // Orient board based on player, but white always moves first
             window.boardOrientation = playerSide;
@@ -456,10 +460,10 @@ export function updateUI() {
         }
     }
 
-    if (typeof renderBoard === 'function') renderBoard();
     if (typeof window.updateScoreCard === 'function') window.updateScoreCard();
     if (typeof window.updateMoveHistoryCard === 'function') window.updateMoveHistoryCard();
     if (typeof window.updateTimerDisplay === 'function') window.updateTimerDisplay();
+    if (typeof renderBoard === 'function') renderBoard();
 }
 
 /**

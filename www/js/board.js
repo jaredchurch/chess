@@ -5,9 +5,11 @@
 // and preview board for move history.
 //
 
-import { pieceUnicode, isWhitePiece } from './ui.js';
+import { pieceUnicode, isWhitePiece, PIECE_TYPES } from './ui.js';
+import { skinRegistry } from './skins.js';
 import { getLegalMoves, applyMove, getGameState } from './chess-wasm.js';
 import { getCapturedPiece, getBoardStateAtMove } from './game.js';
+import { createRenderer } from './renderer-3d.js';
 
 window.boardOrientation = 'white';
 window.selectedSquare = null;
@@ -20,24 +22,32 @@ window.legalMoves = [];
  */
 window.updateBoardSize = function() {
     const board = document.getElementById('board');
-    if (!board) return;
-    
-    // Get actual container dimensions to maximize board size
     const container = document.getElementById('board-container');
+    if (!board || !container) return;
+
+    // In 3D mode, Three.js ResizeObserver handles sizing
+    if (window._chessRenderer) return;
+
+    // Use actual dimensions to maximize board size
+    const rect = container.getBoundingClientRect();
+    const width = rect.width;
+    const height = rect.height;
     const isMobile = window.innerWidth <= 700;
     
-    let maxSize;
-    if (isMobile) {
-        // On mobile, use full viewport minus status bar and padding
-        maxSize = Math.min(window.innerWidth - 20, window.innerHeight - 120);
-    } else {
-        // On desktop, subtract info panel width from viewport
-        const infoPanel = document.getElementById('info-panel');
-        const panelWidth = infoPanel ? infoPanel.offsetWidth + 20 : 300;
-        const availableWidth = window.innerWidth - panelWidth - 40;
-        const availableHeight = window.innerHeight - 140;
-        maxSize = Math.min(availableWidth, availableHeight);
-    }
+    // Account for padding and labels
+    // We use a ratio-based approach for label space to ensure consistency
+    const padding = isMobile ? 10 : 20;
+    
+    // Estimate maxSize first to get an approximate squareSize for label calculation
+    let estSize = Math.min(width - padding * 2, height - padding * 2);
+    let estSquareSize = Math.floor(estSize / 8);
+    let estLabelHeight = Math.max(Math.floor(estSquareSize * 0.3), 12);
+    let labelSpace = estLabelHeight * 4; // Top + Bottom + Spacing
+    
+    const availableWidth = width - padding * 2;
+    const availableHeight = height - labelSpace;
+    
+    const maxSize = Math.min(availableWidth, availableHeight);
     
     // Make board as large as possible while keeping it square
     const size = Math.floor(Math.max(maxSize, 200));
@@ -63,6 +73,21 @@ window.updateBoardSize = function() {
     }
 };
 
+// Add ResizeObserver to board-container to ensure 2D board always updates
+// when the container size changes (e.g. info-panel scrollbar appearing)
+if (typeof ResizeObserver !== 'undefined') {
+    const container = document.getElementById('board-container');
+    if (container) {
+        const ro = new ResizeObserver(() => {
+            if (!window._chessRenderer) {
+                // Immediate update to prevent flicker, but use requestAnimationFrame for smoothness
+                window.updateBoardSize();
+            }
+        });
+        ro.observe(container);
+    }
+}
+
 /**
  * Updates the algebraic notation labels (a-h, 1-8) around the board
  * Adjusts font size to match board square size
@@ -78,6 +103,17 @@ window.updateBoardLabels = function() {
     const fontSize = Math.max(Math.floor(squareSize * 0.25), 10);
     const labelsVisible = localStorage.getItem('chess_show_board_labels') !== 'false';
     
+    // Calculate label heights/widths for stability
+    const labelRowHeight = Math.ceil(fontSize * 1.5);
+    const labelColWidth = Math.ceil(fontSize * 1.5);
+
+    // Update corner spaces to match
+    document.querySelectorAll('.label-corner').forEach(el => {
+        el.style.width = labelColWidth + 'px';
+        el.style.height = labelRowHeight + 'px';
+        el.style.display = labelsVisible ? 'block' : 'none';
+    });
+
     // Files (a-h) top and bottom
     const files = window.boardOrientation === 'white' ? ['a','b','c','d','e','f','g','h'] : ['h','g','f','e','d','c','b','a'];
     ['board-labels-top', 'board-labels-bottom'].forEach(id => {
@@ -85,6 +121,8 @@ window.updateBoardLabels = function() {
         if (!el) return;
         el.style.display = labelsVisible ? 'flex' : 'none';
         el.style.fontSize = fontSize + 'px';
+        el.style.height = labelRowHeight + 'px';
+        el.style.width = boardWidth + 'px';
         el.innerHTML = files.map(f => `<div style="width:${squareSize}px;text-align:center;">${f}</div>`).join('');
     });
     
@@ -95,7 +133,9 @@ window.updateBoardLabels = function() {
         if (!el) return;
         el.style.display = labelsVisible ? 'flex' : 'none';
         el.style.fontSize = fontSize + 'px';
-        el.innerHTML = ranks.map(r => `<div style="height:${squareSize}px;display:flex;align-items:center;">${r}</div>`).join('');
+        el.style.width = labelColWidth + 'px';
+        el.style.height = (squareSize * 8) + 'px';
+        el.innerHTML = ranks.map(r => `<div style="height:${squareSize}px;display:flex;align-items:center;justify-content:center;">${r}</div>`).join('');
     });
 };
 
@@ -134,7 +174,71 @@ export function renderBoard() {
         console.warn('Board element not found');
         return;
     }
+
+    // Apply active skin
+    skinRegistry.applyActive();
+
+    const activeSkin = skinRegistry.getActive();
+    const is3d = skinRegistry.get3dMode();
+
+    // Toggle 3D mode class on board wrapper
+    const boardWrapper = document.getElementById('board-wrapper');
+    if (boardWrapper) {
+        boardWrapper.classList.toggle('mode-3d', is3d);
+    }
+
+    // Hide board labels in 3D mode (they don't work with perspective)
+    if (is3d) {
+        ['board-labels-top', 'board-labels-bottom', 'board-labels-left', 'board-labels-right'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.style.display = 'none';
+        });
+        document.querySelectorAll('.label-corner').forEach(el => {
+            el.style.display = 'none';
+        });
+    } else {
+        ['board-labels-top', 'board-labels-bottom', 'board-labels-left', 'board-labels-right'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.style.display = '';
+        });
+        document.querySelectorAll('.label-corner').forEach(el => {
+            el.style.display = '';
+        });
+    }
+
+    if (is3d) {
+        // Clear fixed sizing from 2D mode to allow 3D canvas to fill container
+        boardEl.style.width = '';
+        boardEl.style.height = '';
+        window.legalMoves = getLegalMoves(window.currentFen) || [];
+        renderBoard3d(boardEl);
+        return;
+    }
+
+    // When switching FROM 3D mode, clean up Three.js renderer
+    if (window._chessRenderer) {
+        window._chessRenderer.dispose();
+        window._chessRenderer = null;
+    }
+    const r3d = document.getElementById('renderer-3d-container');
+    if (r3d) r3d.remove();
+
+    // Reset board-container positioning from 3D mode (BUG35)
+    const boardContainer = document.getElementById('board-container');
+    if (boardContainer) {
+        boardContainer.style.position = '';
+    }
+
     boardEl.innerHTML = '';
+
+    // Reset any 3D styles that may have leaked from 3D mode
+    boardEl.style.placeItems = '';
+    boardEl.style.background = '';
+    boardEl.style.display = 'grid';
+    window.updateBoardSize();
+
+    const useImagePieces = activeSkin && activeSkin.pieceSet && activeSkin.pieceSet.type === PIECE_TYPES.IMAGE;
+    const pieceMapping = useImagePieces ? (activeSkin.pieceSet.mapping || {}) : {};
 
     const pieces = parseFenPieces(window.currentFen);
     window.legalMoves = getLegalMoves(window.currentFen) || [];
@@ -151,14 +255,78 @@ export function renderBoard() {
             
             const piece = pieces[squareName];
             if (piece) {
-                squareEl.innerText = pieceUnicode[piece];
                 squareEl.classList.add(piece === piece.toUpperCase() ? 'piece-white' : 'piece-black');
+                const imgSrc = pieceMapping[piece];
+                if (useImagePieces && imgSrc) {
+                    const img = document.createElement('img');
+                    img.src = imgSrc;
+                    img.alt = piece;
+                    img.style.width = '100%';
+                    img.style.height = '100%';
+                    img.style.objectFit = 'contain';
+                    img.style.pointerEvents = 'none';
+                    img.onerror = function() {
+                        this.replaceWith(pieceUnicode[piece]);
+                    };
+                    squareEl.appendChild(img);
+                } else {
+                    squareEl.innerText = pieceUnicode[piece];
+                }
             }
 
             squareEl.onclick = () => handleSquareClick(squareName);
             boardEl.appendChild(squareEl);
         });
     });
+}
+
+/**
+ * Renders a 3D perspective view of the board using Three.js.
+ * Creates a procedural low-poly chess scene with piece placement from FEN.
+ */
+function renderBoard3d(boardEl) {
+    let container = document.getElementById('renderer-3d-container');
+
+    if (!container) {
+        boardEl.innerHTML = '';
+
+        // Make board-container the positioning parent so the 3D container
+        // can use absolute positioning to bypass CSS grid auto-sizing (BUG35)
+        const boardContainer = document.getElementById('board-container');
+        if (boardContainer && boardContainer.style.position !== 'relative') {
+            boardContainer.style.position = 'relative';
+        }
+
+        container = document.createElement('div');
+        container.id = 'renderer-3d-container';
+        container.style.position = 'absolute';
+        container.style.top = '0';
+        container.style.left = '0';
+        container.style.width = '100%';
+        container.style.height = '100%';
+        // Board outline: only show if URL param is set (BUG50 fix)
+        const showOutline = new URLSearchParams(window.location.search).has('board_outline');
+        if (showOutline) {
+            const overlay = document.createElement('div');
+            overlay.className = 'board-outline-overlay';
+            container.appendChild(overlay);
+        }
+        boardEl.appendChild(container);
+        const renderer = createRenderer(container);
+
+        window._chessRenderer = renderer;
+        renderer.onSquareClick = (square) => handleSquareClick(square);
+    }
+
+    const renderer = window._chessRenderer;
+    renderer.setOrientation(window.boardOrientation);
+    renderer.setPosition(window.currentFen);
+
+    if (window.selectedSquare) {
+        renderer.setSelection(window.selectedSquare);
+    }
+
+    renderer.resize();
 }
 
 /**
@@ -183,19 +351,96 @@ export function parseFenPieces(fen) {
  * Manages piece selection, move validation, and executing moves
  * @param {string} square - The clicked square (e.g., 'e4')
  */
+function getPieceAtSquare(sq) {
+    const pieces = {};
+    let rank = 7, file = 0;
+    for (const ch of window.currentFen.split(' ')[0]) {
+        if (ch === '/') { rank--; file = 0; }
+        else if (ch >= '1' && ch <= '8') { file += parseInt(ch); }
+        else { pieces[String.fromCharCode(97 + file) + (rank + 1)] = ch; file++; }
+    }
+    return pieces[sq] || null;
+}
+
+function findCastlingMove(kingSq, rookSq) {
+    const kingFile = kingSq.charCodeAt(0) - 97;
+    const rookFile = rookSq.charCodeAt(0) - 97;
+    let targetFile;
+    if (rookFile > kingFile) {
+        targetFile = kingFile + 2; // kingside: e1→g1
+    } else {
+        targetFile = kingFile - 2; // queenside: e1→c1
+    }
+    const targetSq = String.fromCharCode(targetFile + 97) + kingSq[1];
+    return window.legalMoves.find(m => m.from === kingSq && m.to === targetSq) || null;
+}
+
+function showCastlingDialog(move, clickedSq) {
+    let dialog = document.getElementById('castling-dialog');
+    if (!dialog) {
+        dialog = document.createElement('div');
+        dialog.id = 'castling-dialog';
+        const isKingside = (move.to.charCodeAt(0) - 97) > (move.from.charCodeAt(0) - 97);
+        const side = isKingside ? 'kingside' : 'queenside';
+        dialog.innerHTML = `
+            <div class="castling-content">
+                <div class="castling-header">Castle ${side}?</div>
+                <div class="castling-options">
+                    <button class="castling-btn-yes">Yes</button>
+                    <button class="castling-btn-no">No</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(dialog);
+        dialog.onclick = (e) => {
+            if (e.target === dialog) closeCastlingDialog();
+        };
+    }
+    dialog.querySelectorAll('.castling-btn-yes').forEach(btn => {
+        btn.onclick = () => {
+            closeCastlingDialog();
+            makeMove(move);
+        };
+    });
+    dialog.querySelectorAll('.castling-btn-no').forEach(btn => {
+        btn.onclick = () => {
+            closeCastlingDialog();
+            window.selectedSquare = clickedSq;
+            renderBoard();
+        };
+    });
+    dialog.style.display = 'flex';
+}
+
+window.closeCastlingDialog = function() {
+    const dialog = document.getElementById('castling-dialog');
+    if (dialog) dialog.style.display = 'none';
+};
+
 export function handleSquareClick(square) {
     if (window.selectedSquare === square) {
         window.selectedSquare = null;
     } else if (window.selectedSquare) {
         const move = window.legalMoves.find(m => m.from === window.selectedSquare && m.to === square);
         if (move) {
-            // TODO 20: Handle promotion - let user choose piece
             if (move.promotion) {
                 showPromotionDialog(move);
                 return;
             }
             makeMove(move);
         } else {
+            // Check for castling: king selected, rook clicked
+            const selectedPiece = getPieceAtSquare(window.selectedSquare);
+            const clickedPiece = getPieceAtSquare(square);
+            const isKing = selectedPiece && selectedPiece.toUpperCase() === 'K';
+            const isRook = clickedPiece && clickedPiece.toUpperCase() === 'R';
+            if (isKing && isRook) {
+                const castlingMove = findCastlingMove(window.selectedSquare, square);
+                if (castlingMove) {
+                    showCastlingDialog(castlingMove, square);
+                    return;
+                }
+            }
             window.selectedSquare = square;
         }
     } else {
@@ -204,7 +449,6 @@ export function handleSquareClick(square) {
     renderBoard();
 }
 
-// TODO 20: Show promotion piece selection dialog
 function showPromotionDialog(move) {
     let dialog = document.getElementById('promotion-dialog');
     if (!dialog) {
@@ -214,10 +458,10 @@ function showPromotionDialog(move) {
             <div class="promotion-content">
                 <div class="promotion-header">Choose promotion piece:</div>
                 <div class="promotion-options">
-                    <button class="promotion-btn" data-piece="q">♕ Queen</button>
-                    <button class="promotion-btn" data-piece="r">♖ Rook</button>
-                    <button class="promotion-btn" data-piece="b">♗ Bishop</button>
-                    <button class="promotion-btn" data-piece="n">♘ Knight</button>
+                    <button class="promotion-btn" data-piece="q">&#9813; Queen</button>
+                    <button class="promotion-btn" data-piece="r">&#9814; Rook</button>
+                    <button class="promotion-btn" data-piece="b">&#9815; Bishop</button>
+                    <button class="promotion-btn" data-piece="n">&#9816; Knight</button>
                 </div>
             </div>
         `;
@@ -227,7 +471,6 @@ function showPromotionDialog(move) {
         };
     }
     
-    // Store the move and handle selection
     window.pendingPromotionMove = move;
     dialog.querySelectorAll('.promotion-btn').forEach(btn => {
         btn.onclick = () => {
@@ -247,7 +490,6 @@ window.closePromotionDialog = function() {
     if (dialog) dialog.style.display = 'none';
 }
 
-// Helper function to execute a move
 function makeMove(move) {
     if (typeof window.recordMoveTime === 'function') window.recordMoveTime();
     if (typeof window.stopMoveTimer === 'function') window.stopMoveTimer();
@@ -286,6 +528,10 @@ export function renderPreviewBoard(boardEl, fen, highlightFrom, highlightTo) {
     const ranks = window.boardOrientation === 'white' ? [7, 6, 5, 4, 3, 2, 1, 0] : [0, 1, 2, 3, 4, 5, 6, 7];
     const files = window.boardOrientation === 'white' ? [0, 1, 2, 3, 4, 5, 6, 7] : [7, 6, 5, 4, 3, 2, 1, 0];
 
+    const activeSkin = skinRegistry.getActive();
+    const useImagePieces = activeSkin && activeSkin.pieceSet && activeSkin.pieceSet.type === PIECE_TYPES.IMAGE;
+    const pieceMapping = useImagePieces ? (activeSkin.pieceSet.mapping || {}) : {};
+
     ranks.forEach((rank, ri) => {
         files.forEach((file, fi) => {
             const squareName = String.fromCharCode(97 + file) + (rank + 1);
@@ -295,8 +541,23 @@ export function renderPreviewBoard(boardEl, fen, highlightFrom, highlightTo) {
             
             const piece = pieces[squareName];
             if (piece) {
-                squareEl.innerText = pieceUnicode[piece];
                 squareEl.classList.add(piece === piece.toUpperCase() ? 'piece-white' : 'piece-black');
+                const imgSrc = pieceMapping[piece];
+                if (useImagePieces && imgSrc) {
+                    const img = document.createElement('img');
+                    img.src = imgSrc;
+                    img.alt = piece;
+                    img.style.width = '100%';
+                    img.style.height = '100%';
+                    img.style.objectFit = 'contain';
+                    img.style.pointerEvents = 'none';
+                    img.onerror = function() {
+                        this.replaceWith(pieceUnicode[piece]);
+                    };
+                    squareEl.appendChild(img);
+                } else {
+                    squareEl.innerText = pieceUnicode[piece];
+                }
             }
 
             boardEl.appendChild(squareEl);
