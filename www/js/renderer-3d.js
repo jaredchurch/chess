@@ -9,7 +9,7 @@
 import * as THREE from 'three';
 
 const WHITE_MAT = { color: 0xf0f0f0, roughness: 0.25, metalness: 0.05 };
-const BLACK_MAT = { color: 0x1a1a1a, roughness: 0.45, metalness: 0.1  };
+const BLACK_MAT = { color: 0x333333, roughness: 0.45, metalness: 0.1  };
 
 export class ChessRenderer3D {
     constructor() {
@@ -108,9 +108,9 @@ export class ChessRenderer3D {
     }
 
     _setupLights() {
-        this.ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+        this.ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
         this.scene.add(this.ambientLight);
-        this.mainLight = new THREE.DirectionalLight(0xffffff, 1.8);
+        this.mainLight = new THREE.DirectionalLight(0xffffff, 2.95);
         this.mainLight.position.set(5, 15, 10);
         this.mainLight.castShadow = true;
         this.mainLight.shadow.mapSize.width = 2048;
@@ -496,8 +496,8 @@ export class ChessRenderer3D {
             mainX: this.mainLight ? this.mainLight.position.x : 5,
             mainY: this.mainLight ? this.mainLight.position.y : 15,
             mainZ: this.mainLight ? this.mainLight.position.z : 10,
-            mainIntensity: this.mainLight ? this.mainLight.intensity : 1.8,
-            ambientIntensity: this.ambientLight ? this.ambientLight.intensity : 0.7,
+            mainIntensity: this.mainLight ? this.mainLight.intensity : 2.95,
+            ambientIntensity: this.ambientLight ? this.ambientLight.intensity : 0.3,
         };
     }
 
