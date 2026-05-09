@@ -7,7 +7,7 @@
 //
 
 import * as THREE from 'three';
-import { skinRegistry } from './skins.js';
+import { skinRegistry, switchSkin } from './skins.js';
 import { renderBoard3d } from './board.js';
 
 function setupViewerControls() {
@@ -149,7 +149,7 @@ function setupSkinControlsInner(skinSelect) {
         console.log('setupSkinControls: skin change event triggered, value:', e.target.value);
         const skinId = skinSelect.value;
         console.log('setupSkinControls: attempting to switch to skin:', skinId);
-        const switchResult = skinRegistry.switchSkin(skinId);
+        const switchResult = switchSkin(skinId);
         console.log('setupSkinControls: switchSkin returned:', switchResult);
         if (switchResult) {
             console.log('setupSkinControls: switched to skin:', skinId);
