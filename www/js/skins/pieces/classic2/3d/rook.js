@@ -11,7 +11,7 @@
 //   (Spaced at 45° intervals around the platform edge)
 //
 import * as THREE from 'three';
-import { getPointsFromSVGPath } from '../../svg-path.js';
+import { getPointsFromSVGPath } from '../../../svg-path.js';
 
 function createRamparts(increment = 0, mat, posY = 0.845, innerRadius = 0.15, outerRadius = 0.2, height = 0.10) {
         // 1. Create the 2D Shape (The footprint of the ring)

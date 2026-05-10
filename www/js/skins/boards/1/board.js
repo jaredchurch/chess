@@ -9,7 +9,7 @@ import * as THREE from 'three';
 
 const SQUARE_SIZE = 1;
 const BOARD_SIZE = 8;
-const BORDER_SIZE = 8.6;
+export const BORDER_SIZE = 8.6;
 const LABEL_OFFSET = 4.2;
 const RANK_LABEL_OFFSET = 4.15;
 const LABEL_PLANE_SIZE = 0.4;
@@ -170,6 +170,9 @@ export class Board3D {
     }
 
     dispose() {
+        if (this.group.parent) {
+            this.group.parent.remove(this.group);
+        }
         this._disposeChildren();
     }
 }

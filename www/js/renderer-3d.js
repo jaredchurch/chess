@@ -7,20 +7,7 @@
 //
 
 import * as THREE from 'three';
-import { skinRegistry } from './skins.js';
-import { Board3D } from './skins/boards/1/board.js';
-import { buildPawn as buildPawnClassic } from './skins/classic/3d/pawn.js';
-import { buildRook as buildRookClassic } from './skins/classic/3d/rook.js';
-import { buildKnight as buildKnightClassic } from './skins/classic/3d/knight.js';
-import { buildBishop as buildBishopClassic } from './skins/classic/3d/bishop.js';
-import { buildQueen as buildQueenClassic } from './skins/classic/3d/queen.js';
-import { buildKing as buildKingClassic } from './skins/classic/3d/king.js';
-import { buildPawn as buildPawnClassic2 } from './skins/classic2/3d/pawn.js';
-import { buildRook as buildRookClassic2 } from './skins/classic2/3d/rook.js';
-import { buildKnight as buildKnightClassic2 } from './skins/classic2/3d/knight.js';
-import { buildBishop as buildBishopClassic2 } from './skins/classic2/3d/bishop.js';
-import { buildQueen as buildQueenClassic2 } from './skins/classic2/3d/queen.js';
-import { buildKing as buildKingClassic2 } from './skins/classic2/3d/king.js';
+import { skinRegistry, Board3D, skin3dPieces } from './skins/skins.js';
 
 const WHITE_SHINY = { color: 0xf0f0f0, roughness: 0.4, metalness: 0.6 };
 const BLACK_SHINY = { color: 0x505050, roughness: 0.4, metalness: 0.6 };
@@ -104,10 +91,22 @@ export class ChessRenderer3D {
         return this;
     }
 
+    setBoardDesign(BoardClass) {
+        this._boardDesign = BoardClass || Board3D;
+        if (this.board) {
+            this.board.dispose();
+            this.board = null;
+        }
+        const Design = this._boardDesign;
+        this.board = new Design(this._boardWrap, { light: 0xf0d9b5, dark: 0xb58863 });
+        this.board.build();
+    }
+
     _setupBoard() {
         this._boardWrap = new THREE.Group();
         this.scene.add(this._boardWrap);
-        this.board = new Board3D(this._boardWrap, { light: 0xf0d9b5, dark: 0xb58863 });
+        const Design = this._boardDesign || Board3D;
+        this.board = new Design(this._boardWrap, { light: 0xf0d9b5, dark: 0xb58863 });
         this.board.build();
     }
 
@@ -164,51 +163,27 @@ export class ChessRenderer3D {
 
     _buildPawn(group, mat) {
         const activeSkinId = skinRegistry.getActive()?.id || 'classic';
-        if (activeSkinId === 'classic2') {
-            buildPawnClassic2(group, mat);
-        } else {
-            buildPawnClassic(group, mat);
-        }
+        (skin3dPieces[activeSkinId] || skin3dPieces.classic).buildPawn(group, mat);
     }
     _buildRook(group, mat) {
         const activeSkinId = skinRegistry.getActive()?.id || 'classic';
-        if (activeSkinId === 'classic2') {
-            buildRookClassic2(group, mat);
-        } else {
-            buildRookClassic(group, mat);
-        }
+        (skin3dPieces[activeSkinId] || skin3dPieces.classic).buildRook(group, mat);
     }
     _buildKnight(group, mat) {
         const activeSkinId = skinRegistry.getActive()?.id || 'classic';
-        if (activeSkinId === 'classic2') {
-            buildKnightClassic2(group, mat);
-        } else {
-            buildKnightClassic(group, mat);
-        }
+        (skin3dPieces[activeSkinId] || skin3dPieces.classic).buildKnight(group, mat);
     }
     _buildBishop(group, mat) {
         const activeSkinId = skinRegistry.getActive()?.id || 'classic';
-        if (activeSkinId === 'classic2') {
-            buildBishopClassic2(group, mat);
-        } else {
-            buildBishopClassic(group, mat);
-        }
+        (skin3dPieces[activeSkinId] || skin3dPieces.classic).buildBishop(group, mat);
     }
     _buildQueen(group, mat) {
         const activeSkinId = skinRegistry.getActive()?.id || 'classic';
-        if (activeSkinId === 'classic2') {
-            buildQueenClassic2(group, mat);
-        } else {
-            buildQueenClassic(group, mat);
-        }
+        (skin3dPieces[activeSkinId] || skin3dPieces.classic).buildQueen(group, mat);
     }
     _buildKing(group, mat) {
         const activeSkinId = skinRegistry.getActive()?.id || 'classic';
-        if (activeSkinId === 'classic2') {
-            buildKingClassic2(group, mat);
-        } else {
-            buildKingClassic(group, mat);
-        }
+        (skin3dPieces[activeSkinId] || skin3dPieces.classic).buildKing(group, mat);
     }
 
     // ---- Public API ----
