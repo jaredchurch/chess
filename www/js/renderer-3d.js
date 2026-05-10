@@ -110,9 +110,9 @@ export class ChessRenderer3D {
 
     _setFileLabelsBySide(side) {
         // Toggle file labels visibility so only the ones closest to camera are shown
-        // When side is 'white', bottom labels (z=5.0) are close, top labels (z=-5.0) are far.
-        // When side is 'black', the board is rotated 180 deg, so bottom labels (z=5.0 relative to board)
-        // are now at z=-5.0 in world space, and top labels are at z=5.0 in world space.
+        // When side is 'white', bottom labels (z=4.2) are close, top labels (z=-4.2) are far.
+        // When side is 'black', the board is rotated 180 deg, so bottom labels (z=4.2 relative to board)
+        // are now at z=-4.2 in world space, and top labels are at z=4.2 in world space.
         const showBottom = (side === 'white');
         this.fileLabelsBottom.forEach(l => l.visible = showBottom);
         this.fileLabelsTop.forEach(l => l.visible = !showBottom);
@@ -187,23 +187,31 @@ export class ChessRenderer3D {
         this._createLabels();
     }
 
-    _makeLabelSprite(text) {
+    _makeLabelMesh(text) {
         // Guard for Node.js test environment where document is not defined
         if (typeof document === 'undefined') {
-            const mat = new THREE.SpriteMaterial({ color: 0xffffff });
-            return new THREE.Sprite(mat);
+            const geo = new THREE.PlaneGeometry(0.4, 0.4);
+            const mat = new THREE.MeshBasicMaterial({ color: 0x95a5a6 });
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.rotation.x = -Math.PI / 2;
+            return mesh;
         }
         const canvas = document.createElement('canvas');
-        canvas.width = 64; canvas.height = 64;
+        canvas.width = 128;
+        canvas.height = 128;
         const ctx = canvas.getContext('2d');
         ctx.fillStyle = '#95a5a6';
-        ctx.font = 'bold 13px monospace';
+        ctx.font = 'bold 48px monospace';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(text, 32, 34);
+        ctx.fillText(text, 64, 68);
         const texture = new THREE.CanvasTexture(canvas);
-        const mat = new THREE.SpriteMaterial({ map: texture, transparent: true });
-        return new THREE.Sprite(mat);
+        const geo = new THREE.PlaneGeometry(0.4, 0.4);
+        const mat = new THREE.MeshBasicMaterial({ map: texture, transparent: true, depthWrite: false });
+        const mesh = new THREE.Mesh(geo, mat);
+        // Labels lie flat on the board surface, rotated to face upward
+        mesh.rotation.x = -Math.PI / 2;
+        return mesh;
     }
 
     _createLabels() {
@@ -213,28 +221,30 @@ export class ChessRenderer3D {
         this.fileLabelsBottom = [];
         this.fileLabelsTop = [];
 
-        // Files along bottom (z = 5.0, near Rank 1) and top (z = -5.0, near Rank 8)
+        // Files along bottom (z = 4.15, near Rank 1) and top (z = -4.15, near Rank 8)
+        // Labels sit flat on the border strip between squares (±4.0) and outer edge (±4.3)
         for (let f = 0; f < 8; f++) {
             const x = f - 3.5;
-            const bottom = this._makeLabelSprite(files[f]);
-            bottom.position.set(x, 0.05, 5.0);
+            const bottom = this._makeLabelMesh(files[f]);
+            bottom.position.set(x, 0.02, 4.2);
             this.boardGroup.add(bottom);
             this.fileLabelsBottom.push(bottom);
 
-            const top = this._makeLabelSprite(files[f]);
-            top.position.set(x, 0.05, -5.0);
+            const top = this._makeLabelMesh(files[f]);
+            top.position.set(x, 0.02, -4.2);
             this.boardGroup.add(top);
             this.fileLabelsTop.push(top);
         }
 
-        // Ranks along left (x = -4.5) and right (x = 4.5)
+        // Ranks along left (x = -4.15) and right (x = 4.15)
+        // Slightly inward from file labels (±4.2) to look centered on the board edge
         for (let r = 0; r < 8; r++) {
             const z = -(r - 3.5);
-            const left = this._makeLabelSprite(ranks[r].toString());
-            left.position.set(-4.5, 0.05, z);
+            const left = this._makeLabelMesh(ranks[r].toString());
+            left.position.set(-4.15, 0.02, z);
             this.boardGroup.add(left);
-            const right = this._makeLabelSprite(ranks[r].toString());
-            right.position.set(4.5, 0.05, z);
+            const right = this._makeLabelMesh(ranks[r].toString());
+            right.position.set(4.15, 0.02, z);
             this.boardGroup.add(right);
         }
     }
