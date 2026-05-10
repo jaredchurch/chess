@@ -43,8 +43,12 @@ export class ChessRenderer3D {
         this.boardColors = { light: 0xf0d9b5, dark: 0xb58863 };
 
         // Drag and zoom controls state
+        this.mouse = new THREE.Vector2();
+        this.raycaster = new THREE.Raycaster();
         this._controlsEnabled = false;
         this._isDragging = false;
+        this._wasDrag = false;
+        this._pointerDown = false;
         this._previousMousePosition = { x: 0, y: 0 };
     }
 
@@ -279,12 +283,9 @@ export class ChessRenderer3D {
 
     _buildPawn(group, mat) {
         const activeSkinId = skinRegistry.getActive()?.id || 'classic';
-        console.log('_buildPawn called with activeSkinId:', activeSkinId);
         if (activeSkinId === 'classic2') {
-            console.log('_buildPawn using classic2 builder');
             buildPawnClassic2(group, mat);
         } else {
-            console.log('_buildPawn using classic builder');
             buildPawnClassic(group, mat);
         }
     }
@@ -332,6 +333,7 @@ export class ChessRenderer3D {
     // ---- Public API ----
 
     setPosition(fen) {
+        if (!fen) return;
         // Clear all square highlights before rebuilding
         for (const mesh of this.squareMeshes) {
             const sq = mesh.userData.square;
@@ -503,6 +505,7 @@ export class ChessRenderer3D {
     }
 
     _onClick(event) {
+        if (this._wasDrag) return;
         const rect = this.renderer.domElement.getBoundingClientRect();
         this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
         this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
@@ -572,13 +575,22 @@ export class ChessRenderer3D {
 
     _onMouseDown(event) {
         if (!this._controlsEnabled) return;
-        this._isDragging = true;
+        this._wasDrag = false;
+        this._pointerDown = true;
+        this._isDragging = false;
         this._previousMousePosition = { x: event.clientX, y: event.clientY };
-        this.container.style.cursor = 'grabbing';
     }
 
     _onMouseMove(event) {
-        if (!this._isDragging || !this._controlsEnabled) return;
+        if (!this._controlsEnabled || !this._pointerDown) return;
+        if (!this._isDragging) {
+            const dx = event.clientX - this._previousMousePosition.x;
+            const dy = event.clientY - this._previousMousePosition.y;
+            if (dx * dx + dy * dy < 16) return;
+            this._isDragging = true;
+            this._wasDrag = true;
+            this.container.style.cursor = 'grabbing';
+        }
         const deltaMove = {
             x: event.clientX - this._previousMousePosition.x,
             y: event.clientY - this._previousMousePosition.y
@@ -589,7 +601,6 @@ export class ChessRenderer3D {
             this._boardWrap.rotation.y += deltaMove.x * rotSpeed;
             this._boardWrap.rotation.x += deltaMove.y * rotSpeed;
             
-            // Clamp vertical rotation to prevent flipping
             const maxVert = Math.PI / 2;
             this._boardWrap.rotation.x = Math.max(
                 -maxVert,
@@ -602,29 +613,40 @@ export class ChessRenderer3D {
     _onMouseUp() {
         if (!this._controlsEnabled) return;
         this._isDragging = false;
+        this._pointerDown = false;
         this.container.style.cursor = 'grab';
     }
 
     _onMouseLeave() {
         if (!this._controlsEnabled) return;
         this._isDragging = false;
+        this._pointerDown = false;
         this.container.style.cursor = 'grab';
     }
 
     _onTouchStart(event) {
         if (!this._controlsEnabled) return;
         if (event.touches.length === 1) {
-            this._isDragging = true;
+            this._wasDrag = false;
+            this._pointerDown = true;
+            this._isDragging = false;
             this._previousMousePosition = {
                 x: event.touches[0].clientX,
                 y: event.touches[0].clientY
             };
-            this.container.style.cursor = 'grabbing';
         }
     }
 
     _onTouchMove(event) {
-        if (!this._isDragging || !this._controlsEnabled || event.touches.length !== 1) return;
+        if (!this._controlsEnabled || !this._pointerDown || event.touches.length !== 1) return;
+        if (!this._isDragging) {
+            const dx = event.touches[0].clientX - this._previousMousePosition.x;
+            const dy = event.touches[0].clientY - this._previousMousePosition.y;
+            if (dx * dx + dy * dy < 16) return;
+            this._isDragging = true;
+            this._wasDrag = true;
+            this.container.style.cursor = 'grabbing';
+        }
         const deltaMove = {
             x: event.touches[0].clientX - this._previousMousePosition.x,
             y: event.touches[0].clientY - this._previousMousePosition.y
@@ -635,7 +657,6 @@ export class ChessRenderer3D {
             this._boardWrap.rotation.y += deltaMove.x * rotSpeed;
             this._boardWrap.rotation.x += deltaMove.y * rotSpeed;
             
-            // Clamp vertical rotation to prevent flipping
             const maxVert = Math.PI / 2;
             this._boardWrap.rotation.x = Math.max(
                 -maxVert,
@@ -651,6 +672,7 @@ export class ChessRenderer3D {
     _onTouchEnd() {
         if (!this._controlsEnabled) return;
         this._isDragging = false;
+        this._pointerDown = false;
         this.container.style.cursor = 'grab';
     }
 

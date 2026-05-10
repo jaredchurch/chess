@@ -7,7 +7,7 @@
 //
 
 import * as THREE from 'three';
-import { skinRegistry, switchSkin } from './skins.js';
+import { skinRegistry, switchSkin, initializeSkin } from './skins.js';
 import { renderBoard3d } from './board.js';
 
 function setupViewerControls() {
@@ -102,80 +102,42 @@ function setupLightControls() {
     syncLightSliders();
 }
 
-function setupSkinControls() {
+let _skinSelectInitialized = false;
+
+function initSkinSelect() {
     const skinSelect = document.getElementById('skin-select');
-    console.log('setupSkinControls: skinSelect element:', skinSelect);
     if (!skinSelect) {
-        console.warn('setupSkinControls: skin-select element not found in DOM');
-        // Try again in case the DOM isn't ready yet
         setTimeout(() => {
-            const skinSelectRetry = document.getElementById('skin-select');
-            if (skinSelectRetry) {
-                console.log('setupSkinControls: found skin-select on retry');
-                setupSkinControlsInner(skinSelectRetry);
-            } else {
-                console.error('setupSkinControls: skin-select still not found after retry');
-            }
+            const retry = document.getElementById('skin-select');
+            if (retry) initSkinSelect();
         }, 100);
         return;
     }
-    setupSkinControlsInner(skinSelect);
-}
+    if (_skinSelectInitialized) return;
+    _skinSelectInitialized = true;
 
-function setupSkinControlsInner(skinSelect) {
-    console.log('setupSkinControlsInner: populating skin selector');
-    // Populate options
-    const options = skinRegistry.getAll().map(skin => 
-        `<option value="${skin.id}">${skin.name}</option>`
-    ).join('');
-    skinSelect.innerHTML = options;
-    console.log('setupSkinControls: populated options:', skinSelect.innerHTML);
+    skinSelect.innerHTML = skinRegistry.getAll()
+        .filter(s => s.supports3d)
+        .map(skin =>
+            `<option value="${skin.id}">${skin.name}</option>`
+        ).join('');
 
-    // Set current value
     const activeSkin = skinRegistry.getActive();
-    console.log('setupSkinControls: activeSkin:', activeSkin);
-    if (activeSkin) {
-        skinSelect.value = activeSkin.id;
-        console.log('setupSkinControls: set value to:', activeSkin.id);
-    } else {
-        console.warn('setupSkinControls: no active skin found');
-        // Default to classic if none active
-        skinSelect.value = 'classic';
-        console.log('setupSkinControls: defaulted to classic');
-    }
+    skinSelect.value = activeSkin ? activeSkin.id : 'classic';
 
-    // Handle change
-    skinSelect.addEventListener('change', (e) => {
-        console.log('setupSkinControls: skin change event triggered, value:', e.target.value);
+    skinSelect.addEventListener('change', () => {
         const skinId = skinSelect.value;
-        console.log('setupSkinControls: attempting to switch to skin:', skinId);
-        const switchResult = switchSkin(skinId);
-        console.log('setupSkinControls: switchSkin returned:', switchResult);
-        if (switchResult) {
-            console.log('setupSkinControls: switched to skin:', skinId);
-            // Re-apply the skin and re-render the board
-            skinRegistry.applyActive();
-            console.log('setupSkinControls: applied active skin');
-            // Re-render the board to reflect the new skin
-            const boardEl = document.getElementById('board');
-            if (boardEl) {
-                console.log('setupSkinControls: calling window.renderBoard()');
-                window.renderBoard();
-            } else {
-                console.error('setupSkinControls: board element not found');
-            }
-        } else {
-            console.warn('setupSkinControls: failed to switch to skin:', skinId);
-            // Revert selector to current active skin on failure
-            const currentActive = skinRegistry.getActive();
-            if (currentActive) {
-                skinSelect.value = currentActive.id;
-            }
+        if (switchSkin(skinId)) {
+            window.renderBoard();
         }
     });
-    
-    // Also set up initial state to make sure we're in sync
-    console.log('setupSkinControls: initial sync complete');
+}
+
+function updateSkinSelect() {
+    const skinSelect = document.getElementById('skin-select');
+    if (!skinSelect) return;
+    const activeSkin = skinRegistry.getActive();
+    skinSelect.value = activeSkin ? activeSkin.id : 'classic';
 }
 
 function setupDragControls() {
@@ -316,6 +278,7 @@ function saveViewerState() {
     const pos = r.getCameraPosition();
     const light = r.getLightState();
     const state = {
+        skinId: skinRegistry.getActive()?.id || 'classic',
         viewMode: r._viewMode,
         cameraX: pos.x, cameraY: pos.y, cameraZ: pos.z, cameraFov: pos.fov,
         lightX: light.mainX, lightY: light.mainY, lightZ: light.mainZ,
@@ -354,6 +317,8 @@ try {
     _webglOk = false;
 }
 
+initializeSkin();
+
 if (_webglOk) {
     // Use set3dMode directly instead of toggle3dMode to avoid calling
     // renderBoard() at module level, which triggers WASM getLegalMoves()
@@ -376,7 +341,8 @@ window.renderBoard = function() {
     setupDragControls();
     setupViewerControls();
     setupLightControls();
-    setupSkinControls();
+    initSkinSelect();
+    updateSkinSelect();
 
     // Restore persisted state if available (overrides defaults set above)
     const saved = loadViewerState();
@@ -413,6 +379,7 @@ window.renderBoard = function() {
         syncCameraSliders();
         syncLightSliders();
     }
+    updateSkinSelect();
 };
 
 window.addEventListener('load', () => {

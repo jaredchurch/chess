@@ -7,7 +7,7 @@
 
 import { pieceUnicode, isWhitePiece, PIECE_TYPES } from './ui.js';
 import { skinRegistry } from './skins.js';
-import { getLegalMoves, applyMove, getGameState } from './chess-wasm.js';
+import { getLegalMoves, applyMove, getGameState, isWasmReady } from './chess-wasm.js';
 import { getCapturedPiece, getBoardStateAtMove } from './game.js';
 import { createRenderer } from './renderer-3d.js';
 
@@ -210,7 +210,9 @@ export function renderBoard() {
         // Clear fixed sizing from 2D mode to allow 3D canvas to fill container
         boardEl.style.width = '';
         boardEl.style.height = '';
-        window.legalMoves = getLegalMoves(window.currentFen) || [];
+        if (isWasmReady()) {
+            window.legalMoves = getLegalMoves(window.currentFen) || [];
+        }
         renderBoard3d(boardEl);
         return;
     }
@@ -318,10 +320,10 @@ export function renderBoard3d(boardEl) {
         renderer.onSquareClick = (square) => handleSquareClick(square);
         // Enable drag and zoom controls for the game
         renderer.enableControls();
+        renderer.setOrientation(window.boardOrientation);
     }
 
     const renderer = window._chessRenderer;
-    renderer.setOrientation(window.boardOrientation);
     renderer.setPosition(window.currentFen);
 
     if (window.selectedSquare) {
