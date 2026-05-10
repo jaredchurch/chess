@@ -7,7 +7,7 @@
 //
 
 import * as THREE from 'three';
-import { skinRegistry, switchSkin, initializeSkin } from './skins.js';
+import { skinRegistry } from './skins.js';
 import { renderBoard3d } from './board.js';
 
 function setupViewerControls() {
@@ -127,7 +127,8 @@ function initSkinSelect() {
 
     skinSelect.addEventListener('change', () => {
         const skinId = skinSelect.value;
-        if (switchSkin(skinId)) {
+        if (skinRegistry.setActive(skinId)) {
+            skinRegistry.applyActive();
             window.renderBoard();
         }
     });
@@ -300,9 +301,9 @@ function loadViewerState() {
 function resetLighting() {
     const r = window._chessRenderer;
     if (!r) return;
-    r.setMainLightPosition(5, 15, 10);
-    r.setMainLightIntensity(2.95);
-    r.setAmbientIntensity(0.3);
+    r.setMainLightPosition(4, 6.5, 1.5);
+    r.setMainLightIntensity(3.25);
+    r.setAmbientIntensity(0.25);
     syncLightSliders();
     saveViewerState();
 }
@@ -317,7 +318,15 @@ try {
     _webglOk = false;
 }
 
-initializeSkin();
+// Restore saved skin from viewer state (don't use initializeSkin which
+// rejects classic2 and persists to game localStorage via switchSkin)
+const _saved = loadViewerState();
+if (_saved && _saved.skinId && skinRegistry.setActive(_saved.skinId)) {
+    skinRegistry.applyActive();
+} else {
+    skinRegistry.setActive('classic');
+    skinRegistry.applyActive();
+}
 
 if (_webglOk) {
     // Use set3dMode directly instead of toggle3dMode to avoid calling

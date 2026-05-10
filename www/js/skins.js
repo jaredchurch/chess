@@ -182,7 +182,7 @@ SKIN_DEFINITIONS.forEach(skin => skinRegistry.register(skin));
 
 export function initializeSkin() {
     const savedId = getActiveSkinId();
-    if (!skinRegistry.setActive(savedId)) {
+    if (savedId === 'classic2' || !skinRegistry.setActive(savedId)) {
         skinRegistry.setActive(DEFAULT_SKIN_ID);
     }
     skinRegistry.applyActive();

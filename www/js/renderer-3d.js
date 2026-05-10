@@ -64,7 +64,7 @@ export class ChessRenderer3D {
         const h = container.clientHeight || 600;
 
         this.scene = new THREE.Scene();
-        this.scene.background = new THREE.Color(0x2c3e50);
+        this.scene.background = new THREE.Color(0x7f8c8d);
 
         this.camera = new THREE.PerspectiveCamera(28, w / h, 0.1, 100);
         this.camera.position.set(0, 11.8, 16.5); // position x, y, z
@@ -130,10 +130,10 @@ export class ChessRenderer3D {
     }
 
     _setupLights() {
-        this.ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
+        this.ambientLight = new THREE.AmbientLight(0xffffff, 0.25);
         this.scene.add(this.ambientLight);
-        this.mainLight = new THREE.DirectionalLight(0xffffff, 2.95);
-        this.mainLight.position.set(5, 15, 10);
+        this.mainLight = new THREE.DirectionalLight(0xffffff, 3.25);
+        this.mainLight.position.set(-2, 3.5, 1.5);
         this.mainLight.castShadow = true;
         this.mainLight.shadow.mapSize.width = 2048;
         this.mainLight.shadow.mapSize.height = 2048;
@@ -483,11 +483,11 @@ export class ChessRenderer3D {
 
     getLightState() {
         return {
-            mainX: this.mainLight ? this.mainLight.position.x : 5,
-            mainY: this.mainLight ? this.mainLight.position.y : 15,
-            mainZ: this.mainLight ? this.mainLight.position.z : 10,
-            mainIntensity: this.mainLight ? this.mainLight.intensity : 2.95,
-            ambientIntensity: this.ambientLight ? this.ambientLight.intensity : 0.3,
+            mainX: this.mainLight ? this.mainLight.position.x : 4,
+            mainY: this.mainLight ? this.mainLight.position.y : 6.5,
+            mainZ: this.mainLight ? this.mainLight.position.z : 1.5,
+            mainIntensity: this.mainLight ? this.mainLight.intensity : 3.25,
+            ambientIntensity: this.ambientLight ? this.ambientLight.intensity : 0.25,
         };
     }
 
