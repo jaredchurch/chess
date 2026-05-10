@@ -8,6 +8,7 @@
 
 import * as THREE from 'three';
 import { skinRegistry } from './skins.js';
+import { Board3D } from './skins/boards/1/board.js';
 import { buildPawn as buildPawnClassic } from './skins/classic/3d/pawn.js';
 import { buildRook as buildRookClassic } from './skins/classic/3d/rook.js';
 import { buildKnight as buildKnightClassic } from './skins/classic/3d/knight.js';
@@ -40,7 +41,7 @@ export class ChessRenderer3D {
         // Initialize light and board properties (will be set up in init())
         this._viewMode = 'full';
         this._singlePieceGroup = null;
-        this.boardColors = { light: 0xf0d9b5, dark: 0xb58863 };
+        this.board = null;
 
         // Drag and zoom controls state
         this.mouse = new THREE.Vector2();
@@ -103,25 +104,11 @@ export class ChessRenderer3D {
         return this;
     }
 
-    setBoardColors(light, dark) {
-        this.boardColors = { light, dark };
-        this._rebuildBoard();
-    }
-
-    _setFileLabelsBySide(side) {
-        // Toggle file labels visibility so only the ones closest to camera are shown
-        // When side is 'white', bottom labels (z=4.2) are close, top labels (z=-4.2) are far.
-        // When side is 'black', the board is rotated 180 deg, so bottom labels (z=4.2 relative to board)
-        // are now at z=-4.2 in world space, and top labels are at z=4.2 in world space.
-        const showBottom = (side === 'white');
-        this.fileLabelsBottom.forEach(l => l.visible = showBottom);
-        this.fileLabelsTop.forEach(l => l.visible = !showBottom);
-    }
-
     _setupBoard() {
         this._boardWrap = new THREE.Group();
         this.scene.add(this._boardWrap);
-        this._createBoard();
+        this.board = new Board3D(this._boardWrap, { light: 0xf0d9b5, dark: 0xb58863 });
+        this.board.build();
     }
 
     _setupPieceGroups() {
@@ -150,118 +137,6 @@ export class ChessRenderer3D {
         this.scene.add(this.fillLight);
     }
 
-    _createBoard() {
-        if (this.boardGroup) {
-            this._boardWrap.remove(this.boardGroup);
-            this._disposeGroup(this.boardGroup);
-        }
-        this.boardGroup = new THREE.Group();
-        this._boardWrap.add(this.boardGroup);
-        
-        this.squareMeshes = [];
-        this.squareMap = {};
-
-        for (let r = 0; r < 8; r++) {
-            for (let f = 0; f < 8; f++) {
-                const isLight = (r + f) % 2 !== 0;
-                const color = isLight ? this.boardColors.light : this.boardColors.dark;
-                const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.6, metalness: 0 });
-                const geo = new THREE.BoxGeometry(1, 0.04, 1);
-                const mesh = new THREE.Mesh(geo, mat);
-                mesh.position.set(f - 3.5, 0, -(r - 3.5));
-                mesh.receiveShadow = true;
-                mesh.userData.square = String.fromCharCode(97 + f) + (r + 1);
-                this.boardGroup.add(mesh);
-                this.squareMeshes.push(mesh);
-                this.squareMap[mesh.userData.square] = mesh;
-            }
-        }
-
-        const bMat = new THREE.MeshStandardMaterial({ color: 0x5c3a1e, roughness: 0.8, metalness: 0 });
-        const bGeo = new THREE.BoxGeometry(8.6, 0.12, 8.6);
-        const border = new THREE.Mesh(bGeo, bMat);
-        border.position.set(0, -0.08, 0);
-        border.receiveShadow = true;
-        this.boardGroup.add(border);
-
-        this._createLabels();
-    }
-
-    _makeLabelMesh(text) {
-        // Guard for Node.js test environment where document is not defined
-        if (typeof document === 'undefined') {
-            const geo = new THREE.PlaneGeometry(0.4, 0.4);
-            const mat = new THREE.MeshBasicMaterial({ color: 0x95a5a6 });
-            const mesh = new THREE.Mesh(geo, mat);
-            mesh.rotation.x = -Math.PI / 2;
-            return mesh;
-        }
-        const canvas = document.createElement('canvas');
-        canvas.width = 128;
-        canvas.height = 128;
-        const ctx = canvas.getContext('2d');
-        ctx.fillStyle = '#95a5a6';
-        ctx.font = 'bold 48px monospace';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(text, 64, 68);
-        const texture = new THREE.CanvasTexture(canvas);
-        const geo = new THREE.PlaneGeometry(0.4, 0.4);
-        const mat = new THREE.MeshBasicMaterial({ map: texture, transparent: true, depthWrite: false });
-        const mesh = new THREE.Mesh(geo, mat);
-        // Labels lie flat on the board surface, rotated to face upward
-        mesh.rotation.x = -Math.PI / 2;
-        return mesh;
-    }
-
-    _createLabels() {
-        const files = ['a','b','c','d','e','f','g','h'];
-        const ranks = [1,2,3,4,5,6,7,8];
-
-        this.fileLabelsBottom = [];
-        this.fileLabelsTop = [];
-
-        // Files along bottom (z = 4.15, near Rank 1) and top (z = -4.15, near Rank 8)
-        // Labels sit flat on the border strip between squares (±4.0) and outer edge (±4.3)
-        for (let f = 0; f < 8; f++) {
-            const x = f - 3.5;
-            const bottom = this._makeLabelMesh(files[f]);
-            bottom.position.set(x, 0.02, 4.2);
-            this.boardGroup.add(bottom);
-            this.fileLabelsBottom.push(bottom);
-
-            const top = this._makeLabelMesh(files[f]);
-            top.position.set(x, 0.02, -4.2);
-            this.boardGroup.add(top);
-            this.fileLabelsTop.push(top);
-        }
-
-        // Ranks along left (x = -4.15) and right (x = 4.15)
-        // Slightly inward from file labels (±4.2) to look centered on the board edge
-        for (let r = 0; r < 8; r++) {
-            const z = -(r - 3.5);
-            const left = this._makeLabelMesh(ranks[r].toString());
-            left.position.set(-4.15, 0.02, z);
-            this.boardGroup.add(left);
-            const right = this._makeLabelMesh(ranks[r].toString());
-            right.position.set(4.15, 0.02, z);
-            this.boardGroup.add(right);
-        }
-    }
-
-    highlightSquare(sq, on) {
-        const mesh = this.squareMap[sq];
-        if (!mesh) return;
-        if (on) {
-            mesh.material.color.setHex(0xf1c40f);
-        } else {
-            const f = sq.charCodeAt(0) - 97;
-            const r = parseInt(sq[1]) - 1;
-            const isLight = (r + f) % 2 !== 0;
-            mesh.material.color.setHex(isLight ? this.boardColors.light : this.boardColors.dark);
-        }
-    }
-
     _frameBoard() {
         this.camera.updateMatrixWorld(true);
         const margin = 1.4;
@@ -283,10 +158,6 @@ export class ChessRenderer3D {
 
         this.camera.fov = Math.max(fovY, fovX) * margin;
         this.camera.updateProjectionMatrix();
-    }
-
-    _rebuildBoard() {
-        this._createBoard();
     }
 
     // ---- Low-poly piece builders (delegated to skins/classic/3d/ or skins/classic2/3d/) ----
@@ -345,12 +216,12 @@ export class ChessRenderer3D {
     setPosition(fen) {
         if (!fen) return;
         // Clear all square highlights before rebuilding
-        for (const mesh of this.squareMeshes) {
+        for (const mesh of this.board.squareMeshes) {
             const sq = mesh.userData.square;
             const f = sq.charCodeAt(0) - 97;
             const r = parseInt(sq[1]) - 1;
             const isLight = (r + f) % 2 !== 0;
-            mesh.material.color.setHex(isLight ? this.boardColors.light : this.boardColors.dark);
+            mesh.material.color.setHex(isLight ? this.board.colors.light : this.board.colors.dark);
         }
 
         this._clearPieces();
@@ -399,7 +270,7 @@ export class ChessRenderer3D {
 
     setOrientation(side) {
         this._boardWrap.rotation.y = (side === 'black') ? Math.PI : 0;
-        this._setFileLabelsBySide(side);
+        this.board.setFileLabelsBySide(side);
     }
 
     setViewMode(mode) {
@@ -407,7 +278,7 @@ export class ChessRenderer3D {
         const showBoard = mode === 'full' || mode === 'board';
         const showPieces = mode === 'full';
         const showSingle = mode === 'piece';
-        if (this.boardGroup) this.boardGroup.visible = showBoard;
+        if (this.board && this.board.group) this.board.group.visible = showBoard;
         if (this.pieceGroup) this.pieceGroup.visible = showPieces;
         if (this._singlePieceGroup) this._singlePieceGroup.visible = showSingle;
     }
@@ -502,9 +373,9 @@ export class ChessRenderer3D {
     }
 
     setSelection(sq) {
-        if (this.selectedSquare) this.highlightSquare(this.selectedSquare, false);
+        if (this.selectedSquare) this.board.highlightSquare(this.selectedSquare, false);
         this.selectedSquare = sq;
-        if (sq) this.highlightSquare(sq, true);
+        if (sq) this.board.highlightSquare(sq, true);
     }
 
     _squareToPos(sq) {
@@ -520,7 +391,7 @@ export class ChessRenderer3D {
         this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
         this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
         this.raycaster.setFromCamera(this.mouse, this.camera);
-        const hits = this.raycaster.intersectObjects(this.squareMeshes);
+        const hits = this.raycaster.intersectObjects(this.board.squareMeshes);
         if (hits.length > 0) {
             const sq = hits[0].object.userData.square;
             if (this.onSquareClick) this.onSquareClick(sq);
@@ -725,7 +596,7 @@ export class ChessRenderer3D {
         this.container.removeEventListener('wheel', this._onWheel);
 
         this._disposed = true;
-        this._disposeGroup(this.boardGroup);
+        if (this.board) this.board.dispose();
         this._disposeGroup(this.pieceGroup);
         this._disposeGroup(this._singlePieceGroup);
         if (this._resizeObserver) this._resizeObserver.disconnect();
