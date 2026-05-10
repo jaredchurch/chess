@@ -44,9 +44,6 @@ window.showGameMenu = function() {
                 <label style="display:block;margin:10px 0;cursor:pointer;">
                     <input type="checkbox" id="show-board-labels" ${localStorage.getItem('chess_show_board_labels') !== 'false' ? 'checked' : ''} onchange="toggleBoardLabels(this.checked)"> Show Board Labels
                 </label>
-                <label style="display:block;margin:10px 0;cursor:pointer;">
-                    <input type="checkbox" id="board-outline" ${localStorage.getItem('chess_board_outline') === 'true' || new URLSearchParams(window.location.search).has('board_outline') ? 'checked' : ''} onchange="toggleBoardOutline(this.checked)"> Board Outline
-                </label>
                  <div style="margin:15px 0;">
                      <label style="display:block;margin-bottom:5px;font-weight:bold;">Skin</label>
                      <select id="skin-select" style="width:100%;padding:8px;border-radius:5px;border:1px solid #4a5f7f;background:#2c3e50;color:white;" onchange="window.onSkinChange(this.value)">
@@ -72,8 +69,6 @@ window.showGameMenu = function() {
                 <hr style="border-color:#4a5f7f;margin:15px 0;">
                 <button onclick="showFenDialog();" style="display:block;width:100%;margin:8px 0;padding:10px;">Show FEN</button>
                 <button onclick="showGameStats();" style="display:block;width:100%;margin:8px 0;padding:10px;">Game Statistics</button>
-                <hr style="border-color:#4a5f7f;margin:15px 0;">
-                <button onclick="flipBoard();" style="display:block;width:100%;margin:8px 0;padding:10px;">Rotate View</button>
             </div>
         </div>
     `;
@@ -156,24 +151,6 @@ window.toggleBoardLabels = function(visible) {
     localStorage.setItem('chess_show_board_labels', visible ? 'true' : 'false');
     if (typeof window.updateBoardLabels === 'function') window.updateBoardLabels();
     if (typeof window.updateBoardSize === 'function') window.updateBoardSize();
-};
-
-/**
- * Toggles the 3D board outline and saves preference to localStorage
- */
-window.toggleBoardOutline = function(visible) {
-    localStorage.setItem('chess_board_outline', visible ? 'true' : 'false');
-    const container = document.getElementById('renderer-3d-container');
-    if (container) {
-        const existing = container.querySelector('.board-outline-overlay');
-        if (visible && !existing) {
-            const overlay = document.createElement('div');
-            overlay.className = 'board-outline-overlay';
-            container.appendChild(overlay);
-        } else if (!visible && existing) {
-            existing.remove();
-        }
-    }
 };
 
 /**
