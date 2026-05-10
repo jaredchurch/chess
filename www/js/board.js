@@ -316,6 +316,8 @@ export function renderBoard3d(boardEl) {
 
         window._chessRenderer = renderer;
         renderer.onSquareClick = (square) => handleSquareClick(square);
+        // Enable drag and zoom controls for the game
+        renderer.enableControls();
     }
 
     const renderer = window._chessRenderer;

@@ -12,6 +12,8 @@
 import * as THREE from 'three';
 
 export function buildPawn(group, mat) {
+    const segments = 360;
+
     const add = (geo, y) => { const m = new THREE.Mesh(geo, mat); m.position.y = y; group.add(m); };
     // BASE: Cylinder (r=0.24, h=0.06) at y=0.03
     add(new THREE.CylinderGeometry(0.16, 0.2, 0.06, 64), 0.03);

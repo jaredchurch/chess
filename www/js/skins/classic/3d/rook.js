@@ -14,7 +14,7 @@
 import * as THREE from 'three';
 
 export function buildRook(group, mat) {
-    const segments = 64
+    const segments = 64;
 
     const add = (geo, y) => { const m = new THREE.Mesh(geo, mat); m.position.y = y; group.add(m); };
     // BASE: Cylinder (r=0.26, h=0.06) at y=0.03

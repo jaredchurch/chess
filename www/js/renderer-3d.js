@@ -25,31 +25,37 @@ const WHITE_MAT = { color: 0xf0f0f0, roughness: 0.25, metalness: 0.05 };
 const BLACK_MAT = { color: 0x333333, roughness: 0.45, metalness: 0.1  };
 
 export class ChessRenderer3D {
+
     constructor() {
-        this.pieceGroup = null;
-        this.boardGroup = null;
-        this.squareMeshes = [];
-        this.squareMap = {};
-        this.piecesMap = {};
-        this.selectedSquare = null;
-        this.onSquareClick = null;
-        this.clock = new THREE.Clock();
-        this.raycaster = new THREE.Raycaster();
-        this.mouse = new THREE.Vector2();
-        this._disposed = false;
-        this.boardColors = { light: 0xf5ece0, dark: 0x3d2b1f };
-        this.fileLabelsBottom = [];
-        this.fileLabelsTop = [];
-        this._singlePieceGroup = null;
+        // Initialize with placeholder values - will be properly set in init()
+        this.scene = new THREE.Scene();
+        this.camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
+        this.camera.position.set(0, 10, 15);
+        this.camera.lookAt(0, 0, 0);
+
+        this.renderer = new THREE.WebGLRenderer({ antialias: true });
+        this.renderer.shadowMap.enabled = true;
+        this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+        // Initialize light and board properties (will be set up in init())
         this._viewMode = 'full';
-        this._manualCamera = false;
-        this.mainLight = null;
-        this.fillLight = null;
-        this.ambientLight = null;
+        this._singlePieceGroup = null;
+        this.boardColors = { light: 0xf0d9b5, dark: 0xb58863 };
+
+        // Drag and zoom controls state
+        this._controlsEnabled = false;
+        this._isDragging = false;
+        this._previousMousePosition = { x: 0, y: 0 };
     }
 
+    /**
+     * Initialize the renderer with a container DOM element.
+     * @param {HTMLElement} container - The DOM element to render into
+     */
     init(container) {
         this.container = container;
+
+        // Set up the scene with proper aspect ratio
         const w = container.clientWidth || 600;
         const h = container.clientHeight || 600;
 
@@ -68,27 +74,28 @@ export class ChessRenderer3D {
         this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         container.appendChild(this.renderer.domElement);
 
+        // Setup lights, board, and pieces
         this._setupLights();
+        this._setupBoard();
+        this._setupPieceGroups();
 
-        // create wrapper for board + pieces
-        this._boardWrap = new THREE.Group();
-        this.scene.add(this._boardWrap);
-
-        this._createBoard();
-        this.pieceGroup = new THREE.Group();
-        this._boardWrap.add(this.pieceGroup);
-        this._singlePieceGroup = new THREE.Group();
-        this._singlePieceGroup.visible = false;
-        this._boardWrap.add(this._singlePieceGroup);
-
+        // Frame the board appropriately
         this._frameBoard();
 
+        // Set up click handling
         this.renderer.domElement.addEventListener('click', (e) => this._onClick(e));
+
+        // Set up resize observer
         const ro = new ResizeObserver(() => this.resize());
         ro.observe(container);
         this._resizeObserver = ro;
 
+        // Bind drag and zoom event listeners
+        this._bindDragZoomHandlers();
+
+        // Start animation loop
         this._animate();
+
         return this;
     }
 
@@ -97,18 +104,7 @@ export class ChessRenderer3D {
         this._rebuildBoard();
     }
 
-    /**
-     * Sets the board orientation (perspective)
-     * @param {string} side - 'white' or 'black'
-     */
-    setOrientation(side) {
-        if (this._orientation === side) return;
-        this._orientation = side;
-        
-        if (this._boardWrap) {
-            this._boardWrap.rotation.y = (side === 'black') ? Math.PI : 0;
-        }
-
+    _setFileLabelsBySide(side) {
         // Toggle file labels visibility so only the ones closest to camera are shown
         // When side is 'white', bottom labels (z=5.0) are close, top labels (z=-5.0) are far.
         // When side is 'black', the board is rotated 180 deg, so bottom labels (z=5.0 relative to board)
@@ -116,8 +112,17 @@ export class ChessRenderer3D {
         const showBottom = (side === 'white');
         this.fileLabelsBottom.forEach(l => l.visible = showBottom);
         this.fileLabelsTop.forEach(l => l.visible = !showBottom);
+    }
 
-        this._frameBoard();
+    _setupBoard() {
+        this._boardWrap = new THREE.Group();
+        this.scene.add(this._boardWrap);
+        this._createBoard();
+    }
+
+    _setupPieceGroups() {
+        this.pieceGroup = new THREE.Group();
+        this._boardWrap.add(this.pieceGroup);
     }
 
     _setupLights() {
@@ -380,6 +385,11 @@ export class ChessRenderer3D {
         }
     }
 
+    setOrientation(side) {
+        this._boardWrap.rotation.y = (side === 'black') ? Math.PI : 0;
+        this._setFileLabelsBySide(side);
+    }
+
     setViewMode(mode) {
         this._viewMode = mode;
         const showBoard = mode === 'full' || mode === 'board';
@@ -537,7 +547,151 @@ export class ChessRenderer3D {
         });
     }
 
+    // Drag and zoom controls
+    _bindDragZoomHandlers() {
+        // Bind methods to maintain correct 'this' context
+        this._onMouseDown = this._onMouseDown.bind(this);
+        this._onMouseMove = this._onMouseMove.bind(this);
+        this._onMouseUp = this._onMouseUp.bind(this);
+        this._onMouseLeave = this._onMouseLeave.bind(this);
+        this._onTouchStart = this._onTouchStart.bind(this);
+        this._onTouchMove = this._onTouchMove.bind(this);
+        this._onTouchEnd = this._onTouchEnd.bind(this);
+        this._onWheel = this._onWheel.bind(this);
+
+        // Add event listeners
+        this.container.addEventListener('mousedown', this._onMouseDown);
+        this.container.addEventListener('mousemove', this._onMouseMove);
+        this.container.addEventListener('mouseup', this._onMouseUp);
+        this.container.addEventListener('mouseleave', this._onMouseLeave);
+        this.container.addEventListener('touchstart', this._onTouchStart);
+        this.container.addEventListener('touchmove', this._onTouchMove);
+        this.container.addEventListener('touchend', this._onTouchEnd);
+        this.container.addEventListener('wheel', this._onWheel);
+    }
+
+    _onMouseDown(event) {
+        if (!this._controlsEnabled) return;
+        this._isDragging = true;
+        this._previousMousePosition = { x: event.clientX, y: event.clientY };
+        this.container.style.cursor = 'grabbing';
+    }
+
+    _onMouseMove(event) {
+        if (!this._isDragging || !this._controlsEnabled) return;
+        const deltaMove = {
+            x: event.clientX - this._previousMousePosition.x,
+            y: event.clientY - this._previousMousePosition.y
+        };
+        
+        const rotSpeed = 0.005;
+        if (this._boardWrap) {
+            this._boardWrap.rotation.y += deltaMove.x * rotSpeed;
+            this._boardWrap.rotation.x += deltaMove.y * rotSpeed;
+            
+            // Clamp vertical rotation to prevent flipping
+            const maxVert = Math.PI / 2;
+            this._boardWrap.rotation.x = Math.max(
+                -maxVert,
+                Math.min(maxVert, this._boardWrap.rotation.x)
+            );
+        }
+        this._previousMousePosition = { x: event.clientX, y: event.clientY };
+    }
+
+    _onMouseUp() {
+        if (!this._controlsEnabled) return;
+        this._isDragging = false;
+        this.container.style.cursor = 'grab';
+    }
+
+    _onMouseLeave() {
+        if (!this._controlsEnabled) return;
+        this._isDragging = false;
+        this.container.style.cursor = 'grab';
+    }
+
+    _onTouchStart(event) {
+        if (!this._controlsEnabled) return;
+        if (event.touches.length === 1) {
+            this._isDragging = true;
+            this._previousMousePosition = {
+                x: event.touches[0].clientX,
+                y: event.touches[0].clientY
+            };
+            this.container.style.cursor = 'grabbing';
+        }
+    }
+
+    _onTouchMove(event) {
+        if (!this._isDragging || !this._controlsEnabled || event.touches.length !== 1) return;
+        const deltaMove = {
+            x: event.touches[0].clientX - this._previousMousePosition.x,
+            y: event.touches[0].clientY - this._previousMousePosition.y
+        };
+        
+        const rotSpeed = 0.005;
+        if (this._boardWrap) {
+            this._boardWrap.rotation.y += deltaMove.x * rotSpeed;
+            this._boardWrap.rotation.x += deltaMove.y * rotSpeed;
+            
+            // Clamp vertical rotation to prevent flipping
+            const maxVert = Math.PI / 2;
+            this._boardWrap.rotation.x = Math.max(
+                -maxVert,
+                Math.min(maxVert, this._boardWrap.rotation.x)
+            );
+        }
+        this._previousMousePosition = {
+            x: event.touches[0].clientX,
+            y: event.touches[0].clientY
+        };
+    }
+
+    _onTouchEnd() {
+        if (!this._controlsEnabled) return;
+        this._isDragging = false;
+        this.container.style.cursor = 'grab';
+    }
+
+    _onWheel(event) {
+        if (!this._controlsEnabled) return;
+        event.preventDefault();
+        
+        const zoomSpeed = 0.001;
+        const distance = this.camera.position.distanceTo(new THREE.Vector3(0, 0, 0));
+        const zoomAmount = event.deltaY * zoomSpeed;
+        const direction = new THREE.Vector3()
+            .subVectors(this.camera.position, new THREE.Vector3(0, 0, 0))
+            .normalize();
+        const newDistance = Math.max(5, Math.min(30, distance + zoomAmount));
+        this.camera.position.copy(new THREE.Vector3(0, 0, 0)).add(direction.multiplyScalar(newDistance));
+        this.camera.lookAt(0, 0, 0);
+        this.camera.updateProjectionMatrix();
+    }
+
+    enableControls() {
+        this._controlsEnabled = true;
+        this.container.style.cursor = 'grab';
+    }
+
+    disableControls() {
+        this._controlsEnabled = false;
+        this._isDragging = false;
+        this.container.style.cursor = 'default';
+    }
+
     dispose() {
+        // Remove event listeners
+        this.container.removeEventListener('mousedown', this._onMouseDown);
+        this.container.removeEventListener('mousemove', this._onMouseMove);
+        this.container.removeEventListener('mouseup', this._onMouseUp);
+        this.container.removeEventListener('mouseleave', this._onMouseLeave);
+        this.container.removeEventListener('touchstart', this._onTouchStart);
+        this.container.removeEventListener('touchmove', this._onTouchMove);
+        this.container.removeEventListener('touchend', this._onTouchEnd);
+        this.container.removeEventListener('wheel', this._onWheel);
+
         this._disposed = true;
         this._disposeGroup(this.boardGroup);
         this._disposeGroup(this.pieceGroup);
