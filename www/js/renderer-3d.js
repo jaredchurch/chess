@@ -21,8 +21,8 @@ import { buildBishop as buildBishopClassic2 } from './skins/classic2/3d/bishop.j
 import { buildQueen as buildQueenClassic2 } from './skins/classic2/3d/queen.js';
 import { buildKing as buildKingClassic2 } from './skins/classic2/3d/king.js';
 
-const WHITE_MAT = { color: 0xf0f0f0, roughness: 0.25, metalness: 0.05 };
-const BLACK_MAT = { color: 0x333333, roughness: 0.45, metalness: 0.1  };
+const WHITE_SHINY = { color: 0xf0f0f0, roughness: 0.4, metalness: 0.6 };
+const BLACK_SHINY = { color: 0x505050, roughness: 0.4, metalness: 0.6 };
 
 export class ChessRenderer3D {
 
@@ -356,7 +356,7 @@ export class ChessRenderer3D {
 
         for (const [sq, ch] of Object.entries(pieces)) {
             const isWhite = ch === ch.toUpperCase();
-            const opts = isWhite ? WHITE_MAT : BLACK_MAT;
+            const opts = isWhite ? WHITE_SHINY : BLACK_SHINY;
             const mat = new THREE.MeshStandardMaterial({ ...opts, flatShading: true });
             const grp = new THREE.Group();
             const type = ch.toUpperCase();
@@ -414,7 +414,7 @@ export class ChessRenderer3D {
             this._singlePieceGroup.remove(child);
         }
         const isWhite = color === 'white';
-        const opts = isWhite ? WHITE_MAT : BLACK_MAT;
+        const opts = isWhite ? WHITE_SHINY : BLACK_SHINY;
         const mat = new THREE.MeshStandardMaterial({ ...opts, flatShading: true });
         const grp = new THREE.Group();
         const builders = {
