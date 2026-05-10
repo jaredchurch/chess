@@ -7,8 +7,8 @@
 import * as THREE from 'three';
 import { getPointsFromSVGPath } from '../../svg-path.js';
 
-export function buildPawn(group, mat, scale = 0.04) {
-    const pathData = "M0 0 4 0 4-1 3-1C3-2 3-1 2-2L2-2C1-4 1-9 2-10 2-10 1-11 3-11L3-11C3-12 2-12 2-12L1-12C1-12 0-12 1-13M1-13C3-14 3-17 0-17";
+export function buildPawn(group, mat, scale = 0.0095) {
+    const pathData = "M0 0 20 0 20-5 15-5C15-10 15-5 10-10L10-10C5-20 5-35 10-40 18-41 16-44 10-45L5-45C0-45 3-50 5-50M5-50C10-52 10-65 0-65";
     
     const segments = 180;
     const nPoints = 180;

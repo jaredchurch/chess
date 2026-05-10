@@ -7,8 +7,8 @@
 import * as THREE from 'three';
 import { getPointsFromSVGPath } from '../../svg-path.js';
 
-export function buildBishop(group, mat, scale = 0.05) {
-    const pathData = "M0 0 5 0 5-1 4-1C3-2 4-2 2-2L2-2C1-4 1-9 2-11L3-11C3-11 4-11 4-12L2-12C4-15 3-17 1-19 2-20 0-21 0-20";
+export function buildBishop(group, mat, scale = 0.01) {
+    const pathData = "M0 0 25 0 25-5 20-5C15-10 19-9 12-10L12-10C7-21 4-55 14-55L14-55C19-55 23-61 10-60L10-60C17-72 15-85 5-95 7-98 2-99 0-99";
     
     const segments = 180;
     const nPoints = 180;

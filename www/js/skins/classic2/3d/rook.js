@@ -55,13 +55,13 @@ export function buildRook(group, mat, scale=0.045) {
     group.add(meshRook);
 
     // Add crenellations
-    group.add(createRamparts(0, mat, 0.7605, 0.135, 0.18));
-    group.add(createRamparts(1, mat, 0.7605, 0.135, 0.18));
-    group.add(createRamparts(2, mat, 0.7605, 0.135, 0.18));
-    group.add(createRamparts(3, mat, 0.7605, 0.135, 0.18));
-    group.add(createRamparts(4, mat, 0.7605, 0.135, 0.18));
-    group.add(createRamparts(5, mat, 0.7605, 0.135, 0.18));
-    group.add(createRamparts(6, mat, 0.7605, 0.135, 0.18));
-    group.add(createRamparts(7, mat, 0.7605, 0.135, 0.18));
+    group.add(createRamparts(0, mat, 0.745, 0.135, 0.18, 0.08));
+    group.add(createRamparts(1, mat, 0.745, 0.135, 0.18, 0.08));
+    group.add(createRamparts(2, mat, 0.745, 0.135, 0.18, 0.08));
+    group.add(createRamparts(3, mat, 0.745, 0.135, 0.18, 0.08));
+    group.add(createRamparts(4, mat, 0.745, 0.135, 0.18, 0.08));
+    group.add(createRamparts(5, mat, 0.745, 0.135, 0.18, 0.08));
+    group.add(createRamparts(6, mat, 0.745, 0.135, 0.18, 0.08));
+    group.add(createRamparts(7, mat, 0.745, 0.135, 0.18, 0.08));
 
 }
