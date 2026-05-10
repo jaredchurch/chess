@@ -10,27 +10,58 @@
 //   CRENELLATIONS: 8 boxes (0.06x0.10x0.06) at radius 0.20, y=0.845
 //   (Spaced at 45° intervals around the platform edge)
 //
-
 import * as THREE from 'three';
+import { getPointsFromSVGPath } from '../../svg-path.js';
 
-export function buildRook(group, mat) {
-const add = (geo, y) => { const m = new THREE.Mesh(geo, mat); m.position.y = y; group.add(m); };
-    // BASE: Cylinder (r=0.26, h=0.06) at y=0.03
-    add(new THREE.CylinderGeometry(0.26, 0.28, 0.06, 8), 0.03);
-    // UPPER BASE: Cylinder (r=0.20, h=0.24) at y=0.36
-    add(new THREE.CylinderGeometry(0.20, 0.24, 0.6, 8), 0.36);
-    // RING: Cylinder (r=0.24, h=0.05) at y=0.70
-    add(new THREE.CylinderGeometry(0.24, 0.24, 0.05, 8), 0.70);
-    // PLATFORM: Cylinder (r=0.26, h=0.06) at y=0.755
-    const plat = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.26, 0.06, 12), mat);
-    plat.position.y = 0.755;
-    group.add(plat);
-    // CRENELLATIONS: 8 boxes (0.06x0.10x0.06) at radius 0.20, y=0.845
-    // (Spaced at 45° intervals around the platform edge)
-    for (let i = 0; i < 8; i++) {
-        const a = (i / 8) * Math.PI * 2;
-        const b = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.10, 0.06), mat);
-        b.position.set(Math.cos(a) * 0.20, 0.845, Math.sin(a) * 0.20);
-        group.add(b);
-    }
+function createRamparts(increment = 0, mat, posY = 0.845, innerRadius = 0.15, outerRadius = 0.2, height = 0.10) {
+        // 1. Create the 2D Shape (The footprint of the ring)
+    const shape = new THREE.Shape();
+
+    // const innerRadius = 0.15;
+    // const outerRadius = 0.2;
+    const startAngle = 0 + Math.PI* 2 * increment/8; // 0 degrees (starting point)
+    const endAngle = Math.PI * 2/16 + Math.PI * 2 * increment/8; // 270 degrees (partial ring)
+
+    // Outer edge
+    shape.absarc(0, 0, outerRadius, startAngle, endAngle, false);
+
+    // Inner edge (drawn in reverse to create the "hole")
+    shape.absarc(0, 0, innerRadius, endAngle, startAngle, true);
+
+    // 2. Extrude it to add depth
+    const extrudeSettings = {
+        depth: height,           // How thick the ring is on the Z-axis
+        bevelEnabled: false, // Adds rounded edges (highly recommended)
+        curveSegments: 48   // Makes the ring look smooth
+    };
+
+    const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+    const meshRamparts = new THREE.Mesh(geometry, mat);
+    meshRamparts.rotation.x = Math.PI / 2;
+    meshRamparts.position.y = posY;
+    return meshRamparts;
+
+}
+
+export function buildRook(group, mat, scale=0.045) {
+    const pathData = "M0 0 4 0 4-1 3-1C3-2 3-1 2-2L2-2C2-5 1-9 3-11 3-11 1-11 3-11L3-11C3-12 2-12 2-12L3-12 4-13 4-15 3-15 3-14 0-14";
+    
+    const segments = 180;
+    const nPoints = 180;
+    const points = getPointsFromSVGPath(pathData, nPoints, scale);
+    const geometryRook = new THREE.LatheGeometry(points, segments);
+    const meshRook = new THREE.Mesh(geometryRook, mat);
+    meshRook.position.y = 0.0;
+    group.add(meshRook);
+
+    // Add crenellations
+    group.add(createRamparts(0, mat, 0.7605, 0.135, 0.18));
+    group.add(createRamparts(1, mat, 0.7605, 0.135, 0.18));
+    group.add(createRamparts(2, mat, 0.7605, 0.135, 0.18));
+    group.add(createRamparts(3, mat, 0.7605, 0.135, 0.18));
+    group.add(createRamparts(4, mat, 0.7605, 0.135, 0.18));
+    group.add(createRamparts(5, mat, 0.7605, 0.135, 0.18));
+    group.add(createRamparts(6, mat, 0.7605, 0.135, 0.18));
+    group.add(createRamparts(7, mat, 0.7605, 0.135, 0.18));
+
 }
