@@ -449,3 +449,155 @@ button:hover { background: #2980b9; }
     pointer-events: none;
     z-index: 10;
 }
+
+/* Viewer page layout */
+#header {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 50px;
+    background: #2c3e50;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 10px;
+    z-index: 99;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+}
+
+.header-left {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+}
+
+#back-btn {
+    background: transparent;
+    border: none;
+    color: white;
+    font-size: 20px;
+    padding: 8px;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+}
+
+#status-text {
+    color: white;
+    font-size: 1.2em;
+}
+
+#viewer-layout {
+    display: flex;
+    position: fixed;
+    top: 50px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+}
+
+#model-container {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+}
+
+#viewer-controls {
+    width: 300px;
+    min-width: 300px;
+    background: #2c3e50;
+    color: white;
+    padding: 15px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.control-section {
+    background: #34495e;
+    border-radius: 8px;
+    padding: 12px;
+}
+
+.control-section h3 {
+    margin: 0 0 10px 0;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #ecf0f1;
+}
+
+.control-section label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    margin-bottom: 6px;
+    color: #bdc3c7;
+}
+
+.control-section input[type="range"] {
+    flex: 1;
+    max-width: 140px;
+}
+
+.cam-val {
+    min-width: 40px;
+    text-align: right;
+    font-family: monospace;
+    font-size: 12px;
+    color: #ecf0f1;
+}
+
+.btn-group {
+    display: flex;
+    gap: 5px;
+}
+
+.view-mode-btn {
+    flex: 1;
+    padding: 8px 12px;
+    font-size: 13px;
+    background: #2c3e50;
+    color: #bdc3c7;
+    border: 1px solid #7f8c8d;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.view-mode-btn.active {
+    background: #3498db;
+    color: white;
+    border-color: #3498db;
+}
+
+.view-mode-btn:hover:not(.active) {
+    background: #34495e;
+}
+
+#piece-controls select {
+    background: #2c3e50;
+    color: white;
+    border: 1px solid #7f8c8d;
+    border-radius: 4px;
+    padding: 4px 8px;
+}
+
+#reset-camera {
+    width: 100%;
+    margin-top: 6px;
+    padding: 8px;
+    background: #e67e22;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+}
+
+#reset-camera:hover {
+    background: #d35400;
+}

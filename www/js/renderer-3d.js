@@ -7,73 +7,99 @@
 //
 
 import * as THREE from 'three';
-
-const PIECE_PROPS = {
-    P: { h: 1.0  },
-    R: { h: 1.25 },
-    N: { h: 1.33 },
-    B: { h: 1.38 },
-    Q: { h: 1.65 },
-    K: { h: 1.8  },
-};
+import { skinRegistry } from './skins.js';
+import { buildPawn as buildPawnClassic } from './skins/classic/3d/pawn.js';
+import { buildRook as buildRookClassic } from './skins/classic/3d/rook.js';
+import { buildKnight as buildKnightClassic } from './skins/classic/3d/knight.js';
+import { buildBishop as buildBishopClassic } from './skins/classic/3d/bishop.js';
+import { buildQueen as buildQueenClassic } from './skins/classic/3d/queen.js';
+import { buildKing as buildKingClassic } from './skins/classic/3d/king.js';
+import { buildPawn as buildPawnClassic2 } from './skins/classic2/3d/pawn.js';
+import { buildRook as buildRookClassic2 } from './skins/classic2/3d/rook.js';
+import { buildKnight as buildKnightClassic2 } from './skins/classic2/3d/knight.js';
+import { buildBishop as buildBishopClassic2 } from './skins/classic2/3d/bishop.js';
+import { buildQueen as buildQueenClassic2 } from './skins/classic2/3d/queen.js';
+import { buildKing as buildKingClassic2 } from './skins/classic2/3d/king.js';
 
 const WHITE_MAT = { color: 0xf0f0f0, roughness: 0.25, metalness: 0.05 };
-const BLACK_MAT = { color: 0x1a1a1a, roughness: 0.45, metalness: 0.1  };
+const BLACK_MAT = { color: 0x333333, roughness: 0.45, metalness: 0.1  };
 
 export class ChessRenderer3D {
+
     constructor() {
-        this.pieceGroup = null;
-        this.boardGroup = null;
-        this.squareMeshes = [];
-        this.squareMap = {};
-        this.piecesMap = {};
-        this.selectedSquare = null;
-        this.onSquareClick = null;
-        this.clock = new THREE.Clock();
-        this.raycaster = new THREE.Raycaster();
+        // Initialize with placeholder values - will be properly set in init()
+        this.scene = new THREE.Scene();
+        this.camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
+        this.camera.position.set(0, 10, 15);
+        this.camera.lookAt(0, 0, 0);
+
+        this.renderer = new THREE.WebGLRenderer({ antialias: true });
+        this.renderer.shadowMap.enabled = true;
+        this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+        // Initialize light and board properties (will be set up in init())
+        this._viewMode = 'full';
+        this._singlePieceGroup = null;
+        this.boardColors = { light: 0xf0d9b5, dark: 0xb58863 };
+
+        // Drag and zoom controls state
         this.mouse = new THREE.Vector2();
-        this._disposed = false;
-        this.boardColors = { light: 0xf5ece0, dark: 0x3d2b1f };
-        this.fileLabelsBottom = [];
-        this.fileLabelsTop = [];
+        this.raycaster = new THREE.Raycaster();
+        this._controlsEnabled = false;
+        this._isDragging = false;
+        this._wasDrag = false;
+        this._pointerDown = false;
+        this._previousMousePosition = { x: 0, y: 0 };
     }
 
+    /**
+     * Initialize the renderer with a container DOM element.
+     * @param {HTMLElement} container - The DOM element to render into
+     */
     init(container) {
         this.container = container;
+
+        // Set up the scene with proper aspect ratio
         const w = container.clientWidth || 600;
         const h = container.clientHeight || 600;
 
         this.scene = new THREE.Scene();
-        this.scene.background = new THREE.Color(0x2c3e50);
+        this.scene.background = new THREE.Color(0x7f8c8d);
 
         this.camera = new THREE.PerspectiveCamera(28, w / h, 0.1, 100);
-        this.camera.position.set(0, 12, 20);
+        this.camera.position.set(0, 11.8, 16.5); // position x, y, z
         this.camera.lookAt(0, 0, 0);
         this.camera.updateMatrixWorld(true);
 
         this.renderer = new THREE.WebGLRenderer({ antialias: true });
         this.renderer.setSize(w, h);
         this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        this.renderer.shadowMap.enabled = true;
+        this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         container.appendChild(this.renderer.domElement);
 
+        // Setup lights, board, and pieces
         this._setupLights();
+        this._setupBoard();
+        this._setupPieceGroups();
 
-        // create wrapper for board + pieces
-        this._boardWrap = new THREE.Group();
-        this.scene.add(this._boardWrap);
-
-        this._createBoard();
-        this.pieceGroup = new THREE.Group();
-        this._boardWrap.add(this.pieceGroup);
-
+        // Frame the board appropriately
         this._frameBoard();
 
+        // Set up click handling
         this.renderer.domElement.addEventListener('click', (e) => this._onClick(e));
+
+        // Set up resize observer
         const ro = new ResizeObserver(() => this.resize());
         ro.observe(container);
         this._resizeObserver = ro;
 
+        // Bind drag and zoom event listeners
+        this._bindDragZoomHandlers();
+
+        // Start animation loop
         this._animate();
+
         return this;
     }
 
@@ -82,18 +108,7 @@ export class ChessRenderer3D {
         this._rebuildBoard();
     }
 
-    /**
-     * Sets the board orientation (perspective)
-     * @param {string} side - 'white' or 'black'
-     */
-    setOrientation(side) {
-        if (this._orientation === side) return;
-        this._orientation = side;
-        
-        if (this._boardWrap) {
-            this._boardWrap.rotation.y = (side === 'black') ? Math.PI : 0;
-        }
-
+    _setFileLabelsBySide(side) {
         // Toggle file labels visibility so only the ones closest to camera are shown
         // When side is 'white', bottom labels (z=5.0) are close, top labels (z=-5.0) are far.
         // When side is 'black', the board is rotated 180 deg, so bottom labels (z=5.0 relative to board)
@@ -101,18 +116,38 @@ export class ChessRenderer3D {
         const showBottom = (side === 'white');
         this.fileLabelsBottom.forEach(l => l.visible = showBottom);
         this.fileLabelsTop.forEach(l => l.visible = !showBottom);
+    }
 
-        this._frameBoard();
+    _setupBoard() {
+        this._boardWrap = new THREE.Group();
+        this.scene.add(this._boardWrap);
+        this._createBoard();
+    }
+
+    _setupPieceGroups() {
+        this.pieceGroup = new THREE.Group();
+        this._boardWrap.add(this.pieceGroup);
     }
 
     _setupLights() {
-        this.scene.add(new THREE.AmbientLight(0xffffff, 0.7));
-        const main = new THREE.DirectionalLight(0xffffff, 1.8);
-        main.position.set(5, 15, 10);
-        this.scene.add(main);
-        const fill = new THREE.DirectionalLight(0x8888cc, 0.3);
-        fill.position.set(-3, 5, -5);
-        this.scene.add(fill);
+        this.ambientLight = new THREE.AmbientLight(0xffffff, 0.25);
+        this.scene.add(this.ambientLight);
+        this.mainLight = new THREE.DirectionalLight(0xffffff, 3.25);
+        this.mainLight.position.set(-2, 3.5, 1.5);
+        this.mainLight.castShadow = true;
+        this.mainLight.shadow.mapSize.width = 2048;
+        this.mainLight.shadow.mapSize.height = 2048;
+        this.mainLight.shadow.camera.near = 0.5;
+        this.mainLight.shadow.camera.far = 30;
+        this.mainLight.shadow.camera.left = -8;
+        this.mainLight.shadow.camera.right = 8;
+        this.mainLight.shadow.camera.top = 8;
+        this.mainLight.shadow.camera.bottom = -8;
+        this.mainLight.shadow.bias = -0.001;
+        this.scene.add(this.mainLight);
+        this.fillLight = new THREE.DirectionalLight(0x8888cc, 0.3);
+        this.fillLight.position.set(-3, 5, -5);
+        this.scene.add(this.fillLight);
     }
 
     _createBoard() {
@@ -130,12 +165,11 @@ export class ChessRenderer3D {
             for (let f = 0; f < 8; f++) {
                 const isLight = (r + f) % 2 !== 0;
                 const color = isLight ? this.boardColors.light : this.boardColors.dark;
-                const mat = new THREE.MeshBasicMaterial({ color });
+                const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.6, metalness: 0 });
                 const geo = new THREE.BoxGeometry(1, 0.04, 1);
                 const mesh = new THREE.Mesh(geo, mat);
-                const x = f - 3.5;
-                const z = -(r - 3.5);
-                mesh.position.set(x, 0, z);
+                mesh.position.set(f - 3.5, 0, -(r - 3.5));
+                mesh.receiveShadow = true;
                 mesh.userData.square = String.fromCharCode(97 + f) + (r + 1);
                 this.boardGroup.add(mesh);
                 this.squareMeshes.push(mesh);
@@ -143,10 +177,11 @@ export class ChessRenderer3D {
             }
         }
 
-        const bMat = new THREE.MeshBasicMaterial({ color: 0x5c3a1e });
+        const bMat = new THREE.MeshStandardMaterial({ color: 0x5c3a1e, roughness: 0.8, metalness: 0 });
         const bGeo = new THREE.BoxGeometry(8.6, 0.12, 8.6);
         const border = new THREE.Mesh(bGeo, bMat);
         border.position.set(0, -0.08, 0);
+        border.receiveShadow = true;
         this.boardGroup.add(border);
 
         this._createLabels();
@@ -244,106 +279,61 @@ export class ChessRenderer3D {
         this._createBoard();
     }
 
-    // ---- Low-poly piece builders ----
+    // ---- Low-poly piece builders (delegated to skins/classic/3d/ or skins/classic2/3d/) ----
 
     _buildPawn(group, mat) {
-        const add = (geo, y) => { const m = new THREE.Mesh(geo, mat); m.position.y = y; group.add(m); };
-        add(new THREE.CylinderGeometry(0.24, 0.28, 0.06, 8), 0.03);
-        add(new THREE.CylinderGeometry(0.14, 0.22, 0.55, 8), 0.34);
-        add(new THREE.SphereGeometry(0.14, 6, 5), 0.74);
-        add(new THREE.SphereGeometry(0.10, 6, 5), 0.88);
+        const activeSkinId = skinRegistry.getActive()?.id || 'classic';
+        if (activeSkinId === 'classic2') {
+            buildPawnClassic2(group, mat);
+        } else {
+            buildPawnClassic(group, mat);
+        }
     }
-
     _buildRook(group, mat) {
-        const add = (geo, y) => { const m = new THREE.Mesh(geo, mat); m.position.y = y; group.add(m); };
-        add(new THREE.CylinderGeometry(0.26, 0.28, 0.06, 8), 0.03);
-        add(new THREE.CylinderGeometry(0.20, 0.24, 0.6, 8), 0.36);
-        add(new THREE.CylinderGeometry(0.24, 0.24, 0.05, 8), 0.70);
-        add(new THREE.CylinderGeometry(0.14, 0.16, 0.25, 8), 0.88);
-        const plat = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.06, 0.48), mat);
-        plat.position.y = 1.08;
-        group.add(plat);
-        for (const [dx, dz] of [[-0.18,-0.18], [0.18,-0.18], [-0.18,0.18], [0.18,0.18]]) {
-            const b = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.12, 0.07), mat);
-            b.position.set(dx, 1.19, dz);
-            group.add(b);
+        const activeSkinId = skinRegistry.getActive()?.id || 'classic';
+        if (activeSkinId === 'classic2') {
+            buildRookClassic2(group, mat);
+        } else {
+            buildRookClassic(group, mat);
         }
     }
-
     _buildKnight(group, mat) {
-        const add = (geo, y) => { const m = new THREE.Mesh(geo, mat); m.position.y = y; group.add(m); };
-        add(new THREE.CylinderGeometry(0.24, 0.28, 0.06, 8), 0.03);
-        add(new THREE.CylinderGeometry(0.16, 0.22, 0.5, 8), 0.30);
-        add(new THREE.CylinderGeometry(0.12, 0.14, 0.15, 8), 0.56);
-        const head = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.18, 0.18), mat);
-        head.position.set(0.04, 0.75, -0.02);
-        head.rotation.z = 0.08;
-        head.rotation.x = 0.15;
-        group.add(head);
-        const ear = new THREE.Mesh(new THREE.ConeGeometry(0.035, 0.12, 5), mat);
-        ear.position.set(0.10, 0.88, 0.03);
-        ear.rotation.z = -0.15;
-        ear.rotation.x = 0.25;
-        group.add(ear);
+        const activeSkinId = skinRegistry.getActive()?.id || 'classic';
+        if (activeSkinId === 'classic2') {
+            buildKnightClassic2(group, mat);
+        } else {
+            buildKnightClassic(group, mat);
+        }
     }
-
     _buildBishop(group, mat) {
-        const add = (geo, y) => { const m = new THREE.Mesh(geo, mat); m.position.y = y; group.add(m); };
-        add(new THREE.CylinderGeometry(0.24, 0.28, 0.06, 8), 0.03);
-        add(new THREE.CylinderGeometry(0.16, 0.22, 0.5, 8), 0.30);
-        add(new THREE.CylinderGeometry(0.16, 0.18, 0.05, 8), 0.58);
-        add(new THREE.CylinderGeometry(0.08, 0.10, 0.22, 6), 0.70);
-        add(new THREE.ConeGeometry(0.08, 0.26, 6), 0.92);
+        const activeSkinId = skinRegistry.getActive()?.id || 'classic';
+        if (activeSkinId === 'classic2') {
+            buildBishopClassic2(group, mat);
+        } else {
+            buildBishopClassic(group, mat);
+        }
     }
-
     _buildQueen(group, mat) {
-        const add = (geo, y) => { const m = new THREE.Mesh(geo, mat); m.position.y = y; group.add(m); };
-        add(new THREE.CylinderGeometry(0.24, 0.28, 0.06, 8), 0.03);
-        add(new THREE.CylinderGeometry(0.16, 0.22, 0.5, 8), 0.30);
-        add(new THREE.CylinderGeometry(0.18, 0.20, 0.05, 8), 0.58);
-        add(new THREE.CylinderGeometry(0.08, 0.10, 0.3, 6), 0.73);
-        const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.18, 0.06, 8), mat);
-        crown.position.y = 0.93;
-        group.add(crown);
-        const n = 6;
-        for (let i = 0; i < n; i++) {
-            const a = (i / n) * Math.PI * 2;
-            const p = new THREE.Mesh(new THREE.ConeGeometry(0.025, 0.12, 4), mat);
-            p.position.set(Math.cos(a) * 0.16, 1.02, Math.sin(a) * 0.16);
-            group.add(p);
+        const activeSkinId = skinRegistry.getActive()?.id || 'classic';
+        if (activeSkinId === 'classic2') {
+            buildQueenClassic2(group, mat);
+        } else {
+            buildQueenClassic(group, mat);
         }
-        const top = new THREE.Mesh(new THREE.SphereGeometry(0.05, 6, 5), mat);
-        top.position.y = 1.12;
-        group.add(top);
     }
-
     _buildKing(group, mat) {
-        const add = (geo, y) => { const m = new THREE.Mesh(geo, mat); m.position.y = y; group.add(m); };
-        add(new THREE.CylinderGeometry(0.24, 0.28, 0.06, 8), 0.03);
-        add(new THREE.CylinderGeometry(0.16, 0.22, 0.55, 8), 0.32);
-        add(new THREE.CylinderGeometry(0.18, 0.20, 0.05, 8), 0.63);
-        add(new THREE.CylinderGeometry(0.08, 0.10, 0.3, 6), 0.78);
-        const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.20, 0.06, 8), mat);
-        crown.position.y = 0.98;
-        group.add(crown);
-        const n = 5;
-        for (let i = 0; i < n; i++) {
-            const a = (i / n) * Math.PI * 2;
-            const p = new THREE.Mesh(new THREE.ConeGeometry(0.025, 0.10, 4), mat);
-            p.position.set(Math.cos(a) * 0.18, 1.07, Math.sin(a) * 0.18);
-            group.add(p);
+        const activeSkinId = skinRegistry.getActive()?.id || 'classic';
+        if (activeSkinId === 'classic2') {
+            buildKingClassic2(group, mat);
+        } else {
+            buildKingClassic(group, mat);
         }
-        const vert = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.32, 0.05), mat);
-        vert.position.y = 1.26;
-        group.add(vert);
-        const horiz = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.05, 0.05), mat);
-        horiz.position.y = 1.24;
-        group.add(horiz);
     }
 
     // ---- Public API ----
 
     setPosition(fen) {
+        if (!fen) return;
         // Clear all square highlights before rebuilding
         for (const mesh of this.squareMeshes) {
             const sq = mesh.userData.square;
@@ -371,10 +361,15 @@ export class ChessRenderer3D {
             const grp = new THREE.Group();
             const type = ch.toUpperCase();
             const builders = {
-                P: this._buildPawn, R: this._buildRook, N: this._buildKnight,
-                B: this._buildBishop, Q: this._buildQueen, K: this._buildKing,
+                P: (grp, mat) => this._buildPawn(grp, mat),
+                R: (grp, mat) => this._buildRook(grp, mat),
+                N: (grp, mat) => this._buildKnight(grp, mat),
+                B: (grp, mat) => this._buildBishop(grp, mat),
+                Q: (grp, mat) => this._buildQueen(grp, mat),
+                K: (grp, mat) => this._buildKing(grp, mat),
             };
-            (builders[type] || this._buildPawn).call(this, grp, mat);
+            (builders[type] || builders.P)(grp, mat);
+            grp.traverse(child => { if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; } });
 
             const pos = this._squareToPos(sq);
             grp.position.set(pos.x, 0, pos.z);
@@ -392,6 +387,110 @@ export class ChessRenderer3D {
         }
     }
 
+    setOrientation(side) {
+        this._boardWrap.rotation.y = (side === 'black') ? Math.PI : 0;
+        this._setFileLabelsBySide(side);
+    }
+
+    setViewMode(mode) {
+        this._viewMode = mode;
+        const showBoard = mode === 'full' || mode === 'board';
+        const showPieces = mode === 'full';
+        const showSingle = mode === 'piece';
+        if (this.boardGroup) this.boardGroup.visible = showBoard;
+        if (this.pieceGroup) this.pieceGroup.visible = showPieces;
+        if (this._singlePieceGroup) this._singlePieceGroup.visible = showSingle;
+    }
+
+    setSinglePiece(type, color) {
+        const typeUpper = type.toUpperCase();
+        if (!this._singlePieceGroup) {
+            this._singlePieceGroup = new THREE.Group();
+            this._boardWrap.add(this._singlePieceGroup);
+        }
+        while (this._singlePieceGroup.children.length) {
+            const child = this._singlePieceGroup.children[0];
+            this._disposeGroup(child);
+            this._singlePieceGroup.remove(child);
+        }
+        const isWhite = color === 'white';
+        const opts = isWhite ? WHITE_MAT : BLACK_MAT;
+        const mat = new THREE.MeshStandardMaterial({ ...opts, flatShading: true });
+        const grp = new THREE.Group();
+        const builders = {
+            P: (grp, mat) => this._buildPawn(grp, mat),
+            R: (grp, mat) => this._buildRook(grp, mat),
+            N: (grp, mat) => this._buildKnight(grp, mat),
+            B: (grp, mat) => this._buildBishop(grp, mat),
+            Q: (grp, mat) => this._buildQueen(grp, mat),
+            K: (grp, mat) => this._buildKing(grp, mat),
+        };
+        (builders[typeUpper] || buildPawn)(grp, mat);
+        grp.traverse(child => { if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; } });
+        const box = new THREE.Box3().setFromObject(grp);
+        const center = box.getCenter(new THREE.Vector3());
+        grp.position.sub(center);
+        this._singlePieceGroup.add(grp);
+    }
+
+    setCameraPosition(x, y, z) {
+        this._manualCamera = true;
+        this.camera.position.set(x, y, z);
+        this.camera.lookAt(0, 0, 0);
+        this.camera.updateProjectionMatrix();
+    }
+
+    setCameraFov(fov) {
+        this._manualCamera = true;
+        this.camera.fov = fov;
+        this.camera.updateProjectionMatrix();
+    }
+
+    resetCamera() {
+        this._manualCamera = false;
+        const isPiece = this._viewMode === 'piece';
+        this.camera.position.set(0, isPiece ? 4 : 11.8, isPiece ? 5 : 16.5);
+        this.camera.lookAt(0, 0, 0);
+        this.camera.fov = isPiece ? 29 : 28;
+        this.camera.updateProjectionMatrix();
+        this._boardWrap.rotation.set(0, 0, 0);
+        // Only auto-frame the board in full/board mode — in piece mode
+        // there is no board visible and the close camera would produce
+        // an extreme FOV from projecting empty board corners
+        if (!isPiece) this._frameBoard();
+    }
+
+    getCameraPosition() {
+        return {
+            x: this.camera.position.x,
+            y: this.camera.position.y,
+            z: this.camera.position.z,
+            fov: this.camera.fov,
+        };
+    }
+
+    setMainLightPosition(x, y, z) {
+        if (this.mainLight) this.mainLight.position.set(x, y, z);
+    }
+
+    setMainLightIntensity(intensity) {
+        if (this.mainLight) this.mainLight.intensity = intensity;
+    }
+
+    setAmbientIntensity(intensity) {
+        if (this.ambientLight) this.ambientLight.intensity = intensity;
+    }
+
+    getLightState() {
+        return {
+            mainX: this.mainLight ? this.mainLight.position.x : 4,
+            mainY: this.mainLight ? this.mainLight.position.y : 6.5,
+            mainZ: this.mainLight ? this.mainLight.position.z : 1.5,
+            mainIntensity: this.mainLight ? this.mainLight.intensity : 3.25,
+            ambientIntensity: this.ambientLight ? this.ambientLight.intensity : 0.25,
+        };
+    }
+
     setSelection(sq) {
         if (this.selectedSquare) this.highlightSquare(this.selectedSquare, false);
         this.selectedSquare = sq;
@@ -406,6 +505,7 @@ export class ChessRenderer3D {
     }
 
     _onClick(event) {
+        if (this._wasDrag) return;
         const rect = this.renderer.domElement.getBoundingClientRect();
         this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
         this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
@@ -427,7 +527,7 @@ export class ChessRenderer3D {
         this.camera.aspect = w / h;
         this.camera.updateProjectionMatrix();
         this.renderer.setSize(w, h);
-        this._frameBoard();
+        if (!this._manualCamera) this._frameBoard();
     }
 
     _animate() {
@@ -450,10 +550,174 @@ export class ChessRenderer3D {
         });
     }
 
+    // Drag and zoom controls
+    _bindDragZoomHandlers() {
+        // Bind methods to maintain correct 'this' context
+        this._onMouseDown = this._onMouseDown.bind(this);
+        this._onMouseMove = this._onMouseMove.bind(this);
+        this._onMouseUp = this._onMouseUp.bind(this);
+        this._onMouseLeave = this._onMouseLeave.bind(this);
+        this._onTouchStart = this._onTouchStart.bind(this);
+        this._onTouchMove = this._onTouchMove.bind(this);
+        this._onTouchEnd = this._onTouchEnd.bind(this);
+        this._onWheel = this._onWheel.bind(this);
+
+        // Add event listeners
+        this.container.addEventListener('mousedown', this._onMouseDown);
+        this.container.addEventListener('mousemove', this._onMouseMove);
+        this.container.addEventListener('mouseup', this._onMouseUp);
+        this.container.addEventListener('mouseleave', this._onMouseLeave);
+        this.container.addEventListener('touchstart', this._onTouchStart);
+        this.container.addEventListener('touchmove', this._onTouchMove);
+        this.container.addEventListener('touchend', this._onTouchEnd);
+        this.container.addEventListener('wheel', this._onWheel);
+    }
+
+    _onMouseDown(event) {
+        if (!this._controlsEnabled) return;
+        this._wasDrag = false;
+        this._pointerDown = true;
+        this._isDragging = false;
+        this._previousMousePosition = { x: event.clientX, y: event.clientY };
+    }
+
+    _onMouseMove(event) {
+        if (!this._controlsEnabled || !this._pointerDown) return;
+        if (!this._isDragging) {
+            const dx = event.clientX - this._previousMousePosition.x;
+            const dy = event.clientY - this._previousMousePosition.y;
+            if (dx * dx + dy * dy < 16) return;
+            this._isDragging = true;
+            this._wasDrag = true;
+            this.container.style.cursor = 'grabbing';
+        }
+        const deltaMove = {
+            x: event.clientX - this._previousMousePosition.x,
+            y: event.clientY - this._previousMousePosition.y
+        };
+        
+        const rotSpeed = 0.005;
+        if (this._boardWrap) {
+            this._boardWrap.rotation.y += deltaMove.x * rotSpeed;
+            this._boardWrap.rotation.x += deltaMove.y * rotSpeed;
+            
+            const maxVert = Math.PI / 2;
+            this._boardWrap.rotation.x = Math.max(
+                -maxVert,
+                Math.min(maxVert, this._boardWrap.rotation.x)
+            );
+        }
+        this._previousMousePosition = { x: event.clientX, y: event.clientY };
+    }
+
+    _onMouseUp() {
+        if (!this._controlsEnabled) return;
+        this._isDragging = false;
+        this._pointerDown = false;
+        this.container.style.cursor = 'grab';
+    }
+
+    _onMouseLeave() {
+        if (!this._controlsEnabled) return;
+        this._isDragging = false;
+        this._pointerDown = false;
+        this.container.style.cursor = 'grab';
+    }
+
+    _onTouchStart(event) {
+        if (!this._controlsEnabled) return;
+        if (event.touches.length === 1) {
+            this._wasDrag = false;
+            this._pointerDown = true;
+            this._isDragging = false;
+            this._previousMousePosition = {
+                x: event.touches[0].clientX,
+                y: event.touches[0].clientY
+            };
+        }
+    }
+
+    _onTouchMove(event) {
+        if (!this._controlsEnabled || !this._pointerDown || event.touches.length !== 1) return;
+        if (!this._isDragging) {
+            const dx = event.touches[0].clientX - this._previousMousePosition.x;
+            const dy = event.touches[0].clientY - this._previousMousePosition.y;
+            if (dx * dx + dy * dy < 16) return;
+            this._isDragging = true;
+            this._wasDrag = true;
+            this.container.style.cursor = 'grabbing';
+        }
+        const deltaMove = {
+            x: event.touches[0].clientX - this._previousMousePosition.x,
+            y: event.touches[0].clientY - this._previousMousePosition.y
+        };
+        
+        const rotSpeed = 0.005;
+        if (this._boardWrap) {
+            this._boardWrap.rotation.y += deltaMove.x * rotSpeed;
+            this._boardWrap.rotation.x += deltaMove.y * rotSpeed;
+            
+            const maxVert = Math.PI / 2;
+            this._boardWrap.rotation.x = Math.max(
+                -maxVert,
+                Math.min(maxVert, this._boardWrap.rotation.x)
+            );
+        }
+        this._previousMousePosition = {
+            x: event.touches[0].clientX,
+            y: event.touches[0].clientY
+        };
+    }
+
+    _onTouchEnd() {
+        if (!this._controlsEnabled) return;
+        this._isDragging = false;
+        this._pointerDown = false;
+        this.container.style.cursor = 'grab';
+    }
+
+    _onWheel(event) {
+        if (!this._controlsEnabled) return;
+        event.preventDefault();
+        
+        const zoomSpeed = 0.001;
+        const distance = this.camera.position.distanceTo(new THREE.Vector3(0, 0, 0));
+        const zoomAmount = event.deltaY * zoomSpeed;
+        const direction = new THREE.Vector3()
+            .subVectors(this.camera.position, new THREE.Vector3(0, 0, 0))
+            .normalize();
+        const newDistance = Math.max(5, Math.min(30, distance + zoomAmount));
+        this.camera.position.copy(new THREE.Vector3(0, 0, 0)).add(direction.multiplyScalar(newDistance));
+        this.camera.lookAt(0, 0, 0);
+        this.camera.updateProjectionMatrix();
+    }
+
+    enableControls() {
+        this._controlsEnabled = true;
+        this.container.style.cursor = 'grab';
+    }
+
+    disableControls() {
+        this._controlsEnabled = false;
+        this._isDragging = false;
+        this.container.style.cursor = 'default';
+    }
+
     dispose() {
+        // Remove event listeners
+        this.container.removeEventListener('mousedown', this._onMouseDown);
+        this.container.removeEventListener('mousemove', this._onMouseMove);
+        this.container.removeEventListener('mouseup', this._onMouseUp);
+        this.container.removeEventListener('mouseleave', this._onMouseLeave);
+        this.container.removeEventListener('touchstart', this._onTouchStart);
+        this.container.removeEventListener('touchmove', this._onTouchMove);
+        this.container.removeEventListener('touchend', this._onTouchEnd);
+        this.container.removeEventListener('wheel', this._onWheel);
+
         this._disposed = true;
         this._disposeGroup(this.boardGroup);
         this._disposeGroup(this.pieceGroup);
+        this._disposeGroup(this._singlePieceGroup);
         if (this._resizeObserver) this._resizeObserver.disconnect();
         if (this.renderer) this.renderer.dispose();
         if (this.container && this.renderer && this.renderer.domElement) {

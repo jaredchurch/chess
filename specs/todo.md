@@ -40,3 +40,8 @@ Once we have worked through doing the spec for them, they should be marked as do
 - [ ] 37. Give the black pieces more contrast from the light source. when close together (one in front of another) it's difficult to differentiate one from the other.
 - [ ] 38. give shadows from the light source for each piece.
 - [ ] 39. Viewport should be taller to fill space on the page.
+- [ ] 40. enable a drag to rotate board in 3D mode.
+- [ ] 41. In 3D mode, put the labels on the board, make the board a little large if necessary
+- [ ] 42. in model viewer camera and lighting cards should be collapsable and collapsed by default.
+- [ ] 43. in model viewer, I'd like to combine skin and piece/colour selectors into a single card (piece & colour should still only show when I've selected to see individual pieces). The selectors should go horizontal across the card.
+- [ ] 44. In model viewer only show skins that have a 3D version.
