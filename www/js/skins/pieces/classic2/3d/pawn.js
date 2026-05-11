@@ -6,8 +6,8 @@
 
 import { rotator } from '../../rotator.js';
 
-export function buildPawn(group, mat, scale = 0.0095) {
-    const pathData = "M0 0 20 0 20-5 15-5C15-10 15-5 10-10L10-10C5-20 5-35 10-40 18-41 16-44 10-45L5-45C0-45 3-50 5-50M5-50C10-52 10-65 0-65";
+export function buildPawn(group, mat, scale = 0.012) {
+    const pathData = "M0 0 13 0 13-3 12-3C12-4 13-5 12-6 11-7 10.6667-8 10-9 10-9.6667 11-10 10-11 9-12 3-16 5-32 10-32 11-35 9-35L0-35 0-33C10-33 10-49 0-49";
     group.add(rotator(pathData, mat, scale));
 }
 

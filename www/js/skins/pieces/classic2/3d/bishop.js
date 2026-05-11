@@ -6,8 +6,8 @@
 
 import { rotator } from '../../rotator.js';
 
-export function buildBishop(group, mat, scale = 0.01) {
-    const pathData = "M0 0 25 0 25-5 20-5C15-10 19-9 12-10L12-10C7-21 4-55 14-55L14-55C19-55 23-61 10-60L10-60C17-72 15-85 5-95 7-98 2-99 0-99";
+export function buildBishop(group, mat, scale = 0.016) {
+    const pathData = "M0 0 13 0 13-3 12-3C12-4 13-5 12-6 11-7 10.6667-8 10-9 10-9.6667 11-10 10-11 9-12 3-16 5-32 10-32 11-35 9-35 6-35 12-37 7-37 9-37 9-39 7-39L5-39C10-43 8-52 1-59 2-59 2-61 0-61";
     group.add(rotator(pathData, mat, scale));
 
     // TODO: Create the "Cutter" (a thin box for the slit)

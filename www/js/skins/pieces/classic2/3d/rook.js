@@ -6,14 +6,14 @@
 import * as THREE from 'three';
 import { rotator } from '../../rotator.js';
 
-function createRamparts(increment = 0, mat, posY = 0.845, innerRadius = 0.15, outerRadius = 0.2, height = 0.10) {
+function createRamparts(increment = 0, total = 8, mat, posY = 0.845, innerRadius = 0.15, outerRadius = 0.2, height = 0.10) {
         // 1. Create the 2D Shape (The footprint of the ring)
     const shape = new THREE.Shape();
 
     // const innerRadius = 0.15;
     // const outerRadius = 0.2;
-    const startAngle = 0 + Math.PI* 2 * increment/8; // 0 degrees (starting point)
-    const endAngle = Math.PI * 2/16 + Math.PI * 2 * increment/8; // 270 degrees (partial ring)
+    const startAngle = 0 + Math.PI* 2 * increment/total; // 0 degrees (starting point)
+    const endAngle = Math.PI * 1/total + Math.PI * 2 * increment/total; // 270 degrees (partial ring)
 
     // Outer edge
     shape.absarc(0, 0, outerRadius, startAngle, endAngle, false);
@@ -36,13 +36,14 @@ function createRamparts(increment = 0, mat, posY = 0.845, innerRadius = 0.15, ou
 
 }
 
-export function buildRook(group, mat, scale=0.045) {
-    const pathData = "M0 0 4 0 4-1 3-1C3-2 3-1 2-2L2-2C2-5 1-9 3-11 3-11 1-11 3-11L3-11C3-12 2-12 2-12L3-12 4-13 4-15 3-15 3-14 0-14";
+export function buildRook(group, mat, scale=0.014) {
+    const pathData = "M0 0 13 0 13-3 12-3C12-4 13-5 12-6 11-7 10.6667-8 10-9 10-9.6667 11-10 10-11 9-12 3-16 5-32 10-32 11-35 9-35L5-35 11-39 11-47 7-47 7-42 0-42";
     group.add(rotator(pathData, mat, scale));
 
     // Add 8 crenellations around the top
-    for (let i = 0; i < 8; i++) {
-        group.add(createRamparts(i, mat, 0.745, 0.135, 0.18, 0.08));
+    const rampartCount=7;
+    for (let i = 0; i < rampartCount; i++) {
+        group.add(createRamparts(i, rampartCount, mat, 0.72, 0.0978, 0.1541, 0.08));
     }
 
 }
