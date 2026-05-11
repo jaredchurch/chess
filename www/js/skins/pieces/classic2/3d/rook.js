@@ -2,13 +2,6 @@
 // Licensed under the MIT License. See LICENSE file in the project root for details.
 //
 // Classic 3D Rook - Low-poly rook piece geometry builder.
-// Components (from bottom to top):
-//   BASE: Cylinder (r=0.26, h=0.06) at y=0.03
-//   UPPER BASE: Cylinder (r=0.20, h=0.24) at y=0.36
-//   RING: Cylinder (r=0.24, h=0.05) at y=0.70
-//   PLATFORM: Cylinder (r=0.26, h=0.06) at y=0.755
-//   CRENELLATIONS: 8 boxes (0.06x0.10x0.06) at radius 0.20, y=0.845
-//   (Spaced at 45° intervals around the platform edge)
 //
 import * as THREE from 'three';
 import { getPointsFromSVGPath } from '../../../svg-path.js';

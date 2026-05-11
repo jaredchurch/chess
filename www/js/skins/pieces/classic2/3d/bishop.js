@@ -1,7 +1,7 @@
 // Copyright (c) 2026 Chess Core Team
 // Licensed under the MIT License. See LICENSE file in the project root for details.
 //
-// Classic 3D Pawn - Low-poly pawn piece geometry builder using SVG path lathe.
+// Classic 3D Bishop - Low-poly bishop piece geometry builder using SVG path lathe.
 // SVG path designed with: https://yqnn.github.io/svg-path-editor/
 
 import * as THREE from 'three';
