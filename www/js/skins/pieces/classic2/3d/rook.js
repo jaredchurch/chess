@@ -4,7 +4,7 @@
 // Classic 3D Rook - Low-poly rook piece geometry builder.
 //
 import * as THREE from 'three';
-import { getPointsFromSVGPath } from '../../../svg-path.js';
+import { rotator } from '../../rotator.js';
 
 function createRamparts(increment = 0, mat, posY = 0.845, innerRadius = 0.15, outerRadius = 0.2, height = 0.10) {
         // 1. Create the 2D Shape (The footprint of the ring)
@@ -38,23 +38,11 @@ function createRamparts(increment = 0, mat, posY = 0.845, innerRadius = 0.15, ou
 
 export function buildRook(group, mat, scale=0.045) {
     const pathData = "M0 0 4 0 4-1 3-1C3-2 3-1 2-2L2-2C2-5 1-9 3-11 3-11 1-11 3-11L3-11C3-12 2-12 2-12L3-12 4-13 4-15 3-15 3-14 0-14";
-    
-    const segments = 180;
-    const nPoints = 180;
-    const points = getPointsFromSVGPath(pathData, nPoints, scale);
-    const geometryRook = new THREE.LatheGeometry(points, segments);
-    const meshRook = new THREE.Mesh(geometryRook, mat);
-    meshRook.position.y = 0.0;
-    group.add(meshRook);
+    group.add(rotator(pathData, mat, scale));
 
-    // Add crenellations
-    group.add(createRamparts(0, mat, 0.745, 0.135, 0.18, 0.08));
-    group.add(createRamparts(1, mat, 0.745, 0.135, 0.18, 0.08));
-    group.add(createRamparts(2, mat, 0.745, 0.135, 0.18, 0.08));
-    group.add(createRamparts(3, mat, 0.745, 0.135, 0.18, 0.08));
-    group.add(createRamparts(4, mat, 0.745, 0.135, 0.18, 0.08));
-    group.add(createRamparts(5, mat, 0.745, 0.135, 0.18, 0.08));
-    group.add(createRamparts(6, mat, 0.745, 0.135, 0.18, 0.08));
-    group.add(createRamparts(7, mat, 0.745, 0.135, 0.18, 0.08));
+    // Add 8 crenellations around the top
+    for (let i = 0; i < 8; i++) {
+        group.add(createRamparts(i, mat, 0.745, 0.135, 0.18, 0.08));
+    }
 
 }
