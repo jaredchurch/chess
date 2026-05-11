@@ -8,7 +8,7 @@ import * as THREE from 'three';
 import { getPointsFromSVGPath } from '../../../svg-path.js';
 
 
-export function buildQueen(group, mat, scale = 0.017) {
+export function buildQueen(group, mat, scale = 0.019) {
     const pathData = "M0 0 13 0 13-3 12-3C12-4 13-5 12-6 11-7 10.6667-8 10-9 10-9.6667 11-10 10-11 9-12 8-15 7-32 11-32 11-35 9-35 6-35 12-37 7-37 9-37 9-39 7-39 10-49 13-57 8-53 4-54 3-56 2-56 4-57 4-58 2-58 3-58 3-59 1-59 2-59 1-60 0-60";
 
     const segments = 180;
