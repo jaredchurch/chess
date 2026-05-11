@@ -1,6 +1,8 @@
 {
   "dependencies": {
-    "acorn": "^8.16.0"
+    "acorn": "^8.16.0",
+    "three-bvh-csg": "^0.0.8",
+    "three-mesh-bvh": "^0.6.8"
   },
   "devDependencies": {
     "three": "^0.170.0"

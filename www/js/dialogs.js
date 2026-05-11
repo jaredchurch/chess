@@ -5,7 +5,7 @@
 //
 
 import { getGameStats } from './storage.js';
-import { skinRegistry, switchSkin } from './skins.js';
+import { skinRegistry, switchSkin } from './skins/skins.js';
 
 window.moveHistoryCollapsed = window.moveHistoryCollapsed || false;
 window.getGameStats = getGameStats;

@@ -7,7 +7,7 @@
 //
 
 import * as THREE from 'three';
-import { skinRegistry } from './skins.js';
+import { skinRegistry, Board3D, Board3DV2 } from './skins/skins.js';
 import { renderBoard3d } from './board.js';
 
 function setupViewerControls() {
@@ -131,6 +131,15 @@ function initSkinSelect() {
             skinRegistry.applyActive();
             window.renderBoard();
         }
+    });
+}
+
+function initBoardDesign() {
+    const boardSelect = document.getElementById('board-design');
+    if (!boardSelect) return;
+
+    boardSelect.addEventListener('change', () => {
+        window.renderBoard();
     });
 }
 
@@ -280,6 +289,7 @@ function saveViewerState() {
     const light = r.getLightState();
     const state = {
         skinId: skinRegistry.getActive()?.id || 'classic',
+        boardDesign: parseInt(document.getElementById('board-design')?.value || '1'),
         viewMode: r._viewMode,
         cameraX: pos.x, cameraY: pos.y, cameraZ: pos.z, cameraFov: pos.fov,
         lightX: light.mainX, lightY: light.mainY, lightZ: light.mainZ,
@@ -347,10 +357,19 @@ window.renderBoard = function() {
     boardEl.style.width = '';
     boardEl.style.height = '';
     renderBoard3d(boardEl);
+
+    // Apply chosen board design (only in viewer, never in the game)
+    const boardDesign = document.getElementById('board-design');
+    if (boardDesign && window._chessRenderer) {
+        const design = parseInt(boardDesign.value);
+        window._chessRenderer.setBoardDesign(design === 2 ? Board3DV2 : Board3D);
+    }
+
     setupDragControls();
     setupViewerControls();
     setupLightControls();
     initSkinSelect();
+    initBoardDesign();
     updateSkinSelect();
 
     // Restore persisted state if available (overrides defaults set above)
@@ -400,6 +419,13 @@ window.addEventListener('load', () => {
         return;
     }
     document.getElementById('status-text').textContent = 'Loading 3D models...';
+
+    // Restore board design before render so it takes effect on first creation
+    if (_saved && _saved.boardDesign) {
+        const boardSelect = document.getElementById('board-design');
+        if (boardSelect) boardSelect.value = String(_saved.boardDesign);
+    }
+
     setTimeout(() => {
         if (typeof window.renderBoard === 'function') {
             window.renderBoard();

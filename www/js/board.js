@@ -6,7 +6,7 @@
 //
 
 import { pieceUnicode, isWhitePiece, PIECE_TYPES } from './ui.js';
-import { skinRegistry } from './skins.js';
+import { skinRegistry } from './skins/skins.js';
 import { getLegalMoves, applyMove, getGameState, isWasmReady } from './chess-wasm.js';
 import { getCapturedPiece, getBoardStateAtMove } from './game.js';
 import { createRenderer } from './renderer-3d.js';

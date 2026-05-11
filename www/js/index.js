@@ -96,7 +96,7 @@ import {
 import './dialogs-newgame.js';
 
 // Import skin module
-import { initializeSkin, switchSkin, toggle3dMode } from './skins.js';
+import { initializeSkin, switchSkin, toggle3dMode } from './skins/skins.js';
 
 // Export key functions to window object for HTML event handlers and backward compatibility
 window.currentFen = INITIAL_FEN;

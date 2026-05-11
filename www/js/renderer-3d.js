@@ -7,22 +7,10 @@
 //
 
 import * as THREE from 'three';
-import { skinRegistry } from './skins.js';
-import { buildPawn as buildPawnClassic } from './skins/classic/3d/pawn.js';
-import { buildRook as buildRookClassic } from './skins/classic/3d/rook.js';
-import { buildKnight as buildKnightClassic } from './skins/classic/3d/knight.js';
-import { buildBishop as buildBishopClassic } from './skins/classic/3d/bishop.js';
-import { buildQueen as buildQueenClassic } from './skins/classic/3d/queen.js';
-import { buildKing as buildKingClassic } from './skins/classic/3d/king.js';
-import { buildPawn as buildPawnClassic2 } from './skins/classic2/3d/pawn.js';
-import { buildRook as buildRookClassic2 } from './skins/classic2/3d/rook.js';
-import { buildKnight as buildKnightClassic2 } from './skins/classic2/3d/knight.js';
-import { buildBishop as buildBishopClassic2 } from './skins/classic2/3d/bishop.js';
-import { buildQueen as buildQueenClassic2 } from './skins/classic2/3d/queen.js';
-import { buildKing as buildKingClassic2 } from './skins/classic2/3d/king.js';
+import { skinRegistry, Board3D, skin3dPieces } from './skins/skins.js';
 
-const WHITE_MAT = { color: 0xf0f0f0, roughness: 0.25, metalness: 0.05 };
-const BLACK_MAT = { color: 0x333333, roughness: 0.45, metalness: 0.1  };
+const WHITE_SHINY = { color: 0xf0f0f0, roughness: 0.4, metalness: 0.6 };
+const BLACK_SHINY = { color: 0x505050, roughness: 0.4, metalness: 0.6 };
 
 export class ChessRenderer3D {
 
@@ -40,7 +28,7 @@ export class ChessRenderer3D {
         // Initialize light and board properties (will be set up in init())
         this._viewMode = 'full';
         this._singlePieceGroup = null;
-        this.boardColors = { light: 0xf0d9b5, dark: 0xb58863 };
+        this.board = null;
 
         // Drag and zoom controls state
         this.mouse = new THREE.Vector2();
@@ -76,6 +64,7 @@ export class ChessRenderer3D {
         this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         this.renderer.shadowMap.enabled = true;
         this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        this.renderer.localClippingEnabled = true;
         container.appendChild(this.renderer.domElement);
 
         // Setup lights, board, and pieces
@@ -103,25 +92,23 @@ export class ChessRenderer3D {
         return this;
     }
 
-    setBoardColors(light, dark) {
-        this.boardColors = { light, dark };
-        this._rebuildBoard();
-    }
-
-    _setFileLabelsBySide(side) {
-        // Toggle file labels visibility so only the ones closest to camera are shown
-        // When side is 'white', bottom labels (z=5.0) are close, top labels (z=-5.0) are far.
-        // When side is 'black', the board is rotated 180 deg, so bottom labels (z=5.0 relative to board)
-        // are now at z=-5.0 in world space, and top labels are at z=5.0 in world space.
-        const showBottom = (side === 'white');
-        this.fileLabelsBottom.forEach(l => l.visible = showBottom);
-        this.fileLabelsTop.forEach(l => l.visible = !showBottom);
+    setBoardDesign(BoardClass) {
+        this._boardDesign = BoardClass || Board3D;
+        if (this.board) {
+            this.board.dispose();
+            this.board = null;
+        }
+        const Design = this._boardDesign;
+        this.board = new Design(this._boardWrap, { light: 0xf0d9b5, dark: 0xb58863 });
+        this.board.build();
     }
 
     _setupBoard() {
         this._boardWrap = new THREE.Group();
         this.scene.add(this._boardWrap);
-        this._createBoard();
+        const Design = this._boardDesign || Board3D;
+        this.board = new Design(this._boardWrap, { light: 0xf0d9b5, dark: 0xb58863 });
+        this.board.build();
     }
 
     _setupPieceGroups() {
@@ -150,108 +137,6 @@ export class ChessRenderer3D {
         this.scene.add(this.fillLight);
     }
 
-    _createBoard() {
-        if (this.boardGroup) {
-            this._boardWrap.remove(this.boardGroup);
-            this._disposeGroup(this.boardGroup);
-        }
-        this.boardGroup = new THREE.Group();
-        this._boardWrap.add(this.boardGroup);
-        
-        this.squareMeshes = [];
-        this.squareMap = {};
-
-        for (let r = 0; r < 8; r++) {
-            for (let f = 0; f < 8; f++) {
-                const isLight = (r + f) % 2 !== 0;
-                const color = isLight ? this.boardColors.light : this.boardColors.dark;
-                const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.6, metalness: 0 });
-                const geo = new THREE.BoxGeometry(1, 0.04, 1);
-                const mesh = new THREE.Mesh(geo, mat);
-                mesh.position.set(f - 3.5, 0, -(r - 3.5));
-                mesh.receiveShadow = true;
-                mesh.userData.square = String.fromCharCode(97 + f) + (r + 1);
-                this.boardGroup.add(mesh);
-                this.squareMeshes.push(mesh);
-                this.squareMap[mesh.userData.square] = mesh;
-            }
-        }
-
-        const bMat = new THREE.MeshStandardMaterial({ color: 0x5c3a1e, roughness: 0.8, metalness: 0 });
-        const bGeo = new THREE.BoxGeometry(8.6, 0.12, 8.6);
-        const border = new THREE.Mesh(bGeo, bMat);
-        border.position.set(0, -0.08, 0);
-        border.receiveShadow = true;
-        this.boardGroup.add(border);
-
-        this._createLabels();
-    }
-
-    _makeLabelSprite(text) {
-        // Guard for Node.js test environment where document is not defined
-        if (typeof document === 'undefined') {
-            const mat = new THREE.SpriteMaterial({ color: 0xffffff });
-            return new THREE.Sprite(mat);
-        }
-        const canvas = document.createElement('canvas');
-        canvas.width = 64; canvas.height = 64;
-        const ctx = canvas.getContext('2d');
-        ctx.fillStyle = '#95a5a6';
-        ctx.font = 'bold 13px monospace';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(text, 32, 34);
-        const texture = new THREE.CanvasTexture(canvas);
-        const mat = new THREE.SpriteMaterial({ map: texture, transparent: true });
-        return new THREE.Sprite(mat);
-    }
-
-    _createLabels() {
-        const files = ['a','b','c','d','e','f','g','h'];
-        const ranks = [1,2,3,4,5,6,7,8];
-
-        this.fileLabelsBottom = [];
-        this.fileLabelsTop = [];
-
-        // Files along bottom (z = 5.0, near Rank 1) and top (z = -5.0, near Rank 8)
-        for (let f = 0; f < 8; f++) {
-            const x = f - 3.5;
-            const bottom = this._makeLabelSprite(files[f]);
-            bottom.position.set(x, 0.05, 5.0);
-            this.boardGroup.add(bottom);
-            this.fileLabelsBottom.push(bottom);
-
-            const top = this._makeLabelSprite(files[f]);
-            top.position.set(x, 0.05, -5.0);
-            this.boardGroup.add(top);
-            this.fileLabelsTop.push(top);
-        }
-
-        // Ranks along left (x = -4.5) and right (x = 4.5)
-        for (let r = 0; r < 8; r++) {
-            const z = -(r - 3.5);
-            const left = this._makeLabelSprite(ranks[r].toString());
-            left.position.set(-4.5, 0.05, z);
-            this.boardGroup.add(left);
-            const right = this._makeLabelSprite(ranks[r].toString());
-            right.position.set(4.5, 0.05, z);
-            this.boardGroup.add(right);
-        }
-    }
-
-    highlightSquare(sq, on) {
-        const mesh = this.squareMap[sq];
-        if (!mesh) return;
-        if (on) {
-            mesh.material.color.setHex(0xf1c40f);
-        } else {
-            const f = sq.charCodeAt(0) - 97;
-            const r = parseInt(sq[1]) - 1;
-            const isLight = (r + f) % 2 !== 0;
-            mesh.material.color.setHex(isLight ? this.boardColors.light : this.boardColors.dark);
-        }
-    }
-
     _frameBoard() {
         this.camera.updateMatrixWorld(true);
         const margin = 1.4;
@@ -275,59 +160,31 @@ export class ChessRenderer3D {
         this.camera.updateProjectionMatrix();
     }
 
-    _rebuildBoard() {
-        this._createBoard();
-    }
-
     // ---- Low-poly piece builders (delegated to skins/classic/3d/ or skins/classic2/3d/) ----
 
     _buildPawn(group, mat) {
         const activeSkinId = skinRegistry.getActive()?.id || 'classic';
-        if (activeSkinId === 'classic2') {
-            buildPawnClassic2(group, mat);
-        } else {
-            buildPawnClassic(group, mat);
-        }
+        (skin3dPieces[activeSkinId] || skin3dPieces.classic).buildPawn(group, mat);
     }
     _buildRook(group, mat) {
         const activeSkinId = skinRegistry.getActive()?.id || 'classic';
-        if (activeSkinId === 'classic2') {
-            buildRookClassic2(group, mat);
-        } else {
-            buildRookClassic(group, mat);
-        }
+        (skin3dPieces[activeSkinId] || skin3dPieces.classic).buildRook(group, mat);
     }
     _buildKnight(group, mat) {
         const activeSkinId = skinRegistry.getActive()?.id || 'classic';
-        if (activeSkinId === 'classic2') {
-            buildKnightClassic2(group, mat);
-        } else {
-            buildKnightClassic(group, mat);
-        }
+        (skin3dPieces[activeSkinId] || skin3dPieces.classic).buildKnight(group, mat);
     }
     _buildBishop(group, mat) {
         const activeSkinId = skinRegistry.getActive()?.id || 'classic';
-        if (activeSkinId === 'classic2') {
-            buildBishopClassic2(group, mat);
-        } else {
-            buildBishopClassic(group, mat);
-        }
+        (skin3dPieces[activeSkinId] || skin3dPieces.classic).buildBishop(group, mat);
     }
     _buildQueen(group, mat) {
         const activeSkinId = skinRegistry.getActive()?.id || 'classic';
-        if (activeSkinId === 'classic2') {
-            buildQueenClassic2(group, mat);
-        } else {
-            buildQueenClassic(group, mat);
-        }
+        (skin3dPieces[activeSkinId] || skin3dPieces.classic).buildQueen(group, mat);
     }
     _buildKing(group, mat) {
         const activeSkinId = skinRegistry.getActive()?.id || 'classic';
-        if (activeSkinId === 'classic2') {
-            buildKingClassic2(group, mat);
-        } else {
-            buildKingClassic(group, mat);
-        }
+        (skin3dPieces[activeSkinId] || skin3dPieces.classic).buildKing(group, mat);
     }
 
     // ---- Public API ----
@@ -335,12 +192,12 @@ export class ChessRenderer3D {
     setPosition(fen) {
         if (!fen) return;
         // Clear all square highlights before rebuilding
-        for (const mesh of this.squareMeshes) {
+        for (const mesh of this.board.squareMeshes) {
             const sq = mesh.userData.square;
             const f = sq.charCodeAt(0) - 97;
             const r = parseInt(sq[1]) - 1;
             const isLight = (r + f) % 2 !== 0;
-            mesh.material.color.setHex(isLight ? this.boardColors.light : this.boardColors.dark);
+            mesh.material.color.setHex(isLight ? this.board.colors.light : this.board.colors.dark);
         }
 
         this._clearPieces();
@@ -356,7 +213,7 @@ export class ChessRenderer3D {
 
         for (const [sq, ch] of Object.entries(pieces)) {
             const isWhite = ch === ch.toUpperCase();
-            const opts = isWhite ? WHITE_MAT : BLACK_MAT;
+            const opts = isWhite ? WHITE_SHINY : BLACK_SHINY;
             const mat = new THREE.MeshStandardMaterial({ ...opts, flatShading: true });
             const grp = new THREE.Group();
             const type = ch.toUpperCase();
@@ -389,7 +246,7 @@ export class ChessRenderer3D {
 
     setOrientation(side) {
         this._boardWrap.rotation.y = (side === 'black') ? Math.PI : 0;
-        this._setFileLabelsBySide(side);
+        this.board.setFileLabelsBySide(side);
     }
 
     setViewMode(mode) {
@@ -397,7 +254,7 @@ export class ChessRenderer3D {
         const showBoard = mode === 'full' || mode === 'board';
         const showPieces = mode === 'full';
         const showSingle = mode === 'piece';
-        if (this.boardGroup) this.boardGroup.visible = showBoard;
+        if (this.board && this.board.group) this.board.group.visible = showBoard;
         if (this.pieceGroup) this.pieceGroup.visible = showPieces;
         if (this._singlePieceGroup) this._singlePieceGroup.visible = showSingle;
     }
@@ -414,7 +271,7 @@ export class ChessRenderer3D {
             this._singlePieceGroup.remove(child);
         }
         const isWhite = color === 'white';
-        const opts = isWhite ? WHITE_MAT : BLACK_MAT;
+        const opts = isWhite ? WHITE_SHINY : BLACK_SHINY;
         const mat = new THREE.MeshStandardMaterial({ ...opts, flatShading: true });
         const grp = new THREE.Group();
         const builders = {
@@ -492,9 +349,9 @@ export class ChessRenderer3D {
     }
 
     setSelection(sq) {
-        if (this.selectedSquare) this.highlightSquare(this.selectedSquare, false);
+        if (this.selectedSquare) this.board.highlightSquare(this.selectedSquare, false);
         this.selectedSquare = sq;
-        if (sq) this.highlightSquare(sq, true);
+        if (sq) this.board.highlightSquare(sq, true);
     }
 
     _squareToPos(sq) {
@@ -510,7 +367,7 @@ export class ChessRenderer3D {
         this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
         this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
         this.raycaster.setFromCamera(this.mouse, this.camera);
-        const hits = this.raycaster.intersectObjects(this.squareMeshes);
+        const hits = this.raycaster.intersectObjects(this.board.squareMeshes);
         if (hits.length > 0) {
             const sq = hits[0].object.userData.square;
             if (this.onSquareClick) this.onSquareClick(sq);
@@ -715,7 +572,7 @@ export class ChessRenderer3D {
         this.container.removeEventListener('wheel', this._onWheel);
 
         this._disposed = true;
-        this._disposeGroup(this.boardGroup);
+        if (this.board) this.board.dispose();
         this._disposeGroup(this.pieceGroup);
         this._disposeGroup(this._singlePieceGroup);
         if (this._resizeObserver) this._resizeObserver.disconnect();

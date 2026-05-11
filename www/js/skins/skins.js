@@ -6,7 +6,11 @@
 // and asset preloading for image-based skins.
 //
 
-import { getActiveSkinId, setActiveSkinId, get3dMode, set3dMode as persist3dMode } from './storage.js';
+import { getActiveSkinId, setActiveSkinId, get3dMode, set3dMode as persist3dMode } from '../storage.js';
+
+export { Board3D } from './boards/1/board.js';
+export { Board3DV2 } from './boards/2/board.js';
+export { skin3dPieces } from './3d/index.js';
 
 export const STORAGE_KEY_ACTIVE_SKIN = 'chess_active_skin';
 export const DEFAULT_SKIN_ID = 'classic';
