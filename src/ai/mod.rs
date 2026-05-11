@@ -15,10 +15,11 @@ pub mod transposition;
 use crate::board::move_struct::Move;
 use crate::board::Board;
 
-/// Returns the search depth for the given difficulty level (1, 3-10).
+/// Returns the search depth for the given difficulty level (1-10).
 pub fn get_search_depth(level: u8) -> u8 {
     match level {
         1 => 1,
+        2 => 2,
         3 => 2,
         4 => 3,
         5 => 4,
@@ -34,7 +35,7 @@ pub fn get_search_depth(level: u8) -> u8 {
 ///
 /// # Arguments
 /// * `board` - The current board position
-/// * `level` - The difficulty level (1, 3-10) to use for move selection
+/// * `level` - The difficulty level (1-10) to use for move selection
 ///
 /// # Returns
 /// The best move according to the engine at the given difficulty, or None if no legal moves exist.
