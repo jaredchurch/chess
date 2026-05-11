@@ -1,48 +1,26 @@
 // Copyright (c) 2026 Chess Core Team
 // Licensed under the MIT License. See LICENSE file in the project root for details.
 //
-// Classic 3D King - Low-poly king piece geometry builder.
-// Components (from bottom to top):
-//   BASE: Cylinder (r=0.24, h=0.06) at y=0.03
-//   UPPER BASE: Cylinder (r=0.16, h=0.22) at y=0.36
-//   BELT: Cylinder (r=0.18, h=0.20) at y=0.55
-//   NECK: Cylinder (r=0.08, h=0.30) at y=0.78
-//   CROWN: Cylinder (r=0.18, h=0.06) at y=0.98
-//   SPIKES: 5 cones (r=0.025, h=0.10) at radius 0.18, y=1.07
-//   VERTICAL: Box (0.05x0.32x0.05) at y=1.26
-//   HORIZONTAL: Box (0.16x0.05x0.05) at y=1.24
-//
+// Classic 3D King - Low-poly king piece geometry builder using SVG path lathe.
+// SVG path designed with: https://yqnn.github.io/svg-path-editor/
 
 import * as THREE from 'three';
+import { rotator } from '../../rotator.js';
+import { getPointsFromSVGPath } from '../../../svg-path.js';
 
-export function buildKing(group, mat) {
-    const add = (geo, y) => { const m = new THREE.Mesh(geo, mat); m.position.y = y; group.add(m); };
-    // BASE: Cylinder (r=0.24, h=0.06) at y=0.03
-    add(new THREE.CylinderGeometry(0.24, 0.28, 0.06, 24), 0.03);
-    // UPPER BASE: Cylinder (r=0.16, h=0.22) at y=0.36
-    add(new THREE.CylinderGeometry(0.16, 0.22, 0.55, 24), 0.32);
-    // BELT: Cylinder (r=0.18, h=0.20) at y=0.55
-    add(new THREE.CylinderGeometry(0.18, 0.20, 0.20, 24), 0.63);
-    // NECK: Cylinder (r=0.08, h=0.30) at y=0.78
-    add(new THREE.CylinderGeometry(0.08, 0.10, 0.3, 24), 0.78);
-    // CROWN: Cylinder (r=0.18, h=0.06) at y=0.98
-    const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.20, 0.06, 24), mat);
-    crown.position.y = 0.98;
-    group.add(crown);
-    // SPIKES: 5 cones (r=0.025, h=0.10) at radius 0.18, y=1.07
-    const n = 6;
-    for (let i = 0; i < n; i++) {
-        const a = (i / n) * Math.PI * 2;
-        const p = new THREE.Mesh(new THREE.ConeGeometry(0.025, 0.10, 24), mat);
-        p.position.set(Math.cos(a) * 0.16, 1.05, Math.sin(a) * 0.16);
-        group.add(p);
-    }
-    // VERTICAL: Box (0.05xHx0.05) at y=1.26
-    const vert = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.28, 0.05), mat);
-    vert.position.y = 1.14;
-    group.add(vert);
-    // HORIZONTAL: Box (0.16x0.05x0.05) at y=1.24
-    const horiz = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.05, 0.05), mat);
-    horiz.position.y = 1.17;
-    group.add(horiz);
+export function buildKing(group, mat, scale = 0.02) {
+    const pathData = "M0 0 13 0 13-3 12-3C12-4 13-5 12-6 11-7 10.6667-8 10-9 10-9.6667 11-10 10-11 9-12 7-15 6-32 11-32 11-35 9-35 6-35 12-37 7-37 9-37 9-39 7-39 10-49 12-52 8-53 4-54 2-55 0-55";
+    group.add(rotator(pathData, mat, scale));
+
+    const crossPath="M-6 0 6 0C9-1 9-1 7-3L7-3 1-10 10-6C11-9 11-12 10-15L1-11 7-18C9-20 9-20 6-21L6-21C2-22-2-22-6-21L-6-21C-9-20-9-20-7-18L-1-11-10-15C-11-12-11-9-10-6L-1-10-7-3C-9-1-9-1-6 0-2 1 2 1 6 0";
+    
+    const points = getPointsFromSVGPath(crossPath, 100, 0.008);
+    points.shift(); // remove spurious (0,0) start point from lathe-geometry helper
+    const crossShape = new THREE.Shape(points);
+    const crossGeom = new THREE.ExtrudeGeometry(crossShape, { depth: 0.04, bevelEnabled: true, bevelThickness: 0.01, bevelSize: 0.01 });
+    const crossMesh = new THREE.Mesh(crossGeom, mat);
+    crossMesh.position.y = 1.1;
+    group.add(crossMesh);
 }
+
+

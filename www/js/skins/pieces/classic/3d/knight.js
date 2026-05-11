@@ -1,35 +1,30 @@
 // Copyright (c) 2026 Chess Core Team
 // Licensed under the MIT License. See LICENSE file in the project root for details.
 //
-// Classic 3D Knight - Low-poly knight piece geometry builder.
-// Components (from bottom to top):
-//   BASE: Cylinder (r=0.24, h=0.06) at y=0.03
-//   NECK: Cylinder (r=0.16, h=0.22) at y=0.36
-//   CHEST: Cylinder (r=0.12, h=0.15) at y=0.56
-//   HEAD: Box (0.28x0.18x0.18) at (0.04, 0.75, -0.02), rotated z=0.08, x=0.15
-//   EAR: Cone (r=0.035, h=0.12) at (0.10, 0.88, 0.03), rotated z=-0.15, x=0.25
-//
+// Classic 3D Pawn - Low-poly pawn piece geometry builder using SVG path lathe.
+// SVG path designed with: https://yqnn.github.io/svg-path-editor/
 
 import * as THREE from 'three';
+import { rotator } from '../../rotator.js';
+import { getPointsFromSVGPath } from '../../../svg-path.js';
 
-export function buildKnight(group, mat) {
-    const add = (geo, y) => { const m = new THREE.Mesh(geo, mat); m.position.y = y; group.add(m); };
-    // BASE: Cylinder (r=0.24, h=0.06) at y=0.03
-    add(new THREE.CylinderGeometry(0.24, 0.28, 0.06, 24), 0.03);
-    // NECK: Cylinder (r=0.16, h=0.22) at y=0.36
-    add(new THREE.CylinderGeometry(0.16, 0.22, 0.5, 24), 0.30);
-    // CHEST: Cylinder (r=0.12, h=0.15) at y=0.56
-    add(new THREE.CylinderGeometry(0.12, 0.14, 0.15, 24), 0.56);
-    // HEAD: Box (0.28x0.18x0.18) at (0.04, 0.75, -0.02), rotated z=0.08, x=0.15
-    const head = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.18, 0.18), mat);
-    head.position.set(0.04, 0.75, -0.02);
-    head.rotation.z = 0.08;
-    head.rotation.x = 0.15;
-    group.add(head);
-    // EAR: Cone (r=0.035, h=0.12) at (0.10, 0.88, 0.03), rotated z=-0.15, x=0.25
-    const ear = new THREE.Mesh(new THREE.ConeGeometry(0.035, 0.12, 5), mat);
-    ear.position.set(0.10, 0.88, 0.03);
-    ear.rotation.z = -0.15;
-    ear.rotation.x = 0.25;
-    group.add(ear);
+export function buildKnight(group, mat, scale = 0.0125) {
+    const pathData = "M0 0 13 0 13-3 12-3C12-4 13-5 12-6 11-7 10.6667-8 10-9 10-9.6667 11-10 10-11 9-12 3-16 5-32 10-32 11-35 9-35 6-35 12-37 7-37 9-37 9-39 7-39L3-39 3-42 0-42";
+    //M0 0 13 0 13-3 12-3C12-4 13-5 12-6 11-7 10.6667-8 10-9 10-9.6667 11-10 10-11 9-12 3-16 5-32 10-32 11-35 9-35 6-35 12-37 7-37 9-37 9-39 7-39L3-39 3-42 6-42 6-46C5-46 5-47 6-47L6-51C5-51 5-52 6-52L6-56 0-56";
+    group.add(rotator(pathData, mat, scale));
+
+    const horseHead = "M-23 0 34 0C34 0 40 1 38-7 23-39 93-130 24-150 19.6667-157 10-174 10-166 10-163 12-160 12-152-14-139-26-109-40-95-55-79-34-65-22-75-16-80 14-109 5-88-5-70-6-69-13-63-36-45-63-2-23 0";
+    
+    const points = getPointsFromSVGPath(horseHead, 200, 0.002);
+    const depth = 0.1;
+    points.shift(); // remove spurious (0,0) start point from lathe-geometry helper
+    const crossShape = new THREE.Shape(points);
+    const crossGeom = new THREE.ExtrudeGeometry(crossShape, { depth: depth, bevelEnabled: true, bevelThickness: 0.01, bevelSize: 0.01 });
+    const crossMesh = new THREE.Mesh(crossGeom, mat);
+    crossMesh.position.y = 0.52;
+    crossMesh.position.z = -1 * depth/2;
+    group.add(crossMesh);
+
 }
+
+

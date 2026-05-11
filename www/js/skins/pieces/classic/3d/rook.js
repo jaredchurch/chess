@@ -2,68 +2,48 @@
 // Licensed under the MIT License. See LICENSE file in the project root for details.
 //
 // Classic 3D Rook - Low-poly rook piece geometry builder.
-// Components (from bottom to top):
-//   BASE: Cylinder (r=0.26, h=0.06) at y=0.03
-//   UPPER BASE: Cylinder (r=0.20, h=0.24) at y=0.36
-//   RING: Cylinder (r=0.24, h=0.05) at y=0.70
-//   PLATFORM: Cylinder (r=0.26, h=0.06) at y=0.755
-//   CRENELLATIONS: 8 boxes (0.06x0.10x0.06) at radius 0.20, y=0.845
-//   (Spaced at 45° intervals around the platform edge)
 //
-
 import * as THREE from 'three';
+import { rotator } from '../../rotator.js';
 
-export function buildRook(group, mat) {
-    const segments = 64;
+function createRamparts(increment = 0, total = 8, mat, posY = 0.845, innerRadius = 0.15, outerRadius = 0.2, height = 0.10) {
+        // 1. Create the 2D Shape (The footprint of the ring)
+    const shape = new THREE.Shape();
 
-    const add = (geo, y) => { const m = new THREE.Mesh(geo, mat); m.position.y = y; group.add(m); };
-    // BASE: Cylinder (r=0.26, h=0.06) at y=0.03
-    add(new THREE.CylinderGeometry(0.26, 0.28, 0.06, segments), 0.03);
-    // UPPER BASE: Cylinder (r=0.20, h=0.24) at y=0.36
-    add(new THREE.CylinderGeometry(0.18, 0.22, 0.5, segments), 0.3);
-    // RING: Cylinder (r=0.24, h=0.05) at y=0.70
-    add(new THREE.CylinderGeometry(0.24, 0.24, 0.05, segments), 0.55);
-    // PLATFORM: Cylinder (r=0.26, h=0.06) at y=0.755
-    const plat = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.26, 0.06, segments), mat);
-    plat.position.y = 0.6;
-    group.add(plat);
-    // CRENELLATIONS: 8 boxes (0.06x0.10x0.06) at radius 0.20, y=0.845
-    // (Spaced at 45° intervals around the platform edge)
-    for (let i = 0; i < 8; i++) {
-        const a = (i / 8) * Math.PI * 2;
-        const b = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.14, segments), mat);
-        b.position.set(Math.cos(a) * 0.20, 0.65, Math.sin(a) * 0.20);
-        group.add(b);
+    // const innerRadius = 0.15;
+    // const outerRadius = 0.2;
+    const startAngle = 0 + Math.PI* 2 * increment/total; // 0 degrees (starting point)
+    const endAngle = Math.PI * 1/total + Math.PI * 2 * increment/total; // 270 degrees (partial ring)
+
+    // Outer edge
+    shape.absarc(0, 0, outerRadius, startAngle, endAngle, false);
+
+    // Inner edge (drawn in reverse to create the "hole")
+    shape.absarc(0, 0, innerRadius, endAngle, startAngle, true);
+
+    // 2. Extrude it to add depth
+    const extrudeSettings = {
+        depth: height,           // How thick the ring is on the Z-axis
+        bevelEnabled: false, // Adds rounded edges (highly recommended)
+        curveSegments: 48   // Makes the ring look smooth
+    };
+
+    const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+    const meshRamparts = new THREE.Mesh(geometry, mat);
+    meshRamparts.rotation.x = Math.PI / 2;
+    meshRamparts.position.y = posY;
+    return meshRamparts;
+
+}
+
+export function buildRook(group, mat, scale=0.014) {
+    const pathData = "M0 0 13 0 13-3 12-3C12-4 13-5 12-6 11-7 10.6667-8 10-9 10-9.6667 11-10 10-11 9-12 3-16 5-32 10-32 11-35 9-35L5-35 11-39 11-47 7-47 7-42 0-42";
+    group.add(rotator(pathData, mat, scale));
+
+    // Add 8 crenellations around the top
+    const rampartCount=7;
+    for (let i = 0; i < rampartCount; i++) {
+        group.add(createRamparts(i, rampartCount, mat, 0.72, 0.0978, 0.1541, 0.08));
     }
-
-
-    // const outerRadius = 0.24;
-    // const innerRadius = 0.18;
-    // const shape = new THREE.Shape();
-    // shape.absarc(0, 0, outerRadius, 0, Math.PI * 2, false);
-    
-    // // Create the hole
-    // const hole = new THREE.Shape();
-    // hole.absarc(0, 0, innerRadius, 0, Math.PI * 2, false);
-    // shape.holes.push(hole);
-
-    // // 2. Extrude settings
-    // const extrudeSettings = {
-    //     depth: 0.14,          // height of the ring
-    //     bevelEnabled: false
-    // };
-
-    // // 3. Create geometry + mesh
-    // const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
-    // const ring = new THREE.Mesh(geometry, mat);
-
-    // // 4. Rotate 90 degrees on X axis
-    // ring.rotation.x = Math.PI / 2;
-
-    // // Optional: center geometry
-    // ring.position.y = 0.9; //0.7// Position the ring at the correct height
-
-    // // Add to scene
-    // group.add(ring);
 
 }
