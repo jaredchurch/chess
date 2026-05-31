@@ -6,6 +6,9 @@
 	"image": "mcr.microsoft.com/devcontainers/python:3.13-trixie", // based on Debian "Trixie" (13)
 	"features": {
 		"./features/en-NZ-locale": {},
+		"./features/gemini": {},
+		"./features/opencode": {},
+		"./features/spec-kit": {},
 		"ghcr.io/devcontainers/features/common-utils:2": {
 			"installZsh": true,
 			"installOhMyZsh": true,
