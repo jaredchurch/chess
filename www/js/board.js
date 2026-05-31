@@ -56,6 +56,11 @@ window.updateBoardSize = function() {
     const squareSize = Math.floor(size / 8);
     const actualBoardSize = squareSize * 8;
     
+    // Guard: skip if board dimensions haven't changed (prevents oscillation on click)
+    if (parseInt(board.style.width) === actualBoardSize) {
+        return;
+    }
+
     // Reset to exact size that's divisible by 8
     board.style.width = actualBoardSize + 'px';
     board.style.height = actualBoardSize + 'px';
@@ -71,16 +76,41 @@ window.updateBoardSize = function() {
     if (typeof window.updateBoardLabels === 'function') {
         window.updateBoardLabels();
     }
+    
+    // Pin board-layout to explicit size matching actual content, preventing CSS grid
+    // auto-sizing from shifting the layout during renders or viewport changes
+    const layout = document.getElementById('board-layout');
+    if (layout) {
+        const topLabel = document.getElementById('board-labels-top');
+        const labelHeight = topLabel && topLabel.offsetHeight ? topLabel.offsetHeight : 20;
+        const leftLabel = document.getElementById('board-labels-left');
+        const labelWidth = leftLabel && leftLabel.offsetWidth ? leftLabel.offsetWidth : 20;
+        const totalW = actualBoardSize + 4 + labelWidth * 2;
+        const totalH = actualBoardSize + 4 + labelHeight * 2;
+        layout.style.width = totalW + 'px';
+        layout.style.height = totalH + 'px';
+    }
 };
 
-// Add ResizeObserver to board-container to ensure 2D board always updates
-// when the container size changes (e.g. info-panel scrollbar appearing)
+// ResizeObserver for 2D board — only resizes board when it doesn't fit the container
+// (e.g. info-panel height increased, shrinking the board area). Uses actual measured
+// label heights to determine if resize is needed, avoiding false positives.
 if (typeof ResizeObserver !== 'undefined') {
     const container = document.getElementById('board-container');
     if (container) {
         const ro = new ResizeObserver(() => {
-            if (!window._chessRenderer) {
-                // Immediate update to prevent flicker, but use requestAnimationFrame for smoothness
+            if (window._chessRenderer) return;
+            const board = document.getElementById('board');
+            if (!board) return;
+            const boardSize = parseInt(board.style.width);
+            if (!boardSize) { window.updateBoardSize(); return; }
+            // Measure actual layout overhead from the DOM
+            const topLabel = document.getElementById('board-labels-top');
+            const bottomLabel = document.getElementById('board-labels-bottom');
+            const labelH = topLabel ? topLabel.offsetHeight : 20;
+            const labelH2 = bottomLabel ? bottomLabel.offsetHeight : 20;
+            // border: 2px each side on #board-wrapper
+            if (boardSize + Math.max(labelH, labelH2) * 2 + 4 > container.clientHeight) {
                 window.updateBoardSize();
             }
         });
@@ -139,6 +169,36 @@ window.updateBoardLabels = function() {
     });
 };
 
+// iOS toolbar viewport management:
+// 1. CSS 100dvh on #app handles toolbar show/hide dynamically
+// 2. This visualViewport handler ONLY patches the known dvh initial-load bug
+//    (where dvh returns toolbar-hidden height when toolbar is visible)
+// 3. On each touch, we verify the viewport height matches and correct if needed
+//    (catches cases where dvh or visualViewport.resize didn't fire)
+if (window.visualViewport) {
+    const app = document.getElementById('app');
+    if (app) {
+        const updateAppHeight = () => {
+            const vv = window.visualViewport;
+            // On iOS, visualViewport.height is the actual visible area (excludes keyboard/toolbars)
+            // We set #app height to fill exactly this area minus the header
+            app.style.height = (vv.height - 50) + 'px';
+            app.style.bottom = 'auto';
+            // Scroll to top to ensure no weird offsets from keyboard
+            window.scrollTo(0, 0);
+            window.updateBoardSize();
+        };
+
+        window.visualViewport.addEventListener('resize', updateAppHeight);
+        window.visualViewport.addEventListener('scroll', updateAppHeight);
+        
+        // Initial call to patch any load-time mismatch
+        if (window.visualViewport.height < window.innerHeight) {
+            updateAppHeight();
+        }
+    }
+}
+
 // Debounced resize handler to prevent excessive recalculations
 let resizeTimeout;
 window.addEventListener('resize', () => {
@@ -196,14 +256,6 @@ export function renderBoard() {
         document.querySelectorAll('.label-corner').forEach(el => {
             el.style.display = 'none';
         });
-    } else {
-        ['board-labels-top', 'board-labels-bottom', 'board-labels-left', 'board-labels-right'].forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.style.display = '';
-        });
-        document.querySelectorAll('.label-corner').forEach(el => {
-            el.style.display = '';
-        });
     }
 
     if (is3d) {
@@ -237,7 +289,12 @@ export function renderBoard() {
     boardEl.style.placeItems = '';
     boardEl.style.background = '';
     boardEl.style.display = 'grid';
-    window.updateBoardSize();
+
+    // Only re-size board if it doesn't have explicit dimensions yet
+    // (e.g. initial render or after switching from 3D mode which clears them)
+    if (!boardEl.style.width) {
+        window.updateBoardSize();
+    }
 
     const useImagePieces = activeSkin && activeSkin.pieceSet && activeSkin.pieceSet.type === PIECE_TYPES.IMAGE;
     const pieceMapping = useImagePieces ? (activeSkin.pieceSet.mapping || {}) : {};
