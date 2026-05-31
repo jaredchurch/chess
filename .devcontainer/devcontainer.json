@@ -33,11 +33,6 @@
 	    }
 
 	},
-	"overrideFeatureInstallOrder": [
-			"ghcr.io/devcontainers/features/node",
-			"ghcr.io/devcontainers/features/dotnet",
-			"ghcr.io/devcontainers/features/common-utils"
-	],
 	"containerUser": "devcontainer",
 	"updateRemoteUserUID": true,
 	"postCreateCommand": "chmod +x ./.devcontainer/post-create.sh && ./.devcontainer/post-create.sh",
