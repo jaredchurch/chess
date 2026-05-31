@@ -208,10 +208,22 @@ window.addEventListener('resize', () => {
 
 /**
  * Initializes panels to show by default on page load
+ * On mobile, hide panels by default to save space
  */
 window.initPanels = function() {
-    const historyWrapper = document.getElementById('history-card-wrapper');
-    if (historyWrapper) historyWrapper.classList.remove('panel-hidden');
+    const isMobile = window.innerWidth <= 700;
+    if (isMobile) {
+        if (typeof window.togglePanelDisplay === 'function') {
+            window.togglePanelDisplay('score-card-wrapper', false);
+            window.togglePanelDisplay('history-card-wrapper', false);
+        }
+    } else {
+        // Desktop default: both visible
+        const sw = document.getElementById('score-card-wrapper');
+        const hw = document.getElementById('history-card-wrapper');
+        if (sw) sw.classList.remove('panel-hidden');
+        if (hw) hw.classList.remove('panel-hidden');
+    }
 };
 
 /**

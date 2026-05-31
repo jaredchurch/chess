@@ -304,8 +304,47 @@ button:hover { background: #2980b9; }
 
 @media (max-width: 700px) {
     #app { flex-direction: column; align-items: center; padding: 10px; gap: 10px; }
-    #board-container { width: 100%; max-width: 100%; overflow: hidden; justify-content: flex-start; flex: 2; }
+    #board-container { width: 100%; max-width: 100%; overflow: hidden; justify-content: center; flex: 2; min-height: 0; min-width: 0; }
     #info-panel { width: 100%; max-width: 100%; margin-top: 10px; flex: 1; min-height: 0; }
+
+    /* BUG37 Fix: Hide FEN text on mobile to prevent dialog overflow */
+    #preview-fen-text { display: none; }
+    .preview-fen { justify-content: center; }
+}
+
+/* Game Menu Dialog */
+#game-menu-dialog {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.8);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.game-menu-content {
+    background: #34495e;
+    border-radius: 10px;
+    padding: 20px;
+    display: flex;
+    gap: 20px;
+    width: min(90vw, 500px);
+}
+.game-menu-section {
+    flex: 1;
+    min-width: 0;
+}
+@media (max-width: 500px) {
+    .game-menu-content {
+        flex-direction: column;
+        gap: 10px;
+        width: 90vw;
+        max-height: 90vh;
+        overflow-y: auto;
+    }
 }
 
 /* Promotion Dialog */

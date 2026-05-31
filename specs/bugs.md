@@ -33,16 +33,16 @@
 - [x] BUG33 - when I first select 3D mode in the setting dialog the viewport is very narrow and I have to subsequently refresh the board to get the full size viewport, modify so that the full size viewport is there immediately.
 - [x] BUG34 - when I check the 3d Mode checkbox (refer line 57 in dailogs.js) the 3d board is tiny within the viewport and should be rendered filling the veiwport. If I do a page refresh after this then the size gets fixed.
 - [x] BUG35 - when I realod a page and am playing black, the timers get out of sync and it times my move on white. ensure that the timers are correctly idenitfying which colour is having it's turn. I suspect this is related to the comment that is in renderer-3d.js at line 425 in the resize function. suspect container created at line 281 of board.js is narrow when we get to renderer.resize at line 309 of board.js. when I switch to 3D mode the container is 57x400, however when I refresh the page the container at the same place is 600x496. please make sure that when the 3D mode is switched on that the container should be resized to fill the screen, I expect it to be 600x496, same as when the page gets refreshed.
-- [?] BUG36 - playing in 2D mode, the board moves around (vertically) when pieces are selected and when moves are completed. ensure that the board position is static for these. It looks like the container the board is in is sometimes too tall for the board. this is a bug that was introduced somewhere between the HEAD of main branch and now. (Fix: ResizeObserver only resizes when board doesn't fit — board.js:87-99) (GitHub #16)
-- [ ] BUG37 - On mobile screen the dialog to show a previous move is too wide — should just show the button, not the full FEN. (GitHub #18)
-- [ ] BUG38 - On Mobile screen the hamburger menu dialog is too wide. (GitHub #17)
-- [ ] BUG39 - 
+- [x] BUG36 - playing in 2D mode, the board moves around (vertically) when pieces are selected and when moves are completed. ensure that the board position is static for these. It looks like the container the board is in is sometimes too tall for the board. this is a bug that was introduced somewhere between the HEAD of main branch and now. (Fix: ResizeObserver only resizes when board doesn't fit — board.js:87-99) (GitHub #16)
+- [x] BUG37 - On mobile screen the dialog to show a previous move is too wide — should just show the button, not the full FEN. (GitHub #18)
+- [x] BUG38 - On Mobile screen the hamburger menu dialog is too wide. (GitHub #17)
+- [ ] BUG39 - board labels (bottom and sides) oscillate (vertically) on board clicks.
 - [x] BUG40. many squares on the 3D board are showing yellow for some reason. This was highlighting all of the valid moves
 - [x] BUG41 - when I select 3D mode on the setting dialog, the viewport starts very narrow and I have to reload the page to get it's correct width. please ensure that the width is correct as soon as 3D mode is selected.
 - [x] BUG42 - in 3d mode the board labels for ranks and columns are not showing, please add these.
 - [x] BUG43 - if answering no to the castle question, when it returns the rook should be the selected piece.
 - [x] BUG44 - In 2D mode, before a pieces is selected the board is positioned incorrect on the screen. Please fix this.
-- [ ] BUG45 - board_outline should also be drawn on 2D boards.
+- [x] BUG45 - board_outline should also be drawn on 2D boards.
 - [x] BUG46 - when a skin is selected the setting dialog should not exit automatically. as with all other settings the dialog should remain open until the user click outside the dialog
 - [x] BUG47 - the outline around the 3D board should be turned off if the url param is not set.
 - [x] BUG48 - in 3D skin, board should present the colour being played by the player at the bottom of the screen. right now if I play black I see white at bottom of screen and black at top of screen - board needs to be rotated 180 degrees. Refer bug 31 as well.
